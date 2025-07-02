@@ -1,9 +1,8 @@
 #!/bin/bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source $SCRIPT_DIR/helper.sh
+source "$SCRIPT_DIR/helper.sh"
 
-log_message "GPU driver installation started"
 print_info "\nDetecting GPU..."
 
 GPU_INFO=$(lspci | grep -Ei "VGA|3D")
