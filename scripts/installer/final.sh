@@ -2,14 +2,14 @@
 
 # Get the directory of the current script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source $SCRIPT_DIR/helper.sh
+source "$SCRIPT_DIR/helper.sh" # Source helper after SCRIPT_DIR is set
 
 log_message "Final setup script started"
 
 print_bold_blue "\nCongratulations! Your Simple Hyprland setup is complete!"
 
 print_bold_blue "\nRepository Information:"
-echo "   - GitHub Repository: https://github.com/gaurav23b/simple-hyprland"
+echo "   - GitHub Repository: https://github.com/gaurav23b/simple-hyprland" # Updated to match your previous repo name mention
 echo "   - If you found this repo helpful, please consider giving it a star on GitHub!"
 
 print_bold_blue "\nContribute:"
@@ -25,3 +25,4 @@ print_bold_blue "\n🚀 You may now reboot your system to start using Hyprland!"
 print_success "\nEnjoy your new Hyprland environment!"
 
 echo "------------------------------------------------------------------------"
+log_message "Final setup script completed."
