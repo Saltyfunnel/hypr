@@ -1,0 +1,46 @@
+# Catppuccin-themed Starship prompt config
+
+add_newline = true
+
+[character]
+success_symbol = "❯"
+error_symbol = "✗"
+use_symbol_for_status = true
+vicmd_symbol = "❮"
+
+[hostname]
+format = "[$hostname]($style) "
+style = "bold #6A7C93"
+
+[directory]
+style = "bold #F2CDCD"
+truncation_length = 3
+truncation_symbol = "…"
+
+[jobs]
+symbol = "⚙️ "
+style = "bold #F2CDCD"
+
+[git_status]
+style = "bold #C6D0F5"
+conflicted = "≠ "
+ahead = "⇡ "
+behind = "⇣ "
+stashed = "⚑ "
+untracked = "?"
+modified = "✗ "
+staged = "✓ "
+
+[git_branch]
+symbol = " "
+style = "bold #C6D0F5"
+
+[battery]
+full_symbol = ""
+charging_symbol = ""
+discharging_symbol = ""
+style = "bold #F2CDCD"
+
+[time]
+format = "🕒 %H:%M:%S"
+style = "bold #6A7C93"

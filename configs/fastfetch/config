@@ -1,0 +1,6 @@
+# fastfetch config for Catppuccin theme
+output_format="pretty"
+theme="catppuccin"
+info_title_color="6A7C93"
+info_text_color="C6D0F5"
+accent_color="F2CDCD"
