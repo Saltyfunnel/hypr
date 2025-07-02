@@ -8,22 +8,6 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-LOG_FILE=""
-
-# Function to initialize logging (call this in your main scripts)
-function init_logging {
-    local script_dir="$1"
-    LOG_FILE="$script_dir/install.log"
-    echo "" > "$LOG_FILE"  # Clear previous logs
-}
-
-function log_message {
-    if [ -z "$LOG_FILE" ]; then
-        echo "LOG_FILE not set. Call init_logging first."
-        return 1
-    fi
-    echo "$(date): $1" >> "$LOG_FILE"
-}
 
 function print_error {
     echo -e "${RED}$1${NC}"
