@@ -1,26 +1,44 @@
 #!/bin/bash
 
-# Get the directory of the current script
+# Define script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Source helper file
-source $SCRIPT_DIR/helper.sh
+# Define original user
+SUDO_USER=$(logname)
 
-trap 'trap_message' INT TERM
+# Export these for scripts that use them
+export SCRIPT_DIR
+export SUDO_USER
 
-log_message "Installation started"
-print_bold_blue "\nSimple Hyprland"
-echo "---------------"
+# Trap Ctrl+C or kill
+trap 'echo -e "\n❌ Script interrupted. Exiting..."; exit 1' INT TERM
 
-check_root
-check_os
+# Source helper if needed (only for print_* functions)
+source "$SCRIPT_DIR/helper.sh"
 
-run_script "prerequisites.sh" "Prerequisites Setup"
-run_script "gpu.sh" "GPU Driver Installation"
-run_script "hypr.sh" "Hyprland & Critical Software Setup"
-run_script "utilities.sh" "Basic Utilities & Configs Setup"
-run_script "theming.sh" "Themes and Tools Setup"
-run_script "final.sh" "Final Setup"
+print_bold_blue "\n🚀 Starting Simple Hyprland Setup"
+echo "-------------------------------------"
 
-print_bold_blue "\n🌟 Setup Complete\n"
-log_message "Installation completed successfully"
+# Basic checks
+if [[ "$EUID" -ne 0 ]]; then
+    echo -e "\n❌ Please run this script as root (e.g. with sudo)"
+    exit 1
+fi
+
+# Optional: check OS
+source /etc/os-release
+if [[ "$ID" != "arch" ]]; then
+    echo -e "\n⚠️  This script is meant for Arch Linux. Your OS: $PRETTY_NAME"
+    read -p "Continue anyway? (y/N): " confirm
+    [[ "$confirm" =~ ^[Yy]$ ]] || exit 1
+fi
+
+# Run each section
+bash "$SCRIPT_DIR/prerequisites.sh"
+bash "$SCRIPT_DIR/gpu.sh"
+bash "$SCRIPT_DIR/hypr.sh"
+bash "$SCRIPT_DIR/utilities.sh"
+bash "$SCRIPT_DIR/theming.sh"
+bash "$SCRIPT_DIR/final.sh"
+
+print_bold_blue "\n✅ Setup Complete!"
