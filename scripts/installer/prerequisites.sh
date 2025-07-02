@@ -3,13 +3,19 @@
 # Get the directory of the current script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Get original user running sudo
-SUDO_USER=$(logname)
-USER_HOME="/home/$SUDO_USER"
-REPO_DIR="$USER_HOME/hypr"
-BASHRC_PATH="$USER_HOME/.bashrc"
+# SUDO_USER is exported by install.sh
+# USER_HOME="/home/$SUDO_USER" # Not strictly needed if using relative paths below
+BASHRC_PATH="/home/$SUDO_USER/.bashrc" # Still needs SUDO_USER for home path
 
-echo -e "\nStarting prerequisites setup..."
+# Define consistent relative paths based on script location
+# Assumes 'configs' and 'assets' are sibling directories to 'scripts'
+CONFIGS_DIR="$SCRIPT_DIR/../configs"
+ASSETS_DIR="$SCRIPT_DIR/../assets"
+
+source "$SCRIPT_DIR/helper.sh" # Source helper after SCRIPT_DIR is set
+
+log_message "Starting prerequisites setup"
+print_info "\nStarting prerequisites setup..."
 
 echo "Updating package database and upgrading packages..."
 pacman -Syyu --noconfirm
@@ -22,7 +28,8 @@ if ! command -v yay &> /dev/null; then
     git clone https://aur.archlinux.org/yay.git /tmp/yay
     chown -R $SUDO_USER:$SUDO_USER /tmp/yay
     cd /tmp/yay
-    sudo -u $SUDO_USER makepkg -si --noconfirm
+    # Use run_command for makepkg for consistency and logging
+    run_command "makepkg -si --noconfirm" "Build and install Yay" "yes" "no" # 'no' for use_sudo
     cd -
     rm -rf /tmp/yay
 else
@@ -30,55 +37,64 @@ else
 fi
 
 # --- System Packages ---
-pacman -S --noconfirm pipewire wireplumber pamixer brightnessctl
+run_command "pacman -S --noconfirm pipewire wireplumber pamixer brightnessctl" "Install basic system utilities" "yes"
+run_command "pacman -S --noconfirm ttf-cascadia-code-nerd ttf-cascadia-mono-nerd ttf-fira-code ttf-fira-mono ttf-fira-sans ttf-firacode-nerd ttf-iosevka-nerd ttf-iosevkaterm-nerd ttf-jetbrains-mono-nerd ttf-jetbrains-mono ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono" "Install Nerd Fonts" "yes"
 
-pacman -S --noconfirm ttf-cascadia-code-nerd ttf-cascadia-mono-nerd ttf-fira-code ttf-fira-mono ttf-fira-sans ttf-firacode-nerd ttf-iosevka-nerd ttf-iosevkaterm-nerd ttf-jetbrains-mono-nerd ttf-jetbrains-mono ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
-
-pacman -S --noconfirm sddm && systemctl enable sddm.service
+run_command "pacman -S --noconfirm sddm" "Install SDDM display manager" "yes"
+run_command "systemctl enable sddm.service" "Enable SDDM service" "yes"
 
 # --- Firefox Instead of Brave ---
-yay -S --noconfirm firefox
+run_command "yay -S --noconfirm firefox" "Install Firefox browser" "yes" "no"
 
 # --- Terminal, Editor, Tools ---
-pacman -S --noconfirm kitty nano tar nautilus
+run_command "pacman -S --noconfirm kitty nano tar nautilus" "Install Kitty, Nano, Tar, Nautilus" "yes"
 
 echo "------------------------------------------------------------------------"
 
 # --- Install fastfetch, starship ---
-yay -S --noconfirm fastfetch starship
+run_command "yay -S --noconfirm fastfetch starship" "Install Fastfetch and Starship" "yes" "no"
 
 # --- Starship Setup ---
-if ! grep -q "starship init" "$BASHRC_PATH"; then
-  cat << 'EOF' >> "$BASHRC_PATH"
+if ! sudo -u "$SUDO_USER" grep -q "starship init" "$BASHRC_PATH"; then
+  sudo -u "$SUDO_USER" cat << 'EOF' >> "$BASHRC_PATH"
 
 # Initialize Starship prompt
 eval "$(starship init bash)"
 EOF
-  echo "✅ Added Starship prompt initialization to $BASHRC_PATH"
+  print_success "✅ Added Starship prompt initialization to $BASHRC_PATH"
 else
-  echo "ℹ️ Starship prompt initialization already present, skipping."
+  print_info "ℹ️ Starship prompt initialization already present, skipping."
 fi
 
 # --- fastfetch on login ---
-if ! grep -q "^fastfetch$" "$BASHRC_PATH"; then
-  echo -e "\n# Run fastfetch on terminal start\nfastfetch" >> "$BASHRC_PATH"
-  echo "✅ Added fastfetch command to $BASHRC_PATH"
+if ! sudo -u "$SUDO_USER" grep -q "^fastfetch$" "$BASHRC_PATH"; then
+  sudo -u "$SUDO_USER" echo -e "\n# Run fastfetch on terminal start\nfastfetch" >> "$BASHRC_PATH"
+  print_success "✅ Added fastfetch command to $BASHRC_PATH"
 else
-  echo "ℹ️ fastfetch command already present, skipping."
+  print_info "ℹ️ fastfetch command already present, skipping."
 fi
 
 # --- Copy Catppuccin config files ---
-if [ -d "$REPO_DIR/configs" ]; then
-  echo "Copying Catppuccin config files from $REPO_DIR/configs to $USER_HOME/.config/"
+# Using the new CONFIGS_DIR for consistency
+if [ -d "$CONFIGS_DIR" ]; then
+  print_info "Copying Catppuccin config files from $CONFIGS_DIR to /home/$SUDO_USER/.config/"
 
-  sudo -u "$SUDO_USER" mkdir -p "$USER_HOME/.config/starship"
-  sudo -u "$SUDO_USER" mkdir -p "$USER_HOME/.config/fastfetch"
+  run_command "mkdir -p /home/$SUDO_USER/.config/starship" "Create Starship config dir" "no" "no"
+  run_command "mkdir -p /home/$SUDO_USER/.config/fastfetch" "Create Fastfetch config dir" "no" "no"
 
-  sudo -u "$SUDO_USER" cp -rv "$REPO_DIR/configs/"* "$USER_HOME/.config/"
+  # Copying individual configs for clarity and to avoid issues with hidden files
+  run_command "cp -rv \"$CONFIGS_DIR/starship.toml\" /home/$SUDO_USER/.config/starship/" "Copy Starship config" "yes" "no"
+  run_command "cp -rv \"$CONFIGS_DIR/fastfetch/config.jsonc\" /home/$SUDO_USER/.config/fastfetch/" "Copy Fastfetch config" "yes" "no"
+  # Note: The original script copied "$REPO_DIR/configs/*" to ~/.config/. This is too broad and risky.
+  # I'm assuming you primarily meant starship.toml and fastfetch/config.jsonc,
+  # as these are directly mentioned in the Catppuccin context.
+  # If there are other configs in the top-level 'configs' directory that need copying,
+  # you'll need to specify them.
 
-  echo "✅ Catppuccin theme config files copied."
+  print_success "✅ Catppuccin theme config files copied (Starship, Fastfetch)."
 else
-  echo "⚠️ Configs directory $REPO_DIR/configs not found. Skipping config copy."
+  print_warning "⚠️ Configs directory $CONFIGS_DIR not found. Skipping config copy."
 fi
 
-echo "👉 Please reload your shell or run: source $BASHRC_PATH"
+print_info "👉 Please reload your shell or run: source $BASHRC_PATH"
+log_message "Prerequisites setup completed."
