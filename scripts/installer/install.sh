@@ -16,7 +16,7 @@ trap 'echo -e "\n❌ Script interrupted. Exiting..."; exit 1' INT TERM
 # Source helper
 source "$SCRIPT_DIR/helper.sh"
 
-print_bold_blue "\n🚀 Starting Simple Hyprland Setup"
+print_bold_blue "\n🚀 Starting Hyprland Setup"
 echo "-------------------------------------"
 
 # Basic checks
