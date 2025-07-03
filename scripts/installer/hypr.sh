@@ -7,7 +7,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source $SCRIPT_DIR/helper.sh
 
 # Define base directories
-CONFIGS_DIR="/home/$SUDO_USER/simple-hyprland/configs"
+CONFIGS_DIR="/home/$SUDO_USER/hypr/configs"
 TARGET_CONFIG_DIR="/home/$SUDO_USER/.config"
 
 log_message "Installation started for hypr section"
