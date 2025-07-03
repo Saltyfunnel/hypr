@@ -2,55 +2,59 @@
 
 # Get the directory of the current script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Source helper file
 source $SCRIPT_DIR/helper.sh
 
 log_message "Installation started for theming section"
 print_info "\nStarting theming setup..."
 
-# Install theme engines and theming tools
+# 1. GTK Theme Manager
 run_command "pacman -S --noconfirm nwg-look" "Install nwg-look for GTK theme management" "yes"
-run_command "pacman -S --noconfirm qt5ct qt6ct kvantum kvantum-qt5" "Install Qt5, Qt6 Settings, and Kvantum theme engines" "yes"
-run_command "pacman -S --noconfirm qt6-svg qt6-declarative qt5-quickcontrols2" "Install Qt dependencies for SDDM themes" "yes"
 
-# Install GTK theme
-run_command "tar -xvf /home/$SUDO_USER/hypr/assets/themes/Catppuccin-Mocha.tar.xz -C /usr/share/themes/" "Install Catppuccin Mocha GTK theme" "yes"
+# 2. Nautilus (GNOME Files)
+run_command "pacman -S --noconfirm nautilus" "Install Nautilus file manager" "yes"
 
-# Install icon theme
-run_command "tar -xvf /home/$SUDO_USER/hypr/assets/icons/Tela-circle-dracula.tar.xz -C /usr/share/icons/" "Install Tela Circle Dracula icon theme" "yes"
+# 3. Qt Theme Engines
+run_command "pacman -S --noconfirm qt5ct qt6ct kvantum" "Install Qt5/6 Settings and Kvantum theme engine" "yes"
 
-# Install Kvantum Catppuccin theme
-run_command "yay -S --sudoloop --noconfirm kvantum-theme-catppuccin-git" "Install Catppuccin theme for Kvantum" "yes" "no"
+# 4. Required fonts
+run_command "pacman -S --noconfirm ttf-jetbrains-mono ttf-fira-code ttf-cascadia-code" "Install popular fonts" "yes"
 
-# Copy Kitty theme config
-run_command "cp -r /home/$SUDO_USER/hypr/configs/kitty /home/$SUDO_USER/.config/" "Copy Catppuccin Kitty theme config" "yes" "no"
+# 5. Extract GTK + Icon themes
+run_command "tar -xvf /home/$SUDO_USER/simple-hyprland/assets/themes/Catppuccin-Mocha.tar.xz -C /usr/share/themes/" "Install Catppuccin Mocha GTK theme" "yes"
+run_command "tar -xvf /home/$SUDO_USER/simple-hyprland/assets/icons/Tela-circle-dracula.tar.xz -C /usr/share/icons/" "Install Tela Circle Dracula icon theme" "yes"
 
-# 🧊 Install Catppuccin SDDM theme
-run_command "git clone https://github.com/catppuccin/sddm.git /tmp/catppuccin-sddm" "Clone Catppuccin SDDM theme" "yes"
-run_command "mkdir -p /usr/share/sddm/themes/catppuccin-mocha" "Create SDDM theme directory" "no"
-run_command "cp -r /tmp/catppuccin-sddm/src/* /usr/share/sddm/themes/catppuccin-mocha" "Install Catppuccin SDDM theme to /usr/share/sddm/themes" "no"
+# 6. Kvantum theme
+run_command "yay -S --sudoloop --noconfirm kvantum-theme-catppuccin-git" "Install Catppuccin Kvantum theme" "yes" "no"
 
-# 🛠️ Safely configure /etc/sddm.conf
-print_info "Setting SDDM theme in /etc/sddm.conf..."
+# 7. Kitty config
+run_command "cp -r /home/$SUDO_USER/simple-hyprland/configs/kitty /home/$SUDO_USER/.config/" "Copy Kitty Catppuccin theme config" "yes" "no"
+
+# 8. Catppuccin SDDM Theme
+run_command "yay -S --sudoloop --noconfirm qt6-svg qt6-declarative qt5-quickcontrols2 qt5-graphicaleffects" "Install Qt dependencies for SDDM theming" "yes" "no"
+
+run_command "git clone https://github.com/catppuccin/sddm.git /tmp/catppuccin-sddm" "Clone Catppuccin SDDM theme" "yes" "no"
+run_command "cp -r /tmp/catppuccin-sddm/src /usr/share/sddm/themes/catppuccin-mocha" "Install Catppuccin SDDM theme" "yes"
+
+run_command "chown -R root:root /usr/share/sddm/themes/catppuccin-mocha && chmod -R 755 /usr/share/sddm/themes/catppuccin-mocha" "Fix SDDM theme permissions" "yes"
+
+# 9. Apply SDDM theme
 if [ ! -f /etc/sddm.conf ]; then
-    echo -e "[Theme]\nCurrent=catppuccin-mocha" > /etc/sddm.conf
+    echo "[Theme]" | sudo tee /etc/sddm.conf
+    echo "Current=catppuccin-mocha" | sudo tee -a /etc/sddm.conf
 else
-    if grep -q "^\[Theme\]" /etc/sddm.conf; then
-        sed -i '/^\[Theme\]/,/^\[.*\]/ s/^Current=.*/Current=catppuccin-mocha/' /etc/sddm.conf || \
-        echo "Current=catppuccin-mocha" >> /etc/sddm.conf
-    else
-        echo -e "\n[Theme]\nCurrent=catppuccin-mocha" >> /etc/sddm.conf
-    fi
+    sudo sed -i '/^\[Theme\]/,/^$/ s/^Current=.*/Current=catppuccin-mocha/' /etc/sddm.conf || echo -e "[Theme]\nCurrent=catppuccin-mocha" | sudo tee -a /etc/sddm.conf
 fi
-log_message "Set SDDM theme to catppuccin-mocha"
 
-# 🧾 Final instructions
-print_info "\nPost-installation instructions:"
-print_bold_blue "🧩 Set themes and icons manually if needed:"
-echo "   - Run 'nwg-look' to apply GTK and icon themes"
-echo "   - Run 'kvantummanager' to apply the Kvantum theme"
-echo "   - Run 'qt5ct' or 'qt6ct' to set Qt icon themes"
-echo "   - Reboot or logout to see SDDM login screen theme"
+log_message "Catppuccin SDDM theme set in /etc/sddm.conf"
+
+# Final instruction
+print_info "\nPost-installation steps:"
+print_bold_blue "🖌  Set your GTK and icon themes:"
+echo "   - Run: nwg-look → choose GTK theme and icon set"
+echo "   - Run: kvantummanager → apply Catppuccin"
+echo "   - Run: qt6ct → set icon theme (e.g., Tela-circle-dracula)"
+echo "   - Log out or restart SDDM to see the Catppuccin greeter"
+
+print_success "\n✅ Theming completed successfully."
 
 echo "------------------------------------------------------------------------"
