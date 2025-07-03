@@ -64,4 +64,19 @@ chown -R "$SUDO_USER:$SUDO_USER" "$USER_HOME/.config/gtk-"*
 
 print_success "\n🎉 Theming setup complete!"
 
+# -------------------------------------------------------------
+# Catppuccin SDDM Theme (Mocha variant)
+# -------------------------------------------------------------
+print_info "\nInstalling Catppuccin SDDM theme (Mocha)..."
+
+run_command "git clone https://github.com/catppuccin/sddm.git /tmp/catppuccin-sddm" "Cloning Catppuccin SDDM theme" "no"
+
+run_command "mkdir -p /usr/share/sddm/themes/" "Ensure SDDM themes directory exists" "no"
+
+run_command "cp -r /tmp/catppuccin-sddm/src/mocha /usr/share/sddm/themes/catppuccin-mocha" "Copy Catppuccin Mocha theme to SDDM directory" "no"
+
+run_command "sed -i '/^Current=/d' /etc/sddm.conf && echo 'Current=catppuccin-mocha' >> /etc/sddm.conf" "Set Catppuccin Mocha as the current SDDM theme" "no"
+
+print_success "Catppuccin Mocha SDDM theme installed and set!"
+
 echo "------------------------------------------------------------------------"
