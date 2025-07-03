@@ -37,11 +37,38 @@ else
     log_message "Assets folder missing, skipped copying assets."
 fi
 
+# === SDDM THEME SETUP ===
+
+SDDM_THEME_NAME="catmochasddm"   # Update to your SDDM theme folder name
+SDDM_THEME_SRC="/home/$SUDO_USER/hypr/assets/themes/$SDDM_THEME_NAME"
+SDDM_THEME_DEST="/usr/share/sddm/themes/$SDDM_THEME_NAME"
+
+if [ -d "$SDDM_THEME_SRC" ]; then
+    print_info "\nSetting up SDDM theme: $SDDM_THEME_NAME"
+
+    run_command "sudo cp -r $SDDM_THEME_SRC $SDDM_THEME_DEST" "Copy SDDM theme folder" "no"
+    run_command "sudo chown -R root:root $SDDM_THEME_DEST" "Set ownership of SDDM theme folder" "no"
+    run_command "sudo chmod -R 755 $SDDM_THEME_DEST" "Set permissions of SDDM theme folder" "no"
+
+    # Ensure sddm.conf.d directory exists
+    run_command "sudo mkdir -p /etc/sddm.conf.d" "Ensure sddm.conf.d directory exists" "no"
+
+    # Write theme config snippet for SDDM
+    echo -e "[Theme]\nCurrent=$SDDM_THEME_NAME" | sudo tee /etc/sddm.conf.d/00-$SDDM_THEME_NAME.conf > /dev/null
+    log_message "SDDM theme config written to /etc/sddm.conf.d/00-$SDDM_THEME_NAME.conf"
+
+    print_success "SDDM theme $SDDM_THEME_NAME installed and configured."
+else
+    print_warning "SDDM theme source folder not found: $SDDM_THEME_SRC. Skipping SDDM theme setup."
+    log_message "SDDM theme folder missing, skipped SDDM theme installation."
+fi
+
 # Add instructions to configure theming
 print_info "\nPost-installation instructions:"
 print_bold_blue "Set themes and icons:"
 echo "   - Run 'nwg-look' and set the global GTK and icon theme"
 echo "   - Open 'kvantummanager' (run with sudo for system-wide changes) to select and apply the Catppuccin theme"
 echo "   - Open 'qt6ct' to set the icon theme"
+echo "   - Reboot or restart the sddm service to see the new login theme"
 
 echo "------------------------------------------------------------------------"
