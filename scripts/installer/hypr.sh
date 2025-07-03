@@ -33,7 +33,7 @@ fi
 run_command "pacman -S --noconfirm xdg-desktop-portal-hyprland" "Install XDG Desktop Portal for Hyprland" "yes"
 
 # Install Polkit authentication agent
-run_command "pacman -S --noconfirm polkit-kde-agent" "Install KDE Polkit Agent" "yes"
+run_command "pacman -S --noconfirm polkit-gnome" "Install Polkit Agent" "yes"
 
 # Install Dunst notification daemon
 run_command "pacman -S --noconfirm dunst" "Install Dunst notification daemon" "yes"
