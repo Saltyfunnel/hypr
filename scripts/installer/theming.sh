@@ -18,7 +18,7 @@ run_command "pacman -S --noconfirm nautilus" "Install Nautilus file manager (GTK
 
 # Ensure assets directory exists before copying
 run_command "mkdir -p /home/$SUDO_USER/.config/assets" "Create assets config directory" "no" "no"
-run_command "cp -r /home/$SUDO_USER/simple-hyprland/assets/* /home/$SUDO_USER/.config/assets/" "Copy assets (themes, wallpapers, SDDM themes)" "yes" "no"
+run_command "cp -r /home/$SUDO_USER/hypr/assets/* /home/$SUDO_USER/.config/assets/" "Copy assets (themes, wallpapers, SDDM themes)" "yes" "no"
 
 # Install GTK and icon themes
 run_command "tar -xvf /home/$SUDO_USER/.config/assets/themes/Catppuccin-Mocha.tar.xz -C /usr/share/themes/" "Install Catppuccin Mocha GTK theme" "yes"
@@ -28,7 +28,7 @@ run_command "tar -xvf /home/$SUDO_USER/.config/assets/icons/Tela-circle-dracula.
 run_command "yay -S --sudoloop --noconfirm kvantum-theme-catppuccin-git" "Install Catppuccin theme for Kvantum" "yes" "no"
 
 # Copy Kitty config
-run_command "cp -r /home/$SUDO_USER/simple-hyprland/configs/kitty /home/$SUDO_USER/.config/" "Copy Catppuccin theme configuration for Kitty terminal" "yes" "no"
+run_command "cp -r /home/$SUDO_USER/hypr/configs/kitty /home/$SUDO_USER/.config/" "Copy Catppuccin theme configuration for Kitty terminal" "yes" "no"
 
 # Install Qt dependencies and SDDM theme
 run_command "pacman -S --noconfirm qt6-svg qt6-declarative qt5-quickcontrols2" "Install Qt dependencies for SDDM theme" "yes"
