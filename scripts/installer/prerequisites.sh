@@ -3,86 +3,44 @@
 # Get the directory of the current script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# SUDO_USER is exported by install.sh
-BASHRC_PATH="/home/$SUDO_USER/.bashrc"
+# Source helper file
+source $SCRIPT_DIR/helper.sh
 
-# Define consistent relative paths based on script location
-CONFIGS_DIR="$SCRIPT_DIR/../configs"
-ASSETS_DIR="$SCRIPT_DIR/../assets"
-
-source "$SCRIPT_DIR/helper.sh"
-
+log_message "Installation started for prerequisites section"
 print_info "\nStarting prerequisites setup..."
 
-echo "Updating package database and upgrading packages..."
-pacman -Syyu --noconfirm
+run_command "pacman -Syyu --noconfirm" "Update package database and upgrade packages (Recommended)" "yes"
 
 # --- Yay Installation ---
 if ! command -v yay &> /dev/null; then
-    echo "YAY not found, installing..."
+    print_info "YAY not found, installing..."
 
-    pacman -S --noconfirm --needed git base-devel
-    git clone https://aur.archlinux.org/yay.git /tmp/yay
-    chown -R $SUDO_USER:$SUDO_USER /tmp/yay
-    cd /tmp/yay
-    run_command "makepkg -si --noconfirm" "Build and install Yay" "yes" "no"
-    cd -
-    rm -rf /tmp/yay
+    run_command "pacman -S --noconfirm --needed git base-devel" "Install Git and base-devel for yay" "yes"
+
+    run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay repo" "no" "no"
+
+    run_command "chown -R $SUDO_USER:$SUDO_USER /tmp/yay" "Fix yay folder ownership" "no" "no"
+
+    run_command "cd /tmp/yay && sudo -u $SUDO_USER makepkg -si --noconfirm" "Build and install yay" "no" "no"
+
+    run_command "rm -rf /tmp/yay" "Clean up yay build folder" "no" "no"
 else
-    echo "YAY is already installed."
+    print_success "YAY is already installed."
 fi
 
 # --- System Packages ---
-run_command "pacman -S --noconfirm pipewire wireplumber pamixer brightnessctl" "Install basic system utilities" "yes"
-run_command "pacman -S --noconfirm ttf-cascadia-code-nerd ttf-cascadia-mono-nerd ttf-fira-code ttf-fira-mono ttf-fira-sans ttf-firacode-nerd ttf-iosevka-nerd ttf-iosevkaterm-nerd ttf-jetbrains-mono-nerd ttf-jetbrains-mono ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono" "Install Nerd Fonts" "yes"
+run_command "pacman -S --noconfirm pipewire wireplumber pamixer brightnessctl" "Configuring audio and brightness (Recommended)" "yes"
 
-run_command "pacman -S --noconfirm sddm" "Install SDDM display manager" "yes"
-run_command "systemctl enable sddm.service" "Enable SDDM service" "yes"
+run_command "pacman -S --noconfirm ttf-cascadia-code-nerd ttf-cascadia-mono-nerd ttf-fira-code ttf-fira-mono ttf-fira-sans ttf-firacode-nerd ttf-iosevka-nerd ttf-iosevkaterm-nerd ttf-jetbrains-mono-nerd ttf-jetbrains-mono ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono" "Installing Nerd Fonts and Symbols (Recommended)" "yes"
+
+run_command "pacman -S --noconfirm sddm && systemctl enable sddm.service" "Install and enable SDDM (Recommended)" "yes"
 
 # --- Firefox Instead of Brave ---
-run_command "yay -S --noconfirm firefox" "Install Firefox browser" "yes" "no"
+run_command "yay -S --sudoloop --noconfirm firefox" "Install Firefox browser" "yes" "no"
 
 # --- Terminal, Editor, Tools ---
-run_command "pacman -S --noconfirm kitty nano tar nautilus" "Install Kitty, Nano, Tar, Nautilus" "yes"
+run_command "pacman -S --noconfirm kitty" "Install Kitty (Recommended)" "yes"
+run_command "pacman -S --noconfirm nano" "Install nano" "yes"
+run_command "pacman -S --noconfirm tar" "Install tar for extracting files (Must)/needed for copying themes" "yes"
 
 echo "------------------------------------------------------------------------"
-
-# --- Install fastfetch, starship ---
-run_command "yay -S --noconfirm fastfetch starship" "Install Fastfetch and Starship" "yes" "no"
-
-# --- Starship Setup ---
-if ! sudo -u "$SUDO_USER" grep -q "starship init" "$BASHRC_PATH"; then
-  sudo -u "$SUDO_USER" cat << 'EOF' >> "$BASHRC_PATH"
-
-# Initialize Starship prompt
-eval "$(starship init bash)"
-EOF
-  print_success "✅ Added Starship prompt initialization to $BASHRC_PATH"
-else
-  print_info "ℹ️ Starship prompt initialization already present, skipping."
-fi
-
-# --- fastfetch on login ---
-if ! sudo -u "$SUDO_USER" grep -q "^fastfetch$" "$BASHRC_PATH"; then
-  sudo -u "$SUDO_USER" echo -e "\n# Run fastfetch on terminal start\nfastfetch" >> "$BASHRC_PATH"
-  print_success "✅ Added fastfetch command to $BASHRC_PATH"
-else
-  print_info "ℹ️ fastfetch command already present, skipping."
-fi
-
-# --- Copy Catppuccin config files ---
-if [ -d "$CONFIGS_DIR" ]; then
-  print_info "Copying Catppuccin config files from $CONFIGS_DIR to /home/$SUDO_USER/.config/"
-
-  run_command "mkdir -p /home/$SUDO_USER/.config/starship" "Create Starship config dir" "no" "no"
-  run_command "mkdir -p /home/$SUDO_USER/.config/fastfetch" "Create Fastfetch config dir" "no" "no"
-
-  run_command "cp -rv \"$CONFIGS_DIR/starship.toml\" /home/$SUDO_USER/.config/starship/" "Copy Starship config" "yes" "no"
-  run_command "cp -rv \"$CONFIGS_DIR/fastfetch/config.jsonc\" /home/$SUDO_USER/.config/fastfetch/" "Copy Fastfetch config" "yes" "no"
-
-  print_success "✅ Catppuccin theme config files copied (Starship, Fastfetch)."
-else
-  print_warning "⚠️ Configs directory $CONFIGS_DIR not found. Skipping config copy."
-fi
-
-print_info "👉 Please reload your shell or run: source $BASHRC_PATH"
