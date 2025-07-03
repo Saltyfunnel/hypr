@@ -8,8 +8,8 @@ log_message "Installation started for theming section"
 print_info "\n🎨 Starting theming setup..."
 
 USER_HOME="/home/$SUDO_USER"
-CONFIGS_DIR="$USER_HOME/simple-hyprland/config"
-ASSETS_DIR="$USER_HOME/simple-hyprland/assets"
+CONFIGS_DIR="$USER_HOME/hypr/configs"
+ASSETS_DIR="$USER_HOME/hypr/assets"
 THEME_NAME="Catppuccin-Mocha"
 ICON_NAME="Tela-circle-dracula"
 
