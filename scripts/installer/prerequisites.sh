@@ -46,6 +46,7 @@ run_command "pacman -S --noconfirm code" "Install VSCode" "yes"
 
 # Install Nautilus file manager
 run_command "pacman -S --noconfirm nautilus" "Install Nautilus file manager" "yes"
+run_command "pacman -S --noconfirm gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb" "Tools for Nautilus" "yes"
 
 
 echo "------------------------------------------------------------------------"
