@@ -121,3 +121,14 @@ window#waybar {
     border-radius: 0px 10px 10px 0px;
     margin-right: 10px;
 }
+
+#custom-power {
+  color: #f38ba8;        /* Rosewater */
+  background: #1e1e2e;   /* Base */
+  padding: 0 10px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+#custom-power:hover {
+  background: #313244;   /* Surface0 */
+}
