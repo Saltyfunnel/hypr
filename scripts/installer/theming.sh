@@ -65,6 +65,11 @@ chown -R "$SUDO_USER:$SUDO_USER" "$USER_HOME/.config/gtk-"*
 print_success "\n🎉 Theming setup complete!"
 
 # -------------------------------------------------------------
+# Install required Qt dependencies for SDDM themes
+# -------------------------------------------------------------
+run_command "pacman -S --noconfirm qt6-svg qt6-declarative qt5-quickcontrols2" "Install required Qt libraries for SDDM theme" "yes"
+
+# -------------------------------------------------------------
 # Catppuccin SDDM Theme (Mocha variant)
 # -------------------------------------------------------------
 print_info "\nInstalling Catppuccin SDDM theme (Mocha)..."
