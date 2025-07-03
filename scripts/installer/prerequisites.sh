@@ -35,13 +35,15 @@ run_command "pacman -S --noconfirm ttf-cascadia-code-nerd ttf-cascadia-mono-nerd
 
 run_command "pacman -S --noconfirm sddm && systemctl enable sddm.service" "Install and enable SDDM (Recommended)" "yes"
 
-# --- Firefox Instead of Brave ---
 run_command "yay -S --sudoloop --noconfirm firefox" "Install Firefox browser" "yes" "no"
 
 # --- Terminal, Editor, Tools ---
 run_command "pacman -S --noconfirm kitty" "Install Kitty (Recommended)" "yes"
 run_command "pacman -S --noconfirm nano" "Install nano" "yes"
 run_command "pacman -S --noconfirm tar" "Install tar for extracting files (Must)/needed for copying themes" "yes"
+run_command "pacman -S --noconfirm gnome-disk-utility" "Install disks" "yes"
+run_command "pacman -S --noconfirm code" "Install VSCode" "yes"
+
 # Install Nautilus file manager
 run_command "pacman -S --noconfirm nautilus" "Install Nautilus file manager" "yes"
 
