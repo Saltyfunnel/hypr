@@ -2,15 +2,14 @@
 
 # Get the directory of the current script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/helper.sh"
+source $SCRIPT_DIR/helper.sh
 
+log_message "Installation started for theming section"
 print_info "\n🎨 Starting theming setup..."
 
 USER_HOME="/home/$SUDO_USER"
-# Define consistent paths relative to script location
-CONFIGS_DIR="$SCRIPT_DIR/../configs"
-ASSETS_DIR="$SCRIPT_DIR/../assets"
-
+CONFIGS_DIR="$USER_HOME/simple-hyprland/config"
+ASSETS_DIR="$USER_HOME/simple-hyprland/assets"
 THEME_NAME="Catppuccin-Mocha"
 ICON_NAME="Tela-circle-dracula"
 
@@ -20,13 +19,13 @@ run_command "pacman -S --noconfirm qt5ct qt6ct kvantum" "Install Qt5/6 Settings 
 
 # 2. Extract themes and icons
 if [ -f "$ASSETS_DIR/themes/${THEME_NAME}.tar.xz" ]; then
-    run_command "tar -xvf \"$ASSETS_DIR/themes/${THEME_NAME}.tar.xz\" -C /usr/share/themes/" "Install $THEME_NAME GTK theme" "yes"
+    run_command "tar -xvf $ASSETS_DIR/themes/${THEME_NAME}.tar.xz -C /usr/share/themes/" "Install $THEME_NAME GTK theme" "yes"
 else
     print_warning "⚠️ GTK theme archive not found: $ASSETS_DIR/themes/${THEME_NAME}.tar.xz"
 fi
 
 if [ -f "$ASSETS_DIR/icons/${ICON_NAME}.tar.xz" ]; then
-    run_command "tar -xvf \"$ASSETS_DIR/icons/${ICON_NAME}.tar.xz\" -C /usr/share/icons/" "Install $ICON_NAME icon theme" "yes"
+    run_command "tar -xvf $ASSETS_DIR/icons/${ICON_NAME}.tar.xz -C /usr/share/icons/" "Install $ICON_NAME icon theme" "yes"
 else
     print_warning "⚠️ Icon theme archive not found: $ASSETS_DIR/icons/${ICON_NAME}.tar.xz"
 fi
@@ -36,7 +35,8 @@ run_command "yay -S --sudoloop --noconfirm kvantum-theme-catppuccin-git" "Instal
 
 # 4. Copy Kitty config (optional terminal theme)
 if [ -d "$CONFIGS_DIR/kitty" ]; then
-    run_command "cp -r \"$CONFIGS_DIR/kitty\" \"$USER_HOME/.config/\"" "Copy Kitty config" "yes" "no"
+    cp -r "$CONFIGS_DIR/kitty" "$USER_HOME/.config/"
+    chown -R "$SUDO_USER:$SUDO_USER" "$USER_HOME/.config/kitty"
     print_success "✅ Kitty config copied."
 else
     print_warning "⚠️ Kitty config directory not found: $CONFIGS_DIR/kitty"
@@ -56,10 +56,12 @@ gtk-theme-name=$THEME_NAME
 gtk-icon-theme-name=$ICON_NAME
 gtk-font-name=Sans 10
 "
-run_command "mkdir -p \"$USER_HOME/.config/gtk-3.0\"" "Create gtk-3.0 config dir" "no" "no"
-run_command "mkdir -p \"$USER_HOME/.config/gtk-4.0\"" "Create gtk-4.0 config dir" "no" "no"
-sudo -u "$SUDO_USER" echo "$GTK_THEME_SETTINGS" > "$USER_HOME/.config/gtk-3.0/settings.ini"
-sudo -u "$SUDO_USER" echo "$GTK_THEME_SETTINGS" > "$USER_HOME/.config/gtk-4.0/settings.ini"
+
+mkdir -p "$USER_HOME/.config/gtk-3.0" "$USER_HOME/.config/gtk-4.0"
+echo "$GTK_THEME_SETTINGS" > "$USER_HOME/.config/gtk-3.0/settings.ini"
+echo "$GTK_THEME_SETTINGS" > "$USER_HOME/.config/gtk-4.0/settings.ini"
+chown -R "$SUDO_USER:$SUDO_USER" "$USER_HOME/.config/gtk-"*
 
 print_success "\n🎉 Theming setup complete!"
+
 echo "------------------------------------------------------------------------"
