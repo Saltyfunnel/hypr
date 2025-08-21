@@ -1,19 +1,18 @@
 #!/bin/bash
-# Hyprland + Pywal themed setup for Arch Linux
+# Hyprland + Pywal themed setup for Arch
 set -euo pipefail
 
-# --- Helper Functions ---
-print_header()  { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
+# --- Helpers ---
+print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success() { echo -e "\e[32m$1\e[0m"; }
 print_warning() { echo -e "\e[33mWarning: $1\e[0m"; }
-print_error()   { echo -e "\e[31mError: $1\e[0m"; exit 1; }
+print_error() { echo -e "\e[31mError: $1\e[0m"; exit 1; }
 
 if [ "$EUID" -ne 0 ]; then
     print_error "Run as root (sudo bash $0)."
 fi
 
-# --- Script and User Info ---
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # defined first
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
@@ -31,20 +30,21 @@ PACKAGES=(
 pacman -Syu --noconfirm "${PACKAGES[@]}"
 print_success "✅ Packages installed."
 
-# --- yay (for AUR apps like tofi) ---
+# --- yay ---
 print_header "Installing yay"
 YAY_DIR="$USER_HOME/yay"
 if [ ! -d "$YAY_DIR" ]; then
     sudo -u "$USER_NAME" git clone https://aur.archlinux.org/yay.git "$YAY_DIR"
     cd "$YAY_DIR"
     sudo -u "$USER_NAME" makepkg -si --noconfirm
-else
-    print_success "✅ yay already installed."
 fi
 
-# --- Install tofi via yay ---
-print_header "Installing tofi (AUR)"
-sudo -u "$USER_NAME" yay -S --noconfirm tofi
+# --- Install AUR apps ---
+print_header "Installing AUR apps"
+AUR_APPS=(tofi)
+for app in "${AUR_APPS[@]}"; do
+    sudo -u "$USER_NAME" yay -S --noconfirm "$app"
+done
 
 # --- Copy configs ---
 print_header "Copying configs"
@@ -52,8 +52,6 @@ for dir in hypr waybar kitty dunst tofi fastfetch starship; do
     if [ -d "$SCRIPT_DIR/configs/$dir" ]; then
         sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
         sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
-    else
-        print_warning "Configs folder not found: $SCRIPT_DIR/configs/$dir"
     fi
 done
 
@@ -69,9 +67,7 @@ fi
 ASSETS_SRC="$SCRIPT_DIR/assets"
 ASSETS_DEST="$CONFIG_DIR/assets"
 sudo -u "$USER_NAME" mkdir -p "$ASSETS_DEST"
-if [ -d "$ASSETS_SRC" ]; then
-    sudo -u "$USER_NAME" cp -r "$ASSETS_SRC/." "$ASSETS_DEST/"
-fi
+sudo -u "$USER_NAME" cp -r "$ASSETS_SRC/." "$ASSETS_DEST/"
 
 # --- Pywal ---
 print_header "Applying pywal theme"
@@ -80,7 +76,7 @@ if [ -f "$WALLPAPER" ]; then
     sudo -u "$USER_NAME" wal -i "$WALLPAPER" -n
     print_success "✅ Pywal colors generated."
 else
-    print_warning "No wallpaper found at $WALLPAPER, skipping pywal."
+    print_error "No wallpaper found at $WALLPAPER"
 fi
 
 PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
@@ -88,53 +84,54 @@ PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
 # --- Apply Pywal to Starship ---
 STARSHIP_CONFIG="$CONFIG_DIR/starship/starship.toml"
 if [ -f "$PYWAL_COLORS" ] && [ -f "$STARSHIP_CONFIG" ]; then
-    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
-        sed -i 's/bg:#44475a/bg:$background/g' $STARSHIP_CONFIG && \
-        sed -i 's/fg:#f8f8f2/fg:$foreground/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#6272a4/bg:$color4/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#50fa7b/bg:$color2/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#bd93f9/bg:$color5/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#ff79c6/bg:$color1/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#ffb86c/bg:$color3/g' $STARSHIP_CONFIG"
+    sudo -u "$USER_NAME" bash -c "
+        set -a
+        source $PYWAL_COLORS
+        set +a
+        sed -i 's/bg:#44475a/bg:'\"\$background\"'/g' $STARSHIP_CONFIG
+        sed -i 's/fg:#f8f8f2/fg:'\"\$foreground\"'/g' $STARSHIP_CONFIG
+        sed -i 's/bg:#6272a4/bg:'\"\$color4\"'/g' $STARSHIP_CONFIG
+        sed -i 's/bg:#50fa7b/bg:'\"\$color2\"'/g' $STARSHIP_CONFIG
+        sed -i 's/bg:#bd93f9/bg:'\"\$color5\"'/g' $STARSHIP_CONFIG
+        sed -i 's/bg:#ff79c6/bg:'\"\$color1\"'/g' $STARSHIP_CONFIG
+        sed -i 's/bg:#ffb86c/bg:'\"\$color3\"'/g' $STARSHIP_CONFIG
+    "
     print_success "✅ Starship colors updated with Pywal."
 fi
 
 # --- Apply Pywal to Tofi ---
 TOFI_CONFIG="$CONFIG_DIR/tofi/config"
 if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
-    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
-        sed -i 's/^text-color=.*/text-color=\"$foreground\"/' $TOFI_CONFIG && \
-        sed -i 's/^background-color=.*/background-color=\"${background}cc\"/' $TOFI_CONFIG && \
-        sed -i 's/^selection-color=.*/selection-color=\"$color3\"/' $TOFI_CONFIG && \
-        sed -i 's/^selection-text-color=.*/selection-text-color=\"$foreground\"/' $TOFI_CONFIG"
+    sudo -u "$USER_NAME" bash -c "
+        set -a
+        source $PYWAL_COLORS
+        set +a
+        sed -i 's/^text-color=.*/text-color=\"$foreground\"/' $TOFI_CONFIG
+        sed -i 's/^background-color=.*/background-color=\"${background}cc\"/' $TOFI_CONFIG
+        sed -i 's/^selection-color=.*/selection-color=\"$color3\"/' $TOFI_CONFIG
+        sed -i 's/^selection-text-color=.*/selection-text-color=\"$foreground\"/' $TOFI_CONFIG
+    "
     print_success "✅ Tofi colors updated with Pywal."
 fi
 
 # --- Generate fastfetch config ---
 print_header "Generating fastfetch config"
-FASTFETCH_SCRIPT="$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
+FASTFETCH_SCRIPT="$CONFIG_DIR/fastfetch/scripts/generate_fastfetch.sh"
 if [ -f "$FASTFETCH_SCRIPT" ]; then
     sudo -u "$USER_NAME" bash "$FASTFETCH_SCRIPT"
-    sudo -u "$USER_NAME" chmod +x "$FASTFETCH_SCRIPT"
-    print_success "✅ Fastfetch config generated."
-else
-    print_warning "Fastfetch generation script not found."
+    print_success "✅ Fastfetch config generated"
 fi
 
 # --- Symlink GTK css ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
-if [ -f "$USER_HOME/.cache/wal/colors-gtk.css" ]; then
-    sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
-    sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk-dark.css"
-fi
+sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
+sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk-dark.css"
 
 # --- SDDM ---
 print_header "Setting SDDM theme"
-if [ -d "$ASSETS_SRC/sddm/corners" ]; then
-    cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/
-    echo -e "[Theme]\nCurrent=corners" > /etc/sddm.conf
-fi
+cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/
+echo -e "[Theme]\nCurrent=corners" > /etc/sddm.conf
 
 # --- GPU Drivers ---
 print_header "Installing GPU Drivers"
