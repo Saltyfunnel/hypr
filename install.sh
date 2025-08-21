@@ -71,6 +71,11 @@ else
     print_error "No wallpaper found at $WALLPAPER"
 fi
 
+print_header "Generating fastfetch config"
+sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
+print_success "✅ Fastfetch config generated"
+
+
 # Symlink GTK css
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
