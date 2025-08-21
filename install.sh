@@ -55,6 +55,20 @@ else
     print_warning "Waybar scripts folder not found at $SCRIPTS_DIR"
 fi
 
+# --- Make Fastfetch script executable and generate config ---
+FASTFETCH_SCRIPT="$CONFIG_DIR/fastfetch/scripts/generate_fastfetch.sh"
+if [ -f "$FASTFETCH_SCRIPT" ]; then
+    print_header "Setting executable permissions for Fastfetch script"
+    sudo -u "$USER_NAME" chmod +x "$FASTFETCH_SCRIPT"
+    print_success "✅ Fastfetch script is now executable"
+
+    print_header "Generating Fastfetch config"
+    sudo -u "$USER_NAME" bash "$FASTFETCH_SCRIPT"
+    print_success "✅ Fastfetch config generated"
+else
+    print_warning "Fastfetch script not found at $FASTFETCH_SCRIPT"
+fi
+
 # --- Assets ---
 ASSETS_SRC="$SCRIPT_DIR/assets"
 ASSETS_DEST="$CONFIG_DIR/assets"
@@ -71,12 +85,7 @@ else
     print_error "No wallpaper found at $WALLPAPER"
 fi
 
-print_header "Generating fastfetch config"
-sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
-print_success "✅ Fastfetch config generated"
-
-
-# Symlink GTK css
+# --- Symlink GTK css ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
