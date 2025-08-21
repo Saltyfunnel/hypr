@@ -24,7 +24,7 @@ PACKAGES=(
     sddm kitty nano tar unzip firefox mpv dunst cava code
     yazi gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb polkit polkit-gnome
     waybar hyprland hyprpaper hypridle hyprlock starship fastfetch
-    python-pywal
+    python-pywal tofi
 )
 pacman -Syu --noconfirm "${PACKAGES[@]}"
 print_success "✅ Packages installed."
@@ -38,9 +38,9 @@ if [ ! -d "$YAY_DIR" ]; then
     sudo -u "$USER_NAME" makepkg -si --noconfirm
 fi
 
-# --- Copy configs ---
+# --- Copy configs (exclude fastfetch) ---
 print_header "Copying configs"
-for dir in hypr waybar kitty dunst tofi fastfetch starship; do
+for dir in hypr waybar kitty dunst tofi starship; do
     sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
     sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
 done
@@ -48,9 +48,9 @@ done
 # --- Make all scripts executable ---
 SCRIPTS_DIR="$SCRIPT_DIR/scripts"
 if [ -d "$SCRIPTS_DIR" ]; then
-    print_header "Making all scripts executable"
+    print_header "Making scripts executable"
     sudo -u "$USER_NAME" find "$SCRIPTS_DIR" -type f -name "*.sh" -exec chmod +x {} \;
-    print_success "✅ Scripts are now executable"
+    print_success "✅ All scripts are executable."
 else
     print_warning "Scripts folder not found at $SCRIPTS_DIR"
 fi
@@ -70,7 +70,6 @@ if [ -f "$WALLPAPER" ]; then
 else
     print_warning "No wallpaper found at $WALLPAPER"
 fi
-
 PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
 
 # --- Apply Pywal to Starship ---
@@ -98,23 +97,18 @@ if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
     print_success "✅ Tofi colors updated with Pywal."
 fi
 
-# --- Generate Fastfetch config ---
-print_header "Generating Fastfetch config"
-FASTFETCH_SCRIPT="$SCRIPTS_DIR/generate-fastfetch.sh"
-if [ -f "$FASTFETCH_SCRIPT" ]; then
-    sudo -u "$USER_NAME" bash "$FASTFETCH_SCRIPT"
-    print_success "✅ Fastfetch config generated"
-else
-    print_warning "Fastfetch generation script not found!"
-fi
+# --- Generate fastfetch config ---
+print_header "Generating fastfetch config"
+sudo -u "$USER_NAME" bash "$SCRIPTS_DIR/generate-fastfetch.sh"
+print_success "✅ Fastfetch config generated."
 
-# --- Symlink GTK CSS ---
+# --- Symlink GTK css ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk-dark.css"
 
-# --- SDDM ---
+# --- SDDM theme ---
 print_header "Setting SDDM theme"
 cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/
 echo -e "[Theme]\nCurrent=corners" > /etc/sddm.conf
