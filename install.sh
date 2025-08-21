@@ -40,19 +40,20 @@ fi
 
 # --- Copy configs ---
 print_header "Copying configs"
-CONFIG_FOLDERS=(hypr waybar kitty dunst tofi starship)
-for dir in "${CONFIG_FOLDERS[@]}"; do
-    if [ -d "$SCRIPT_DIR/configs/$dir" ]; then
-        sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
-        sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
-    fi
+for dir in hypr waybar kitty dunst tofi fastfetch starship; do
+    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
+    sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
 done
-print_success "✅ Configs copied"
 
 # --- Make all scripts executable ---
-print_header "Making all scripts executable"
-sudo -u "$USER_NAME" find "$SCRIPT_DIR/configs/scripts" -type f -name "*.sh" -exec chmod +x {} \;
-print_success "✅ Scripts are now executable"
+SCRIPTS_DIR="$SCRIPT_DIR/scripts"
+if [ -d "$SCRIPTS_DIR" ]; then
+    print_header "Making all scripts executable"
+    sudo -u "$USER_NAME" find "$SCRIPTS_DIR" -type f -name "*.sh" -exec chmod +x {} \;
+    print_success "✅ Scripts are now executable"
+else
+    print_warning "Scripts folder not found at $SCRIPTS_DIR"
+fi
 
 # --- Assets ---
 ASSETS_SRC="$SCRIPT_DIR/assets"
@@ -99,7 +100,7 @@ fi
 
 # --- Generate Fastfetch config ---
 print_header "Generating Fastfetch config"
-FASTFETCH_SCRIPT="$SCRIPT_DIR/configs/scripts/generate-fastfetch.sh"
+FASTFETCH_SCRIPT="$SCRIPTS_DIR/generate-fastfetch.sh"
 if [ -f "$FASTFETCH_SCRIPT" ]; then
     sudo -u "$USER_NAME" bash "$FASTFETCH_SCRIPT"
     print_success "✅ Fastfetch config generated"
@@ -107,7 +108,7 @@ else
     print_warning "Fastfetch generation script not found!"
 fi
 
-# --- Symlink GTK css ---
+# --- Symlink GTK CSS ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
