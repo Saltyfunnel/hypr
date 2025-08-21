@@ -49,7 +49,7 @@ print_success "✅ AUR packages installed."
 
 # --- Copy configs ---
 print_header "Copying configs"
-for dir in hypr waybar kitty dunst tofi fastfetch starship; do
+for dir in hypr waybar kitty dunst tofi starship; do
     sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
     sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
 done
