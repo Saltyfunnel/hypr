@@ -27,25 +27,25 @@ PACKAGES=(
     python-pywal
 )
 pacman -Syu --noconfirm "${PACKAGES[@]}"
-print_success "✅ Packages installed."
+print_success "✅ Pacman packages installed."
 
 # --- yay ---
 print_header "Installing yay"
 YAY_DIR="$USER_HOME/yay"
-if [ ! -d "$YAY_DIR" ]; then
-    sudo -u "$USER_NAME" git clone https://aur.archlinux.org/yay.git "$YAY_DIR"
+if ! command -v yay &>/dev/null; then
+    if [ ! -d "$YAY_DIR" ]; then
+        sudo -u "$USER_NAME" git clone https://aur.archlinux.org/yay.git "$YAY_DIR"
+    fi
     cd "$YAY_DIR"
     sudo -u "$USER_NAME" makepkg -si --noconfirm
 fi
 
-# --- tofi (AUR) ---
-print_header "Installing tofi"
-if ! command -v tofi >/dev/null 2>&1; then
+# --- AUR: tofi ---
+print_header "Installing tofi (AUR)"
+if ! command -v tofi &>/dev/null; then
     sudo -u "$USER_NAME" yay -S --noconfirm tofi
-    print_success "✅ tofi installed from AUR."
-else
-    print_success "✅ tofi already installed."
 fi
+print_success "✅ Tofi installed."
 
 # --- Copy configs ---
 print_header "Copying configs"
@@ -74,7 +74,7 @@ sudo -u "$USER_NAME" cp -r "$ASSETS_SRC/." "$ASSETS_DEST/"
 print_header "Applying pywal theme"
 WALLPAPER="$ASSETS_DEST/wallpaper.jpg"
 if [ -f "$WALLPAPER" ]; then
-    sudo -u "$USER_NAME" wal -i "$WALLPAPER" -n || true
+    sudo -u "$USER_NAME" env HOME="$USER_HOME" wal -i "$WALLPAPER" -n || true
     print_success "✅ Pywal colors generated."
 else
     print_error "No wallpaper found at $WALLPAPER"
@@ -85,35 +85,73 @@ PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
 # --- Apply Pywal to Starship ---
 STARSHIP_CONFIG="$CONFIG_DIR/starship/starship.toml"
 if [ -f "$PYWAL_COLORS" ] && [ -f "$STARSHIP_CONFIG" ]; then
-    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
-        sed -i 's/bg:#44475a/bg:$background/' $STARSHIP_CONFIG && \
-        sed -i 's/fg:#f8f8f2/fg:$foreground/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#6272a4/bg:$color4/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#50fa7b/bg:$color2/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#bd93f9/bg:$color5/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#ff79c6/bg:$color1/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#ffb86c/bg:$color3/' $STARSHIP_CONFIG"
+sudo -u "$USER_NAME" env HOME="$USER_HOME" bash <<'EOSU'
+set -e
+COLORS="$HOME/.cache/wal/colors.sh"
+STAR="$HOME/.config/starship/starship.toml"
+if [[ -f "$COLORS" && -f "$STAR" ]]; then
+    . "$COLORS"
+    background="${background:-#282a36}"
+    foreground="${foreground:-#f8f8f2}"
+    color1="${color1:-#ff79c6}"
+    color2="${color2:-#50fa7b}"
+    color3="${color3:-#ffb86c}"
+    color4="${color4:-#6272a4}"
+    color5="${color5:-#bd93f9}"
+
+    sed -i -E \
+      -e "s/bg:#44475a/bg:${background}/g" \
+      -e "s/fg:#f8f8f2/fg:${foreground}/g" \
+      -e "s/bg:#6272a4/bg:${color4}/g" \
+      -e "s/bg:#50fa7b/bg:${color2}/g" \
+      -e "s/bg:#bd93f9/bg:${color5}/g" \
+      -e "s/bg:#ff79c6/bg:${color1}/g" \
+      -e "s/bg:#ffb86c/bg:${color3}/g" \
+      "$STAR"
+fi
+EOSU
     print_success "✅ Starship colors updated with Pywal."
 fi
 
 # --- Apply Pywal to Tofi ---
 TOFI_CONFIG="$CONFIG_DIR/tofi/config"
-if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
-    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
-        sed -i 's/^text-color.*/text-color = $foreground/' $TOFI_CONFIG && \
-        sed -i 's/^background-color.*/background-color = ${background}cc/' $TOFI_CONFIG && \
-        sed -i 's/^selection-color.*/selection-color = $color3/' $TOFI_CONFIG && \
-        sed -i 's/^selection-text-color.*/selection-text-color = $foreground/' $TOFI_CONFIG"
+if [ -f "$PYWAL_COLORS" ] && [ -f "$TOFI_CONFIG" ]; then
+sudo -u "$USER_NAME" env HOME="$USER_HOME" bash <<'EOSU'
+set -e
+COLORS="$HOME/.cache/wal/colors.sh"
+TOFI="$HOME/.config/tofi/config"
+if [[ -f "$COLORS" && -f "$TOFI" ]]; then
+    . "$COLORS"
+    background="${background:-#282a36}"
+    foreground="${foreground:-#f8f8f2}"
+    color3="${color3:-#ffb86c}"
+
+    grep -q '^text-color' "$TOFI" || printf '\ntext-color = %s\n' "$foreground" >> "$TOFI"
+    grep -q '^background-color' "$TOFI" || printf 'background-color = %s\n' "${background}cc" >> "$TOFI"
+    grep -q '^selection-color' "$TOFI" || printf 'selection-color = %s\n' "$color3" >> "$TOFI"
+    grep -q '^selection-text-color' "$TOFI" || printf 'selection-text-color = %s\n' "$foreground" >> "$TOFI"
+
+    sed -i -E \
+      -e "s|^text-color *=.*|text-color = ${foreground}|" \
+      -e "s|^background-color *=.*|background-color = ${background}cc|" \
+      -e "s|^selection-color *=.*|selection-color = ${color3}|" \
+      -e "s|^selection-text-color *=.*|selection-text-color = ${foreground}|" \
+      "$TOFI"
+fi
+EOSU
     print_success "✅ Tofi colors updated with Pywal."
 fi
 
-# --- Generate fastfetch config ---
-print_header "Generating fastfetch config"
-if [ -f "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh" ]; then
-    sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
-    print_success "✅ Fastfetch config generated"
+# --- Fastfetch ---
+print_header "Setting up fastfetch"
+FASTFETCH_SRC="$SCRIPT_DIR/configs/fastfetch"
+FASTFETCH_DEST="$CONFIG_DIR/fastfetch"
+if [ -d "$FASTFETCH_SRC" ]; then
+    sudo -u "$USER_NAME" mkdir -p "$FASTFETCH_DEST"
+    sudo -u "$USER_NAME" cp -r "$FASTFETCH_SRC/." "$FASTFETCH_DEST/"
+    print_success "✅ Fastfetch config copied."
 else
-    print_warning "generate_fastfetch.sh not found, skipping."
+    print_warning "No fastfetch config found in $FASTFETCH_SRC"
 fi
 
 # --- Symlink GTK css ---
@@ -122,20 +160,10 @@ sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk-dark.css"
 
-# --- SDDM ---
+# --- SDDM theme only ---
 print_header "Setting SDDM theme"
-cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/
+cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/ || true
 echo -e "[Theme]\nCurrent=corners" > /etc/sddm.conf
-
-# --- SDDM Autologin ---
-print_header "Configuring SDDM autologin"
-mkdir -p /etc/sddm.conf.d
-cat >/etc/sddm.conf.d/autologin.conf <<EOF
-[Autologin]
-User=$USER_NAME
-Session=hyprland.desktop
-EOF
-print_success "✅ SDDM autologin configured for $USER_NAME"
 
 # --- Auto-run Pywal on login ---
 print_header "Configuring Pywal autostart"
