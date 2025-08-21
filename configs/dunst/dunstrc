@@ -56,3 +56,4 @@ frame_color = "#6272a4"
 background = "#282a36"
 foreground = "#ff5555"
 frame_color = "#ff79c6"
+include ~/.cache/wal/colors-dunst.conf
