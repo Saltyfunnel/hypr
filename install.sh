@@ -85,6 +85,19 @@ else
     print_error "No wallpaper found at $WALLPAPER"
 fi
 
+# --- Apply Pywal colors to Starship ---
+print_header "Updating Starship colors with Pywal"
+
+# Source Pywal colors
+PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
+if [ -f "$PYWAL_COLORS" ]; then
+    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
+        echo 'export STARSHIP_PROMPT_COLOR=\$color1' >> $USER_HOME/.bashrc"
+    print_success "✅ Starship color updated from Pywal"
+else
+    print_warning "Pywal colors file not found: $PYWAL_COLORS"
+fi
+
 # --- Symlink GTK css ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
