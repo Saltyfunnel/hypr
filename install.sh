@@ -55,20 +55,6 @@ else
     print_warning "Waybar scripts folder not found at $SCRIPTS_DIR"
 fi
 
-# --- Make Fastfetch script executable and generate config ---
-FASTFETCH_SCRIPT="$CONFIG_DIR/fastfetch/scripts/generate_fastfetch.sh"
-if [ -f "$FASTFETCH_SCRIPT" ]; then
-    print_header "Setting executable permissions for Fastfetch script"
-    sudo -u "$USER_NAME" chmod +x "$FASTFETCH_SCRIPT"
-    print_success "✅ Fastfetch script is now executable"
-
-    print_header "Generating Fastfetch config"
-    sudo -u "$USER_NAME" bash "$FASTFETCH_SCRIPT"
-    print_success "✅ Fastfetch config generated"
-else
-    print_warning "Fastfetch script not found at $FASTFETCH_SCRIPT"
-fi
-
 # --- Assets ---
 ASSETS_SRC="$SCRIPT_DIR/assets"
 ASSETS_DEST="$CONFIG_DIR/assets"
@@ -81,22 +67,24 @@ WALLPAPER="$ASSETS_DEST/wallpaper.jpg"
 if [ -f "$WALLPAPER" ]; then
     sudo -u "$USER_NAME" wal -i "$WALLPAPER" -n
     print_success "✅ Pywal colors generated."
+
+    # Export colors for Starship dynamically
+    PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
+    if [ -f "$PYWAL_COLORS" ]; then
+        sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
+            echo 'export STARSHIP_BG1=\$color0' >> $USER_HOME/.bashrc && \
+            echo 'export STARSHIP_FG1=\$color7' >> $USER_HOME/.bashrc && \
+            echo 'export STARSHIP_ACC1=\$color1' >> $USER_HOME/.bashrc && \
+            echo 'export STARSHIP_ACC2=\$color2' >> $USER_HOME/.bashrc && \
+            echo 'export STARSHIP_ACC3=\$color3' >> $USER_HOME/.bashrc"
+    fi
 else
     print_error "No wallpaper found at $WALLPAPER"
 fi
 
-# --- Apply Pywal colors to Starship ---
-print_header "Updating Starship colors with Pywal"
-
-# Source Pywal colors
-PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
-if [ -f "$PYWAL_COLORS" ]; then
-    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
-        echo 'export STARSHIP_PROMPT_COLOR=\$color1' >> $USER_HOME/.bashrc"
-    print_success "✅ Starship color updated from Pywal"
-else
-    print_warning "Pywal colors file not found: $PYWAL_COLORS"
-fi
+print_header "Generating fastfetch config"
+sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
+print_success "✅ Fastfetch config generated"
 
 # --- Symlink GTK css ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
