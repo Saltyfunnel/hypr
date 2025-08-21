@@ -10,10 +10,9 @@ num-results = 10
 font = JetBrainsMono Nerd Font
 font-size = 12
 
-text-color = #f8f8f2
-
+text-color = "${color7}"       # Pywal foreground
 prompt-text = " : "
 
-background-color = #282a36cc
-selection-color = #ffb86c
-selection-text-color = #f8f8f2
+background-color = "${color0}cc"  # Pywal background with alpha
+selection-color = "${color3}"     # Pywal highlight
+selection-text-color = "${color7}" # Pywal foreground
