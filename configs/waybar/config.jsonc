@@ -41,7 +41,7 @@
   "on-click": "kitty -e yay -Syu"
 }
 
-
+ "custom-theme": "~/.config/waybar/config.css"
 
 ,
 
