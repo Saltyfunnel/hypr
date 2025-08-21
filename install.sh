@@ -24,7 +24,7 @@ PACKAGES=(
     sddm kitty nano tar unzip firefox mpv dunst cava code
     yazi gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb polkit polkit-gnome
     waybar hyprland hyprpaper hypridle hyprlock starship fastfetch
-    python-pywal tofi
+    python-pywal
 )
 pacman -Syu --noconfirm "${PACKAGES[@]}"
 print_success "✅ Packages installed."
@@ -37,6 +37,15 @@ if [ ! -d "$YAY_DIR" ]; then
     cd "$YAY_DIR"
     sudo -u "$USER_NAME" makepkg -si --noconfirm
 fi
+
+# --- AUR packages ---
+AUR_PACKAGES=(
+    tofi
+)
+for pkg in "${AUR_PACKAGES[@]}"; do
+    sudo -u "$USER_NAME" yay -S --noconfirm "$pkg"
+done
+print_success "✅ AUR packages installed."
 
 # --- Copy configs ---
 print_header "Copying configs"
