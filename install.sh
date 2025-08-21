@@ -1,10 +1,10 @@
-
 #!/bin/bash
 # Hyprland + Pywal themed setup for Arch
 set -euo pipefail
 
 print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success() { echo -e "\e[32m$1\e[0m"; }
+print_warning() { echo -e "\e[33mWarning: $1\e[0m"; }
 print_error() { echo -e "\e[31mError: $1\e[0m"; exit 1; }
 
 if [ "$EUID" -ne 0 ]; then
@@ -71,6 +71,23 @@ sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk
 print_header "Setting SDDM theme"
 cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/
 echo -e "[Theme]\nCurrent=corners" > /etc/sddm.conf
+
+# --- GPU Drivers ---
+print_header "Installing GPU Drivers"
+GPU_INFO=$(lspci | grep -Ei "VGA|3D")
+if echo "$GPU_INFO" | grep -qi "nvidia"; then
+    echo "💻 NVIDIA GPU detected"
+    pacman -S --noconfirm nvidia nvidia-utils nvidia-settings
+elif echo "$GPU_INFO" | grep -qi "amd"; then
+    echo "💻 AMD GPU detected"
+    pacman -S --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau
+elif echo "$GPU_INFO" | grep -qi "intel"; then
+    echo "💻 Intel GPU detected"
+    pacman -S --noconfirm mesa libva-intel-driver intel-media-driver vulkan-intel
+else
+    print_warning "No supported GPU detected"
+fi
+print_success "✅ GPU driver installation complete."
 
 # --- Enable services ---
 systemctl enable --now sddm.service
