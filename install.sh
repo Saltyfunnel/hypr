@@ -38,20 +38,20 @@ if [ ! -d "$YAY_DIR" ]; then
     sudo -u "$USER_NAME" makepkg -si --noconfirm
 fi
 
-# --- AUR packages ---
-AUR_PACKAGES=(
-    tofi
-)
-for pkg in "${AUR_PACKAGES[@]}"; do
-    sudo -u "$USER_NAME" yay -S --noconfirm "$pkg"
-done
-print_success "✅ AUR packages installed."
+# --- tofi (AUR) ---
+print_header "Installing tofi"
+if ! command -v tofi >/dev/null 2>&1; then
+    sudo -u "$USER_NAME" yay -S --noconfirm tofi
+    print_success "✅ tofi installed from AUR."
+else
+    print_success "✅ tofi already installed."
+fi
 
 # --- Copy configs ---
 print_header "Copying configs"
-for dir in hypr waybar kitty dunst tofi starship; do
+for dir in hypr waybar kitty dunst tofi fastfetch starship; do
     sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
-    sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
+    sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/" || true
 done
 
 # --- Make Waybar scripts executable ---
@@ -74,7 +74,7 @@ sudo -u "$USER_NAME" cp -r "$ASSETS_SRC/." "$ASSETS_DEST/"
 print_header "Applying pywal theme"
 WALLPAPER="$ASSETS_DEST/wallpaper.jpg"
 if [ -f "$WALLPAPER" ]; then
-    sudo -u "$USER_NAME" wal -i "$WALLPAPER" -n
+    sudo -u "$USER_NAME" wal -i "$WALLPAPER" -n || true
     print_success "✅ Pywal colors generated."
 else
     print_error "No wallpaper found at $WALLPAPER"
@@ -100,17 +100,21 @@ fi
 TOFI_CONFIG="$CONFIG_DIR/tofi/config"
 if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
     sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
-        sed -i 's/^text-color=.*/text-color=\"$foreground\"/' $TOFI_CONFIG && \
-        sed -i 's/^background-color=.*/background-color=\"${background}cc\"/' $TOFI_CONFIG && \
-        sed -i 's/^selection-color=.*/selection-color=\"$color3\"/' $TOFI_CONFIG && \
-        sed -i 's/^selection-text-color=.*/selection-text-color=\"$foreground\"/' $TOFI_CONFIG"
+        sed -i 's/^text-color.*/text-color = $foreground/' $TOFI_CONFIG && \
+        sed -i 's/^background-color.*/background-color = ${background}cc/' $TOFI_CONFIG && \
+        sed -i 's/^selection-color.*/selection-color = $color3/' $TOFI_CONFIG && \
+        sed -i 's/^selection-text-color.*/selection-text-color = $foreground/' $TOFI_CONFIG"
     print_success "✅ Tofi colors updated with Pywal."
 fi
 
 # --- Generate fastfetch config ---
 print_header "Generating fastfetch config"
-sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
-print_success "✅ Fastfetch config generated"
+if [ -f "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh" ]; then
+    sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
+    print_success "✅ Fastfetch config generated"
+else
+    print_warning "generate_fastfetch.sh not found, skipping."
+fi
 
 # --- Symlink GTK css ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
@@ -122,6 +126,24 @@ sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk
 print_header "Setting SDDM theme"
 cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/
 echo -e "[Theme]\nCurrent=corners" > /etc/sddm.conf
+
+# --- SDDM Autologin ---
+print_header "Configuring SDDM autologin"
+mkdir -p /etc/sddm.conf.d
+cat >/etc/sddm.conf.d/autologin.conf <<EOF
+[Autologin]
+User=$USER_NAME
+Session=hyprland.desktop
+EOF
+print_success "✅ SDDM autologin configured for $USER_NAME"
+
+# --- Auto-run Pywal on login ---
+print_header "Configuring Pywal autostart"
+BASHRC="$USER_HOME/.bashrc"
+if ! grep -q "wal -R" "$BASHRC"; then
+    echo "wal -R" >> "$BASHRC"
+fi
+print_success "✅ Pywal will auto-restore colors on login."
 
 # --- GPU Drivers ---
 print_header "Installing GPU Drivers"
