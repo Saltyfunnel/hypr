@@ -1,1 +1,17 @@
-@import url("~/.cache/wal/colors-waybar.css");
+/* Waybar colors using pywal variables */
+* {
+  --background: ${background};
+  --foreground: ${foreground};
+  --primary: ${color1};
+  --secondary: ${color2};
+  --accent: ${color3};
+}
+
+/* Example usage */
+#clock {
+  color: var(--accent);
+}
+
+#tray {
+  background: var(--background);
+}
