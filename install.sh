@@ -24,7 +24,7 @@ PACKAGES=(
     sddm kitty nano tar unzip firefox mpv dunst cava code
     yazi gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb polkit polkit-gnome
     waybar hyprland hyprpaper hypridle hyprlock starship fastfetch
-    python-pywal
+    python-pywal tofi
 )
 pacman -Syu --noconfirm "${PACKAGES[@]}"
 print_success "✅ Packages installed."
@@ -67,21 +67,38 @@ WALLPAPER="$ASSETS_DEST/wallpaper.jpg"
 if [ -f "$WALLPAPER" ]; then
     sudo -u "$USER_NAME" wal -i "$WALLPAPER" -n
     print_success "✅ Pywal colors generated."
-
-    # Export colors for Starship dynamically
-    PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
-    if [ -f "$PYWAL_COLORS" ]; then
-        sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
-            echo 'export STARSHIP_BG1=\$color0' >> $USER_HOME/.bashrc && \
-            echo 'export STARSHIP_FG1=\$color7' >> $USER_HOME/.bashrc && \
-            echo 'export STARSHIP_ACC1=\$color1' >> $USER_HOME/.bashrc && \
-            echo 'export STARSHIP_ACC2=\$color2' >> $USER_HOME/.bashrc && \
-            echo 'export STARSHIP_ACC3=\$color3' >> $USER_HOME/.bashrc"
-    fi
 else
     print_error "No wallpaper found at $WALLPAPER"
 fi
 
+PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
+
+# --- Apply Pywal to Starship ---
+STARSHIP_CONFIG="$CONFIG_DIR/starship/starship.toml"
+if [ -f "$PYWAL_COLORS" ] && [ -f "$STARSHIP_CONFIG" ]; then
+    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
+        sed -i 's/bg:#44475a/bg:$background/' $STARSHIP_CONFIG && \
+        sed -i 's/fg:#f8f8f2/fg:$foreground/' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#6272a4/bg:$color4/' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#50fa7b/bg:$color2/' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#bd93f9/bg:$color5/' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#ff79c6/bg:$color1/' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#ffb86c/bg:$color3/' $STARSHIP_CONFIG"
+    print_success "✅ Starship colors updated with Pywal."
+fi
+
+# --- Apply Pywal to Tofi ---
+TOFI_CONFIG="$CONFIG_DIR/tofi/config"
+if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
+    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
+        sed -i 's/^text-color=.*/text-color=\"$foreground\"/' $TOFI_CONFIG && \
+        sed -i 's/^background-color=.*/background-color=\"${background}cc\"/' $TOFI_CONFIG && \
+        sed -i 's/^selection-color=.*/selection-color=\"$color3\"/' $TOFI_CONFIG && \
+        sed -i 's/^selection-text-color=.*/selection-text-color=\"$foreground\"/' $TOFI_CONFIG"
+    print_success "✅ Tofi colors updated with Pywal."
+fi
+
+# --- Generate fastfetch config ---
 print_header "Generating fastfetch config"
 sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
 print_success "✅ Fastfetch config generated"
