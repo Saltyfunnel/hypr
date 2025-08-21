@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland + Pywal themed setup for Arch Linux
+# Hyprland + Pywal themed setup for Arch
 set -euo pipefail
 
 print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
@@ -38,15 +38,19 @@ if [ ! -d "$YAY_DIR" ]; then
     sudo -u "$USER_NAME" makepkg -si --noconfirm
 fi
 
-# --- Install AUR apps ---
-print_header "Installing Tofi via yay"
-sudo -u "$USER_NAME" yay -S --noconfirm tofi
-
-# --- Copy configs ---
+# --- Copy configs safely ---
 print_header "Copying configs"
-for dir in hypr waybar kitty dunst tofi fastfetch starship; do
-    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
-    sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
+CONFIG_DIRS=(hypr waybar kitty dunst tofi fastfetch starship)
+for dir in "${CONFIG_DIRS[@]}"; do
+    SRC="$SCRIPT_DIR/configs/$dir"
+    DEST="$CONFIG_DIR/$dir"
+    if [ -d "$SRC" ]; then
+        sudo -u "$USER_NAME" mkdir -p "$DEST"
+        sudo -u "$USER_NAME" cp -r "$SRC/." "$DEST/"
+        print_success "✅ Copied $dir configs"
+    else
+        print_warning "Config folder $SRC not found, skipping..."
+    fi
 done
 
 # --- Make Waybar scripts executable ---
@@ -70,58 +74,22 @@ if [ -f "$WALLPAPER" ]; then
     sudo -u "$USER_NAME" wal -i "$WALLPAPER" -n
     print_success "✅ Pywal colors generated."
 else
-    print_error "No wallpaper found at $WALLPAPER"
+    print_warning "No wallpaper found at $WALLPAPER, skipping pywal."
 fi
-PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
 
-# --- wal-hypr.sh ---
-WAL_HYPR="$CONFIG_DIR/hypr/scripts/wal-hypr.sh"
-sudo -u "$USER_NAME" mkdir -p "$(dirname "$WAL_HYPR")"
-sudo -u "$USER_NAME" tee "$WAL_HYPR" > /dev/null <<'EOL'
-#!/bin/bash
-set -euo pipefail
-PYWAL_COLORS="$HOME/.cache/wal/colors.sh"
-HYPR_COLORS="$HOME/.config/hypr/colors.conf"
-if [ ! -f "$PYWAL_COLORS" ]; then exit 1; fi
-source "$PYWAL_COLORS"
-cat > "$HYPR_COLORS" <<EOL2
-col0=$color0
-col1=$color1
-col2=$color2
-col3=$color3
-col4=$color4
-col5=$color5
-col6=$color6
-col7=$color7
-col8=$color8
-col9=$color9
-col10=$color10
-col11=$color11
-col12=$color12
-col13=$color13
-col14=$color14
-col15=$color15
-background=$background
-foreground=$foreground
-active_border=$color2
-inactive_border=$color0
-EOL2
-if pgrep Hyprland >/dev/null; then hyprctl reload; fi
-EOL
-sudo -u "$USER_NAME" chmod +x "$WAL_HYPR"
-print_success "✅ wal-hypr.sh created"
+PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
 
 # --- Apply Pywal to Starship ---
 STARSHIP_CONFIG="$CONFIG_DIR/starship/starship.toml"
 if [ -f "$PYWAL_COLORS" ] && [ -f "$STARSHIP_CONFIG" ]; then
     sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
-        sed -i 's/bg:#44475a/bg:$background/' $STARSHIP_CONFIG && \
-        sed -i 's/fg:#f8f8f2/fg:$foreground/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#6272a4/bg:$color4/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#50fa7b/bg:$color2/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#bd93f9/bg:$color5/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#ff79c6/bg:$color1/' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#ffb86c/bg:$color3/' $STARSHIP_CONFIG"
+        sed -i 's/bg:#44475a/bg:$background/g' $STARSHIP_CONFIG && \
+        sed -i 's/fg:#f8f8f2/fg:$foreground/g' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#6272a4/bg:$color4/g' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#50fa7b/bg:$color2/g' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#bd93f9/bg:$color5/g' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#ff79c6/bg:$color1/g' $STARSHIP_CONFIG && \
+        sed -i 's/bg:#ffb86c/bg:$color3/g' $STARSHIP_CONFIG"
     print_success "✅ Starship colors updated with Pywal."
 fi
 
@@ -137,9 +105,13 @@ if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
 fi
 
 # --- Generate fastfetch config ---
-print_header "Generating fastfetch config"
-sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
-print_success "✅ Fastfetch config generated"
+if [ -f "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh" ]; then
+    print_header "Generating fastfetch config"
+    sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
+    print_success "✅ Fastfetch config generated"
+else
+    print_warning "Fastfetch generator script not found, skipping..."
+fi
 
 # --- Symlink GTK css ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
