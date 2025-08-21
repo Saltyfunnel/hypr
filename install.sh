@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland + Pywal themed setup for Arch
+# Hyprland + Pywal themed setup for Arch Linux
 set -euo pipefail
 
 print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
@@ -38,18 +38,15 @@ if [ ! -d "$YAY_DIR" ]; then
     sudo -u "$USER_NAME" makepkg -si --noconfirm
 fi
 
-# --- AUR apps ---
-print_header "Installing AUR apps"
+# --- Install AUR apps ---
+print_header "Installing Tofi via yay"
 sudo -u "$USER_NAME" yay -S --noconfirm tofi
-print_success "✅ AUR apps installed."
 
 # --- Copy configs ---
 print_header "Copying configs"
-for dir in hypr waybar kitty dunst tofi starship; do
+for dir in hypr waybar kitty dunst tofi fastfetch starship; do
     sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
-    if [ -d "$SCRIPT_DIR/configs/$dir" ]; then
-        sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
-    fi
+    sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
 done
 
 # --- Make Waybar scripts executable ---
@@ -75,11 +72,12 @@ if [ -f "$WALLPAPER" ]; then
 else
     print_error "No wallpaper found at $WALLPAPER"
 fi
+PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
 
-# --- wal-hypr.sh setup ---
+# --- wal-hypr.sh ---
 WAL_HYPR="$CONFIG_DIR/hypr/scripts/wal-hypr.sh"
 sudo -u "$USER_NAME" mkdir -p "$(dirname "$WAL_HYPR")"
-cat > "$WAL_HYPR" <<'EOL'
+sudo -u "$USER_NAME" tee "$WAL_HYPR" > /dev/null <<'EOL'
 #!/bin/bash
 set -euo pipefail
 PYWAL_COLORS="$HOME/.cache/wal/colors.sh"
@@ -113,13 +111,10 @@ EOL
 sudo -u "$USER_NAME" chmod +x "$WAL_HYPR"
 print_success "✅ wal-hypr.sh created"
 
-# --- Apply Pywal to Starship and Tofi ---
-PYWAL_COLORS_FILE="$USER_HOME/.cache/wal/colors.sh"
-
-# Starship
+# --- Apply Pywal to Starship ---
 STARSHIP_CONFIG="$CONFIG_DIR/starship/starship.toml"
-if [ -f "$PYWAL_COLORS_FILE" ] && [ -f "$STARSHIP_CONFIG" ]; then
-    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS_FILE && \
+if [ -f "$PYWAL_COLORS" ] && [ -f "$STARSHIP_CONFIG" ]; then
+    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
         sed -i 's/bg:#44475a/bg:$background/' $STARSHIP_CONFIG && \
         sed -i 's/fg:#f8f8f2/fg:$foreground/' $STARSHIP_CONFIG && \
         sed -i 's/bg:#6272a4/bg:$color4/' $STARSHIP_CONFIG && \
@@ -130,10 +125,10 @@ if [ -f "$PYWAL_COLORS_FILE" ] && [ -f "$STARSHIP_CONFIG" ]; then
     print_success "✅ Starship colors updated with Pywal."
 fi
 
-# Tofi
+# --- Apply Pywal to Tofi ---
 TOFI_CONFIG="$CONFIG_DIR/tofi/config"
-if [ -f "$TOFI_CONFIG" ]; then
-    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS_FILE && \
+if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
+    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
         sed -i 's/^text-color=.*/text-color=\"$foreground\"/' $TOFI_CONFIG && \
         sed -i 's/^background-color=.*/background-color=\"${background}cc\"/' $TOFI_CONFIG && \
         sed -i 's/^selection-color=.*/selection-color=\"$color3\"/' $TOFI_CONFIG && \
@@ -143,13 +138,7 @@ fi
 
 # --- Generate fastfetch config ---
 print_header "Generating fastfetch config"
-FASTFETCH_DIR="$CONFIG_DIR/fastfetch"
-mkdir -p "$FASTFETCH_DIR"
-cat > "$FASTFETCH_DIR/config.jsonc" <<EOL
-{
-  "modules": ["os","kernel","packages"]
-}
-EOL
+sudo -u "$USER_NAME" bash "$SCRIPT_DIR/configs/scripts/generate_fastfetch.sh"
 print_success "✅ Fastfetch config generated"
 
 # --- Symlink GTK css ---
@@ -167,10 +156,13 @@ echo -e "[Theme]\nCurrent=corners" > /etc/sddm.conf
 print_header "Installing GPU Drivers"
 GPU_INFO=$(lspci | grep -Ei "VGA|3D")
 if echo "$GPU_INFO" | grep -qi "nvidia"; then
+    echo "💻 NVIDIA GPU detected"
     pacman -S --noconfirm nvidia nvidia-utils nvidia-settings
 elif echo "$GPU_INFO" | grep -qi "amd"; then
+    echo "💻 AMD GPU detected"
     pacman -S --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau
 elif echo "$GPU_INFO" | grep -qi "intel"; then
+    echo "💻 Intel GPU detected"
     pacman -S --noconfirm mesa libva-intel-driver intel-media-driver vulkan-intel
 else
     print_warning "No supported GPU detected"
