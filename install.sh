@@ -2,6 +2,7 @@
 # Hyprland + Pywal themed setup for Arch
 set -euo pipefail
 
+# --- Helpers ---
 print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success() { echo -e "\e[32m$1\e[0m"; }
 print_warning() { echo -e "\e[33mWarning: $1\e[0m"; }
@@ -38,7 +39,7 @@ if [ ! -d "$YAY_DIR" ]; then
     sudo -u "$USER_NAME" makepkg -si --noconfirm
 fi
 
-# --- AUR packages ---
+# --- Install AUR packages ---
 print_header "Installing AUR packages"
 AUR_APPS=(tofi)
 for app in "${AUR_APPS[@]}"; do
@@ -47,7 +48,8 @@ done
 
 # --- Copy configs ---
 print_header "Copying configs"
-for dir in hypr waybar kitty dunst tofi fastfetch starship scripts; do
+CONFIG_FOLDERS=(hypr waybar kitty dunst tofi fastfetch starship)
+for dir in "${CONFIG_FOLDERS[@]}"; do
     sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
     sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
 done
@@ -78,23 +80,61 @@ fi
 
 PYWAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
 
+# --- Generate Hyprland colors ---
+HYPR_COLORS_SCRIPT="$CONFIG_DIR/hypr/scripts/generate_hypr_colors.sh"
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/hypr/scripts"
+cat > "$HYPR_COLORS_SCRIPT" <<'EOF'
+#!/bin/bash
+HYPR_COLORS="$HOME/.config/hypr/colors.conf"
+source "$HOME/.cache/wal/colors.sh"
+
+cat > "$HYPR_COLORS" <<EOL
+col0=$color0
+col1=$color1
+col2=$color2
+col3=$color3
+col4=$color4
+col5=$color5
+col6=$color6
+col7=$color7
+col8=$color8
+col9=$color9
+col10=$color10
+col11=$color11
+col12=$color12
+col13=$color13
+col14=$color14
+col15=$color15
+
+background=$background
+foreground=$foreground
+active_border=$color2
+inactive_border=$color0
+EOL
+EOF
+sudo -u "$USER_NAME" chmod +x "$HYPR_COLORS_SCRIPT"
+sudo -u "$USER_NAME" bash "$HYPR_COLORS_SCRIPT"
+print_success "✅ Hyprland colors generated from Pywal."
+
+# --- Apply Pywal to Kitty ---
+KITTY_CONFIG="$CONFIG_DIR/kitty/kitty.conf"
+if [ -f "$PYWAL_COLORS" ] && [ -f "$KITTY_CONFIG" ]; then
+    sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
+        sed -i 's|include.*|include $HOME/.cache/wal/colors-kitty.conf|' $KITTY_CONFIG"
+    print_success "✅ Kitty colors updated with Pywal."
+fi
+
 # --- Apply Pywal to Starship ---
 STARSHIP_CONFIG="$CONFIG_DIR/starship/starship.toml"
 if [ -f "$PYWAL_COLORS" ] && [ -f "$STARSHIP_CONFIG" ]; then
     sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
-        sed -i 's/bg:#44475a/bg:$background/g' $STARSHIP_CONFIG && \
-        sed -i 's/fg:#f8f8f2/fg:$foreground/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#6272a4/bg:$color4/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#50fa7b/bg:$color2/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#bd93f9/bg:$color5/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#ff79c6/bg:$color1/g' $STARSHIP_CONFIG && \
-        sed -i 's/bg:#ffb86c/bg:$color3/g' $STARSHIP_CONFIG"
+        sed -i 's/bg:#44475a/bg:$background/g; s/fg:#f8f8f2/fg:$foreground/g' $STARSHIP_CONFIG"
     print_success "✅ Starship colors updated with Pywal."
 fi
 
 # --- Apply Pywal to Tofi ---
 TOFI_CONFIG="$CONFIG_DIR/tofi/config"
-if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
+if [ -f "$PYWAL_COLORS" ] && [ -f "$TOFI_CONFIG" ]; then
     sudo -u "$USER_NAME" bash -c "source $PYWAL_COLORS && \
         sed -i 's/^text-color=.*/text-color=\"$foreground\"/' $TOFI_CONFIG && \
         sed -i 's/^background-color=.*/background-color=\"${background}cc\"/' $TOFI_CONFIG && \
@@ -103,23 +143,13 @@ if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
     print_success "✅ Tofi colors updated with Pywal."
 fi
 
-# --- Generate fastfetch config ---
-print_header "Generating fastfetch config"
+# --- Generate Fastfetch ---
+print_header "Generating Fastfetch config"
 FASTFETCH_SCRIPT="$CONFIG_DIR/scripts/generate_fastfetch.sh"
-if [ -f "$FASTFETCH_SCRIPT" ]; then
-    sudo -u "$USER_NAME" bash "$FASTFETCH_SCRIPT"
-    print_success "✅ Fastfetch config generated"
-fi
+sudo -u "$USER_NAME" bash "$FASTFETCH_SCRIPT"
+print_success "✅ Fastfetch config generated"
 
-# --- Generate Hyprland Pywal colors ---
-print_header "Generating Hyprland Pywal colors"
-HYPR_COLORS_SCRIPT="$CONFIG_DIR/scripts/generate_hypr_colors.sh"
-if [ -f "$HYPR_COLORS_SCRIPT" ]; then
-    sudo -u "$USER_NAME" bash "$HYPR_COLORS_SCRIPT"
-    print_success "✅ Hyprland colors generated"
-fi
-
-# --- Symlink GTK css ---
+# --- GTK symlink ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
