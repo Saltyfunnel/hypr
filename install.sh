@@ -45,6 +45,16 @@ for dir in hypr waybar kitty dunst tofi fastfetch starship; do
     sudo -u "$USER_NAME" cp -r "$SCRIPT_DIR/configs/$dir/." "$CONFIG_DIR/$dir/"
 done
 
+# --- Make Waybar scripts executable ---
+SCRIPTS_DIR="$CONFIG_DIR/waybar/scripts"
+if [ -d "$SCRIPTS_DIR" ]; then
+    print_header "Setting executable permissions for Waybar scripts"
+    sudo -u "$USER_NAME" find "$SCRIPTS_DIR" -type f -name "*.sh" -exec chmod +x {} \;
+    print_success "✅ Waybar scripts are now executable."
+else
+    print_warning "Waybar scripts folder not found at $SCRIPTS_DIR"
+fi
+
 # --- Assets ---
 ASSETS_SRC="$SCRIPT_DIR/assets"
 ASSETS_DEST="$CONFIG_DIR/assets"
