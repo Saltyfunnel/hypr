@@ -100,13 +100,13 @@ STARSHIP_CONFIG="$CONFIG_DIR/starship/starship.toml"
 if [ -f "$PYWAL_COLORS" ] && [ -f "$STARSHIP_CONFIG" ]; then
     sudo -u "$USER_NAME" bash -c "
         source $PYWAL_COLORS
-        sed -i \"s/bg:#44475a/bg:${background}/\" '$STARSHIP_CONFIG'
-        sed -i \"s/fg:#f8f8f2/fg:${foreground}/\" '$STARSHIP_CONFIG'
-        sed -i \"s/bg:#6272a4/bg:${color4}/\" '$STARSHIP_CONFIG'
-        sed -i \"s/bg:#50fa7b/bg:${color2}/\" '$STARSHIP_CONFIG'
-        sed -i \"s/bg:#bd93f9/bg:${color5}/\" '$STARSHIP_CONFIG'
-        sed -i \"s/bg:#ff79c6/bg:${color1}/\" '$STARSHIP_CONFIG'
-        sed -i \"s/bg:#ffb86c/bg:${color3}/\" '$STARSHIP_CONFIG'
+        sed -i \"s/bg:#44475a/bg:\${background}/\" '$STARSHIP_CONFIG'
+        sed -i \"s/fg:#f8f8f2/fg:\${foreground}/\" '$STARSHIP_CONFIG'
+        sed -i \"s/bg:#6272a4/bg:\${color4}/\" '$STARSHIP_CONFIG'
+        sed -i \"s/bg:#50fa7b/bg:\${color2}/\" '$STARSHIP_CONFIG'
+        sed -i \"s/bg:#bd93f9/bg:\${color5}/\" '$STARSHIP_CONFIG'
+        sed -i \"s/bg:#ff79c6/bg:\${color1}/\" '$STARSHIP_CONFIG'
+        sed -i \"s/bg:#ffb86c/bg:\${color3}/\" '$STARSHIP_CONFIG'
     "
     print_success "✅ Starship colors updated with Pywal."
 fi
@@ -116,10 +116,10 @@ TOFI_CONFIG="$CONFIG_DIR/tofi/config"
 if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
     sudo -u "$USER_NAME" bash -c "
         source $PYWAL_COLORS
-        sed -i \"s/^text-color=.*/text-color=\\\"$foreground\\\"/\" '$TOFI_CONFIG'
-        sed -i \"s/^background-color=.*/background-color=\\\"${background}cc\\\"/\" '$TOFI_CONFIG'
-        sed -i \"s/^selection-color=.*/selection-color=\\\"$color3\\\"/\" '$TOFI_CONFIG'
-        sed -i \"s/^selection-text-color=.*/selection-text-color=\\\"$foreground\\\"/\" '$TOFI_CONFIG'
+        sed -i \"s/^text-color=.*/text-color=\\\"\${foreground}\\\"/\" '$TOFI_CONFIG'
+        sed -i \"s/^background-color=.*/background-color=\\\"\${background}cc\\\"/\" '$TOFI_CONFIG'
+        sed -i \"s/^selection-color=.*/selection-color=\\\"\${color3}\\\"/\" '$TOFI_CONFIG'
+        sed -i \"s/^selection-text-color=.*/selection-text-color=\\\"\${foreground}\\\"/\" '$TOFI_CONFIG'
     "
     print_success "✅ Tofi colors updated with Pywal."
 fi
