@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland + Pywal themed setup for Arch
+# Post-install setup for Arch + Hyprland
 set -euo pipefail
 
 print_header()   { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
@@ -12,51 +12,30 @@ if [ "$EUID" -ne 0 ]; then
     print_error "Please run as root (e.g., sudo ./$(basename "$0"))."
 fi
 
-# --- System Update ---
-print_header "Synchronizing pacman database and updating system"
-pacman -Syu --noconfirm
-print_success "✅ System updated."
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
 
-# --- Packages (official repos) ---
-print_header "Installing packages from official repositories"
+# --- Packages ---
+print_header "Installing official packages"
 PACKAGES=(
     git base-devel pipewire wireplumber pamixer brightnessctl
-    ttf-fira-code ttf-fira-mono
-    sddm kitty nano tar unzip firefox mpv dunst cava code
+    kitty nano tar unzip firefox mpv dunst cava code
     yazi gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb polkit polkit-gnome
-    waybar hyprland hyprpaper hypridle hyprlock starship fastfetch
-    python-pywal
+    waybar starship fastfetch python-pywal
 )
 pacman -S --needed --noconfirm "${PACKAGES[@]}"
 print_success "✅ Official packages installed."
 
-# --- yay (AUR helper) ---
-print_header "Installing yay"
-YAY_DIR="$USER_HOME/yay"
-if [ ! -d "$YAY_DIR" ]; then
-    sudo -u "$USER_NAME" git clone https://aur.archlinux.org/yay.git "$YAY_DIR"
-    pushd "$YAY_DIR"
-    sudo -u "$USER_NAME" makepkg -si --noconfirm
-    popd
-fi
-
-# --- AUR packages ---
+# --- AUR packages via yay ---
 print_header "Installing AUR packages"
-AUR_PACKAGES=(
-    tofi
-    ttf-jetbrains-mono-nerd
-    ttf-iosevka-nerd
-)
+AUR_PACKAGES=( tofi ttf-jetbrains-mono-nerd ttf-iosevka-nerd )
 sudo -u "$USER_NAME" yay -S --needed --noconfirm "${AUR_PACKAGES[@]}"
 print_success "✅ AUR packages installed."
 
 # --- Copy configs ---
-print_header "Copying configs"
+print_header "Copying user configs"
 for dir in hypr waybar kitty dunst tofi starship autostart; do
     if [ -d "$SCRIPT_DIR/configs/$dir" ]; then
         sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/$dir"
@@ -124,96 +103,10 @@ if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
     print_success "✅ Tofi colors updated with Pywal."
 fi
 
-# --- Generate fastfetch config (optional) ---
-print_header "Generating fastfetch config"
-if [ -x "$SCRIPTS_DIR/generate-fastfetch.sh" ]; then
-    sudo -u "$USER_NAME" bash "$SCRIPTS_DIR/generate-fastfetch.sh"
-    print_success "✅ Fastfetch config generated."
-else
-    print_warning "generate-fastfetch.sh not found or not executable"
-fi
-
 # --- Symlink GTK css ---
 GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk-dark.css"
 
-# --- GPU Drivers ---
-print_header "Installing GPU Drivers"
-GPU_INFO=$(lspci | grep -Ei "VGA|3D")
-
-if echo "$GPU_INFO" | grep -qi "nvidia"; then
-    echo "💻 NVIDIA GPU detected"
-    pacman -S --needed --noconfirm nvidia nvidia-utils nvidia-settings
-    if echo "$GPU_INFO" | grep -qi "intel"; then
-        echo "⚡ Hybrid Intel + NVIDIA detected"
-        pacman -S --needed --noconfirm mesa vulkan-intel intel-media-driver
-    elif echo "$GPU_INFO" | grep -qi "amd"; then
-        echo "⚡ Hybrid AMD + NVIDIA detected"
-        pacman -S --needed --noconfirm mesa vulkan-radeon libva-mesa-driver mesa-vdpau
-    fi
-elif echo "$GPU_INFO" | grep -qi "amd"; then
-    echo "💻 AMD GPU detected"
-    pacman -S --needed --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau
-elif echo "$GPU_INFO" | grep -qi "intel"; then
-    echo "💻 Intel GPU detected"
-    pacman -S --needed --noconfirm mesa vulkan-intel intel-media-driver
-else
-    print_warning "No supported GPU detected"
-fi
-print_success "✅ GPU driver installation complete."
-
-# --- GPU-aware environment for Hyprland ---
-print_header "Configuring GPU environment for Hyprland"
-HYPR_ENV="/etc/profile.d/hyprland-gpu.sh"
-cat <<'EOF' > "$HYPR_ENV"
-# Hyprland GPU environment
-GPU_INFO=$(lspci | grep -Ei "VGA|3D")
-if echo "$GPU_INFO" | grep -qi "nvidia" && echo "$GPU_INFO" | grep -qi "intel"; then
-    export __GLX_VENDOR_LIBRARY_NAME=nvidia
-    export VDPAU_DRIVER=nvidia
-    export WLR_DRM_DEVICES=/dev/dri/card0
-elif echo "$GPU_INFO" | grep -qi "nvidia" && echo "$GPU_INFO" | grep -qi "amd"; then
-    export __GLX_VENDOR_LIBRARY_NAME=nvidia
-    export VDPAU_DRIVER=nvidia
-    export WLR_DRM_DEVICES=/dev/dri/card0
-elif echo "$GPU_INFO" | grep -qi "nvidia"; then
-    export __GLX_VENDOR_LIBRARY_NAME=nvidia
-    export VDPAU_DRIVER=nvidia
-elif echo "$GPU_INFO" | grep -qi "intel"; then
-    export WLR_DRM_DEVICES=/dev/dri/card0
-elif echo "$GPU_INFO" | grep -qi "amd"; then
-    export WLR_DRM_DEVICES=/dev/dri/card0
-fi
-EOF
-chmod +x "$HYPR_ENV"
-print_success "✅ GPU environment variables set for Hyprland"
-
-# --- SDDM theme and Hyprland session ---
-print_header "Setting up SDDM and Hyprland session"
-if [ -d "$ASSETS_SRC/sddm/corners" ]; then
-    cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/
-fi
-
-mkdir -p /etc/sddm.conf.d
-cat <<EOF > /etc/sddm.conf.d/corners.conf
-[Theme]
-Current=corners
-EOF
-
-HYPRLAND_DESKTOP="/usr/share/wayland-sessions/hyprland.desktop"
-if [ ! -f "$HYPRLAND_DESKTOP" ]; then
-    cat <<EOF > "$HYPRLAND_DESKTOP"
-[Desktop Entry]
-Name=Hyprland
-Comment=Hyprland Wayland Compositor
-Exec=Hyprland
-Type=Application
-EOF
-fi
-
-systemctl enable --now sddm.service
-print_success "✅ SDDM configured with Hyprland session"
-
-print_success "\n🎉 Install complete! Reboot into Hyprland."
+print_success "\n🎉 Post-install setup complete! Reboot into Hyprland."
