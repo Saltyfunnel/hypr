@@ -26,8 +26,11 @@ PACKAGES=(
     waybar hyprland hyprpaper hypridle hyprlock starship fastfetch
     python-pywal
 )
-pacman -Syu --noconfirm "${PACKAGES[@]}"
-print_success "✅ Packages installed."
+for package in "${PACKAGES[@]}"; do
+    print_header "Installing $package"
+    sudo pacman -S --noconfirm "$package"
+done
+print_success "✅ All official packages installed."
 
 # --- yay ---
 print_header "Installing yay"
