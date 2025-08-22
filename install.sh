@@ -1,5 +1,5 @@
 #!/bin/bash
-# Post-install setup for Arch + Hyprland
+# Post-install setup for Arch + Hyprland (fresh install)
 set -euo pipefail
 
 print_header()   { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
@@ -17,7 +17,7 @@ USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
 
-# --- Packages ---
+# --- Official packages ---
 print_header "Installing official packages"
 PACKAGES=(
     git base-devel pipewire wireplumber pamixer brightnessctl
@@ -28,10 +28,23 @@ PACKAGES=(
 pacman -S --needed --noconfirm "${PACKAGES[@]}"
 print_success "✅ Official packages installed."
 
-# --- AUR packages via yay ---
+# --- yay installation ---
+print_header "Installing yay (AUR helper)"
+YAY_DIR="$USER_HOME/yay"
+if ! command -v yay &>/dev/null; then
+    if [ ! -d "$YAY_DIR" ]; then
+        sudo -u "$USER_NAME" git clone https://aur.archlinux.org/yay.git "$YAY_DIR"
+    fi
+    pushd "$YAY_DIR"
+    sudo -u "$USER_NAME" makepkg -si --noconfirm
+    popd
+fi
+print_success "✅ yay installed"
+
+# --- AUR packages ---
 print_header "Installing AUR packages"
 AUR_PACKAGES=( tofi ttf-jetbrains-mono-nerd ttf-iosevka-nerd )
-sudo -u "$USER_NAME" yay -S --needed --noconfirm "${AUR_PACKAGES[@]}"
+sudo -u "$USER_NAME" bash -c "yay -S --needed --noconfirm ${AUR_PACKAGES[*]}"
 print_success "✅ AUR packages installed."
 
 # --- Copy configs ---
@@ -108,5 +121,25 @@ GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk-dark.css"
+
+# --- Optional GPU / Hybrid GPU Warning ---
+print_header "Checking GPU setup"
+GPU_INFO=$(lspci | grep -Ei "VGA|3D")
+
+if echo "$GPU_INFO" | grep -qi "nvidia"; then
+    if echo "$GPU_INFO" | grep -qi "intel"; then
+        print_warning "Hybrid Intel + NVIDIA GPU detected. Ensure NVIDIA drivers are installed and WLR_DRM_DEVICES is set for Hyprland."
+    elif echo "$GPU_INFO" | grep -qi "amd"; then
+        print_warning "Hybrid AMD + NVIDIA GPU detected. Ensure NVIDIA drivers are installed and WLR_DRM_DEVICES is set for Hyprland."
+    else
+        print_warning "NVIDIA GPU detected. Ensure NVIDIA drivers are installed for Hyprland."
+    fi
+elif echo "$GPU_INFO" | grep -qi "amd"; then
+    print_success "AMD GPU detected."
+elif echo "$GPU_INFO" | grep -qi "intel"; then
+    print_success "Intel GPU detected."
+else
+    print_warning "No supported GPU detected. Check your drivers."
+fi
 
 print_success "\n🎉 Post-install setup complete! Reboot into Hyprland."
