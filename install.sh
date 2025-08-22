@@ -124,7 +124,7 @@ if [ -f "$TOFI_CONFIG" ] && [ -f "$PYWAL_COLORS" ]; then
     print_success "✅ Tofi colors updated with Pywal."
 fi
 
-# --- Generate fastfetch config ---
+# --- Generate fastfetch config (optional) ---
 print_header "Generating fastfetch config"
 if [ -x "$SCRIPTS_DIR/generate-fastfetch.sh" ]; then
     sudo -u "$USER_NAME" bash "$SCRIPTS_DIR/generate-fastfetch.sh"
@@ -138,13 +138,6 @@ GTK_DIR="$USER_HOME/.config/gtk-3.0"
 sudo -u "$USER_NAME" mkdir -p "$GTK_DIR"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk.css"
 sudo -u "$USER_NAME" ln -sf "$USER_HOME/.cache/wal/colors-gtk.css" "$GTK_DIR/gtk-dark.css"
-
-# --- SDDM theme ---
-print_header "Setting SDDM theme"
-if [ -d "$ASSETS_SRC/sddm/corners" ]; then
-    cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/
-    echo -e "[Theme]\nCurrent=corners" > /etc/sddm.conf
-fi
 
 # --- GPU Drivers ---
 print_header "Installing GPU Drivers"
@@ -171,9 +164,56 @@ else
 fi
 print_success "✅ GPU driver installation complete."
 
-# --- Enable services ---
-print_header "Enabling services"
+# --- GPU-aware environment for Hyprland ---
+print_header "Configuring GPU environment for Hyprland"
+HYPR_ENV="/etc/profile.d/hyprland-gpu.sh"
+cat <<'EOF' > "$HYPR_ENV"
+# Hyprland GPU environment
+GPU_INFO=$(lspci | grep -Ei "VGA|3D")
+if echo "$GPU_INFO" | grep -qi "nvidia" && echo "$GPU_INFO" | grep -qi "intel"; then
+    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    export VDPAU_DRIVER=nvidia
+    export WLR_DRM_DEVICES=/dev/dri/card0
+elif echo "$GPU_INFO" | grep -qi "nvidia" && echo "$GPU_INFO" | grep -qi "amd"; then
+    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    export VDPAU_DRIVER=nvidia
+    export WLR_DRM_DEVICES=/dev/dri/card0
+elif echo "$GPU_INFO" | grep -qi "nvidia"; then
+    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    export VDPAU_DRIVER=nvidia
+elif echo "$GPU_INFO" | grep -qi "intel"; then
+    export WLR_DRM_DEVICES=/dev/dri/card0
+elif echo "$GPU_INFO" | grep -qi "amd"; then
+    export WLR_DRM_DEVICES=/dev/dri/card0
+fi
+EOF
+chmod +x "$HYPR_ENV"
+print_success "✅ GPU environment variables set for Hyprland"
+
+# --- SDDM theme and Hyprland session ---
+print_header "Setting up SDDM and Hyprland session"
+if [ -d "$ASSETS_SRC/sddm/corners" ]; then
+    cp -r "$ASSETS_SRC/sddm/corners" /usr/share/sddm/themes/
+fi
+
+mkdir -p /etc/sddm.conf.d
+cat <<EOF > /etc/sddm.conf.d/corners.conf
+[Theme]
+Current=corners
+EOF
+
+HYPRLAND_DESKTOP="/usr/share/wayland-sessions/hyprland.desktop"
+if [ ! -f "$HYPRLAND_DESKTOP" ]; then
+    cat <<EOF > "$HYPRLAND_DESKTOP"
+[Desktop Entry]
+Name=Hyprland
+Comment=Hyprland Wayland Compositor
+Exec=Hyprland
+Type=Application
+EOF
+fi
+
 systemctl enable --now sddm.service
-print_success "✅ Services enabled (SDDM). Polkit will autostart via configs."
+print_success "✅ SDDM configured with Hyprland session"
 
 print_success "\n🎉 Install complete! Reboot into Hyprland."
