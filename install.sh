@@ -48,7 +48,7 @@ USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SAVED_CONFIGS="$SCRIPT_DIR/configs"
+SAVED_CONFIGS="$SCRIPT_DIR/.config"  # Updated path to your repo .config folder
 
 # --- Official Pacman Packages ---
 print_header "Installing official Pacman packages"
@@ -110,7 +110,7 @@ if command -v sddm &>/dev/null; then
     systemctl enable --now sddm.service
 fi
 
-# --- Copy Configs ---
+# --- Copy Configs from Repo .config ---
 print_header "Copying saved Hyprdots configs to ~/.config"
 CONFIGS_TO_COPY=(hypr kitty dunst fastfetch waybar waypaper rofi matugen spicetify vesktop wal/templates)
 for cfg in "${CONFIGS_TO_COPY[@]}"; do
