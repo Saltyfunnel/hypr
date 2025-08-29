@@ -1,5 +1,5 @@
 #!/bin/bash
-# Minimal Hyprdots installer for Arch Linux with Zsh and Hyprland, handling conflicts.
+# Minimal Hyprdots installer for Arch Linux with Zsh and Hyprland, handling conflicts and setting up SDDM.
 set -euo pipefail
 
 # --- Helper Functions ---
@@ -48,7 +48,7 @@ USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SAVED_CONFIGS="$SCRIPT_DIR/.config"  # Updated path to your repo .config folder
+SAVED_CONFIGS="$SCRIPT_DIR/.config"  # Point to your repo .config folder
 
 # --- Official Pacman Packages ---
 print_header "Installing official Pacman packages"
@@ -57,7 +57,7 @@ PACMAN_PACKAGES=(
     hyprland hypridle hyprlock
     qt6 gtk3 gtk4
     pipewire wireplumber pamixer brightnessctl
-    polkit polkit-gnome rofi
+    polkit polkit-gnome rofi sddm
 )
 for pkg in "${PACMAN_PACKAGES[@]}"; do
     install_package "$pkg"
@@ -106,9 +106,8 @@ fi
 # --- Enable Services ---
 print_header "Enabling system services"
 systemctl enable --now polkit.service
-if command -v sddm &>/dev/null; then
-    systemctl enable --now sddm.service
-fi
+systemctl enable --now sddm.service
+print_success "✅ Polkit and SDDM services enabled. Graphical login will be available after reboot."
 
 # --- Copy Configs from Repo .config ---
 print_header "Copying saved Hyprdots configs to ~/.config"
@@ -123,4 +122,4 @@ if [ -f "$SAVED_CONFIGS/starship/starship.toml" ]; then
     print_success "✅ Copied starship.toml"
 fi
 
-print_success "\n🎉 Installation complete! Reboot to apply all changes."
+print_success "\n🎉 Installation complete! Reboot to apply all changes. You will now see the SDDM login screen."
