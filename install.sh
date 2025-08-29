@@ -30,17 +30,17 @@ CONFIG_DIR="$USER_HOME/.config"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SAVED_CONFIGS="$SCRIPT_DIR/configs"
 
-# --- Install System Packages ---
-print_header "Installing required system packages"
+# --- Install System Packages (Official Repos Only) ---
+print_header "Installing official Pacman packages"
 PACMAN_PACKAGES=(
-    git base-devel zsh kitty dunst fastfetch waybar waypaper
+    git base-devel zsh kitty dunst fastfetch waybar
     hyprland hypridle hyprlock
-    qt6 qt6-kde qt6ct gtk3 gtk4
+    qt6 gtk3 gtk4
     pipewire wireplumber pamixer brightnessctl
     polkit polkit-gnome
 )
 pacman -Syu --noconfirm "${PACMAN_PACKAGES[@]}"
-print_success "✅ System packages installed"
+print_success "✅ Official Pacman packages installed"
 
 # --- Install AUR Packages ---
 print_header "Installing yay (AUR helper)"
@@ -54,7 +54,8 @@ else
     print_success "✅ yay already installed"
 fi
 
-AUR_APPS=(matugen rofi rofi-wayland rofi-emoji spicetify python-pywal16 vesktop-themes)
+# AUR-only packages
+AUR_APPS=(waypaper qt6-kde qt6ct matugen rofi rofi-wayland rofi-emoji spicetify python-pywal16 vesktop-themes)
 print_header "Installing AUR apps"
 for app in "${AUR_APPS[@]}"; do
     sudo -u "$USER_NAME" yay -S --noconfirm "$app"
