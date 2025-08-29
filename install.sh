@@ -57,7 +57,7 @@ PACMAN_PACKAGES=(
     hyprland hypridle hyprlock
     qt6 gtk3 gtk4
     pipewire wireplumber pamixer brightnessctl
-    polkit polkit-gnome rofi sddm
+    polkit polkit-gnome rofi sddm firefox
 )
 for pkg in "${PACMAN_PACKAGES[@]}"; do
     install_package "$pkg"
@@ -76,7 +76,7 @@ else
 fi
 
 # --- AUR Packages ---
-AUR_APPS=(waypaper qt6-kde qt6ct matugen spicetify python-pywal16 vesktop-themes)
+AUR_APPS=(waypaper qt6-kde qt6ct matugen spicetify python-pywal16 vesktop-themes swww)
 print_header "Installing AUR apps"
 for app in "${AUR_APPS[@]}"; do
     echo "Installing $app..."
