@@ -32,12 +32,14 @@ SAVED_CONFIGS="$SCRIPT_DIR/configs"
 
 # --- Install System Packages ---
 print_header "Installing required system packages"
-PACKAGES=(
+PACMAN_PACKAGES=(
     git base-devel zsh kitty dunst fastfetch waybar waypaper
+    hyprland hypridle hyprlock
     qt6 qt6-kde qt6ct gtk3 gtk4
-    pipewire wireplumber pamixer brightnessctl polkit polkit-gnome
+    pipewire wireplumber pamixer brightnessctl
+    polkit polkit-gnome
 )
-pacman -Syu --noconfirm "${PACKAGES[@]}"
+pacman -Syu --noconfirm "${PACMAN_PACKAGES[@]}"
 print_success "✅ System packages installed"
 
 # --- Install AUR Packages ---
