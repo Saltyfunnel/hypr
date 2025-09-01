@@ -1,0 +1,157 @@
+* {
+    border: none;
+    border-radius: 0;
+    font-family: JetBrainsMono Nerd Font, monospace;
+    font-weight: bold;
+    font-size: 14px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: rgba(0, 0, 0, 0);
+    color: #e0e0e0;
+}
+
+#workspaces button {
+    padding: 5px;
+    color: #7f7f7f;
+    background: #1a1a1a;
+    margin-right: 5px;
+}
+
+#workspaces button.active {
+    color: #ffffff;
+    background: #2a2a2a;
+    border-radius: 8px;
+}
+
+#workspaces button.focused {
+    color: #ffffff;
+    background: #444444;
+    border-radius: 8px;
+}
+
+#workspaces button.urgent {
+    color: #000000;
+    background: #aaaaaa;
+    border-radius: 8px;
+}
+
+#workspaces button:hover {
+    background: #dddddd;
+    color: #000000;
+    border-radius: 8px;
+}
+
+#window,
+#clock,
+#battery,
+#pulseaudio,
+#network,
+#cpu,
+#memory,
+#workspaces,
+#tray,
+#backlight,
+#custom-power {
+    background: #1a1a1a;
+    padding: 0px 10px;
+    margin: 3px 0px;
+    margin-top: 5px;
+    color: #e0e0e0;
+}
+
+#backlight {
+    border-radius: 10px 0px 0px 10px;
+}
+
+#tray {
+    border-radius: 10px;
+    margin-right: 10px;
+}
+
+#workspaces {
+    border-radius: 10px;
+    margin-left: 10px;
+    padding-right: 0px;
+    padding-left: 5px;
+}
+
+#cpu {
+    border-radius: 0px 10px 10px 0px;
+    margin-right: 10px;
+}
+
+#memory {
+    border-radius: 10px 0px 0px 10px;
+}
+
+#window {
+    border-radius: 10px;
+    margin-left: 60px;
+    margin-right: 60px;
+}
+
+#clock {
+    color: #d0d0d0;
+    border-radius: 10px;
+    margin-left: 5px;
+}
+
+#network {
+    color: #c0c0c0;
+    border-radius: 10px 0px 0px 10px;
+}
+
+#pulseaudio {
+    color: #c0c0c0;
+    border-left: 0px;
+    border-right: 0px;
+}
+
+#pulseaudio.microphone {
+    color: #c0c0c0;
+    border-radius: 0px 10px 10px 0px;
+    margin-right: 5px;
+}
+
+#battery {
+    color: #d0d0d0;
+    border-radius: 0px 10px 10px 0px;
+    margin-right: 10px;
+}
+
+#custom-power {
+    color: #ffffff;
+    background: #1a1a1a;
+    padding: 0 10px;
+    border-radius: 8px;
+}
+
+#custom-power:hover {
+    background: #333333;
+}
+
+#custom-spotify {
+  background: #1a1a1a;
+  padding: 0 10px;
+  margin: 3px 6px 3px 0px; /* top right bottom left */
+  margin-top: 5px;
+  color: #e0e0e0;
+  border-radius: 8px;
+  font-weight: bold;
+  min-width: 150px;
+}
+
+#custom-updates {
+  background: #1a1a1a;
+  padding: 4px 8px;
+  margin: 4px 6px 4px 0;
+  color: #e0e0e0;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 13px;
+  font-family: "Font Awesome 6 Free", "Symbols Nerd Font Mono", sans-serif;
+  min-width: 0;
+}
+
