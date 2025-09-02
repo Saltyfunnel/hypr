@@ -1,0 +1,6 @@
+#!/bin/bash
+export XDG_SESSION_TYPE=wayland
+export WAYLAND_DISPLAY=wayland-0
+
+# Run Yazi detached
+setsid yazi >/dev/null 2>&1 &
