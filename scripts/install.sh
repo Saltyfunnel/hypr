@@ -77,7 +77,7 @@ run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninj
 # -------------------------------
 CORE_PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
-  sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
+  sddm firefox kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
   polkit polkit-gnome hyprland wofi swww waybar hyprpicker hyprlock hypridle
   yazi python-pywal grim slurp fastfetch starship
 )
