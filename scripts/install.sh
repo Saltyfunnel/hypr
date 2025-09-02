@@ -90,7 +90,7 @@ FONT_PACKAGES=(
   ttf-fira-mono
   ttf-fira-sans
   ttf-jetbrains-mono
-  ttf-iosevka
+  ttf-iosevka-nerd
 )
 
 # File management
