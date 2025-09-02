@@ -79,7 +79,7 @@ run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninj
 CORE_PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
   sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
-  polkit polkit-gnome
+  polkit polkit-gnome hyprland wofi swww waybar hyprpicker hyprlock grimblast hypridle
 )
 
 FONT_PACKAGES=(
