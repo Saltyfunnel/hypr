@@ -1,0 +1,26 @@
+window {
+    background-color: @background;
+    border: 2px solid @color1;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+element {
+    background-color: @background;
+    color: @foreground;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+element selected {
+    background-color: @color1;
+    color: @foreground;
+}
+
+textbox {
+    background-color: @background;
+    border: 1px solid @color1;
+    color: @foreground;
+    padding: 4px;
+    border-radius: 4px;
+}
