@@ -128,7 +128,7 @@ sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm firefox
 print_header "Phase 2: Utilities Setup"
 
 CONFIG_DIR="$USER_HOME/.config"
-REPO_DIR="$USER_HOME/hyprbw"
+REPO_DIR="$USER_HOME/hypr"
 ASSETS_SRC="$REPO_DIR/assets"
 ASSETS_DEST="$CONFIG_DIR/assets"
 
