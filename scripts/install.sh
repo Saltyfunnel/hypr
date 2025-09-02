@@ -76,14 +76,12 @@ run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninj
 # Packages categorized
 # -------------------------------
 
-# Core system & utilities
 CORE_PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
   sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
   polkit polkit-gnome
 )
 
-# Fonts
 FONT_PACKAGES=(
   ttf-cascadia-code
   ttf-fira-code
@@ -93,29 +91,31 @@ FONT_PACKAGES=(
   ttf-iosevka-nerd
 )
 
-# File management
 FILE_PACKAGES=(
   thunar thunar-archive-plugin thunar-volman
   tumbler ffmpegthumbnailer file-roller
   gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
 )
 
-# Themeing / wallpaper
 THEME_PACKAGES=(
   python-pywal
 )
 
+MENU_PACKAGES=(
+  wofi
+)
+
 # Merge all packages
-PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${THEME_PACKAGES[@]}")
+PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${THEME_PACKAGES[@]}" "${MENU_PACKAGES[@]}")
 
 run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
 run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
 
 # ============================================================
-#                     Phase 2: Utilities Setup
+#                     Phase 2: Configs
 # ============================================================
-print_header "Phase 2: Utilities Setup"
+print_header "Phase 2: Copying Configurations"
 
 CONFIG_DIR="$USER_HOME/.config"
 REPO_DIR="$USER_HOME/hypr"
@@ -134,20 +134,15 @@ copy_as_user() {
   chown -R "$USER_NAME:$USER_NAME" "$dest"
 }
 
-
-
-# Core utility
-run_command "pacman -S --noconfirm waybar" "Install Waybar"
-copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
-
-# Official packages
-run_command "pacman -S --noconfirm fastfetch wofi swww hyprpicker hyprlock grimblast hypridle starship firefox" "Install Hyprland utilities"
-
-copy_as_user "$REPO_DIR/configs/wofi" "$CONFIG_DIR/wofi"
-copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
+# Copy all relevant configs
 copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
+copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
+copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
+copy_as_user "$REPO_DIR/configs/wofi" "$CONFIG_DIR/wofi"
+copy_as_user "$REPO_DIR/configs/dunst" "$CONFIG_DIR/dunst"
+copy_as_user "$REPO_DIR/configs/kitty" "$CONFIG_DIR/kitty"
 
-# Fastfetch in shells (only config, no picture copy)
+# Fastfetch in shells (only config)
 FASTFETCH_LINE="fastfetch"
 for rc in ".bashrc" ".zshrc"; do
   RC_PATH="$USER_HOME/$rc"
