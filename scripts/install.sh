@@ -78,7 +78,7 @@ run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninj
 CORE_PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
   sddm firefox kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
-  polkit polkit-gnome hyprland wofi swww waybar hyprpicker hyprlock hypridle
+  polkit polkit-gnome hyprland rofi swww waybar hyprpicker hyprlock hypridle
   yazi python-pywal grim slurp fastfetch starship
 )
 
@@ -140,7 +140,7 @@ copy_as_user() {
 copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
 copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
 copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
-copy_as_user "$REPO_DIR/configs/wofi" "$CONFIG_DIR/wofi"
+copy_as_user "$REPO_DIR/configs/rofi" "$CONFIG_DIR/rofi"
 copy_as_user "$REPO_DIR/configs/dunst" "$CONFIG_DIR/dunst"
 copy_as_user "$REPO_DIR/configs/kitty" "$CONFIG_DIR/kitty"
 copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
