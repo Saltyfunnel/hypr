@@ -143,15 +143,3 @@ window#waybar {
   min-width: 150px;
 }
 
-#custom-updates {
-  background: #1a1a1a;
-  padding: 4px 8px;
-  margin: 4px 6px 4px 0;
-  color: #e0e0e0;
-  border-radius: 8px;
-  font-weight: bold;
-  font-size: 13px;
-  font-family: "Font Awesome 6 Free", "Symbols Nerd Font Mono", sans-serif;
-  min-width: 0;
-}
-
