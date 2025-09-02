@@ -9,9 +9,8 @@ USER_HOME=$(eval echo "~$USER_NAME")
 
 CONFIG_DIR="$USER_HOME/.config"
 WALLPAPERS_DIR="$CONFIG_DIR/assets/wallpapers"
+WOFI_CSS="$CONFIG_DIR/wofi/style.css"  # Wofi CSS
 STARSHIP_CONFIG="$CONFIG_DIR/starship.toml"
-DUNSTRC="$CONFIG_DIR/dunst/dunstrc"
-WAL_CACHE="$USER_HOME/.cache/wal/colors.css"
 
 # ===============================
 # Helper functions
@@ -25,10 +24,15 @@ run_as_user() {
     sudo -u "$USER_NAME" bash -c "$1"
 }
 
+hex_to_rgb() {
+    local hex=${1#"#"}
+    echo "$((16#${hex:0:2})) $((16#${hex:2:2})) $((16#${hex:4:2}))"
+}
+
 # ===============================
 # Step 1: Select wallpaper
 # ===============================
-print_info "Selecting wallpaper..."
+print_info "Selecting wallpaper via Wofi..."
 WALL_NAME=$(ls "$WALLPAPERS_DIR" | wofi --prompt "Select Wallpaper:" --dmenu)
 
 if [[ -z "$WALL_NAME" ]]; then
@@ -42,7 +46,7 @@ print_success "Selected wallpaper: $WALL_PATH"
 # ===============================
 # Step 2: Set wallpaper via swww
 # ===============================
-print_info "Applying wallpaper..."
+print_info "Setting wallpaper via swww..."
 swww img "$WALL_PATH" --transition-fps 255 --transition-type outer --transition-duration 0.8
 print_success "Wallpaper applied."
 
@@ -54,9 +58,11 @@ wal -i "$WALL_PATH" --backend wal
 print_success "Pywal colors applied."
 
 # ===============================
-# Step 4: Update Starship
+# Step 4: Update Starship prompt with Pywal colors
 # ===============================
 print_info "Updating Starship prompt..."
+WAL_CACHE="$USER_HOME/.cache/wal/colors.css"
+
 COLOR_BG=$(awk -F: '/background/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CACHE" | head -1)
 COLOR_FG=$(awk -F: '/foreground/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CACHE" | head -1)
 COLOR_ACCENT=$(awk -F: '/color1/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CACHE" | head -1)
@@ -91,22 +97,62 @@ style = "fg=$COLOR_FG"
 EOF
 
 chown "$USER_NAME:$USER_NAME" "$STARSHIP_CONFIG"
-print_success "Starship configured."
+print_success "Starship configured with Pywal colors."
 
 # ===============================
-# Step 5: Update Dunst
+# Step 5: Update Wofi CSS with semi-opaque background
 # ===============================
-print_info "Updating Dunst notifications..."
-if [[ -f "$DUNSTRC" ]]; then
-    sed -i -e "s/^frame_color = .*/frame_color = \"$COLOR_ACCENT\"/" \
-           -e "s/^foreground = .*/foreground = \"$COLOR_FG\"/" \
-           -e "s/^background = .*/background = \"$COLOR_BG\"/" \
-           "$DUNSTRC"
+if [[ -f "$WOFI_CSS" ]]; then
+    print_info "Updating Wofi CSS with Pywal colors..."
+    BG_HEX=$(awk -F: '/background/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CACHE")
+    FG_HEX=$(awk -F: '/foreground/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CACHE")
+    COLOR1_HEX=$(awk -F: '/color1/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CACHE")
+    COLOR0_HEX=$(awk -F: '/color0/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CACHE")
+    read BG_R BG_G BG_B <<< $(hex_to_rgb "$BG_HEX")
 
-    pkill dunst && dunst &
-    print_success "Dunst colors updated."
+    cat > "$WOFI_CSS" <<EOF
+/* ============================
+   Wofi Style (Pywal Compatible)
+   ============================ */
+
+window {
+    background-color: rgba($BG_R,$BG_G,$BG_B,0.95);
+    border-radius: 8px;
+    border: 2px solid $COLOR1_HEX;
+    padding: 6px;
+}
+
+listview row:selected {
+    background-color: $COLOR1_HEX;
+    color: $FG_HEX;
+}
+
+listview row {
+    background-color: rgba($BG_R,$BG_G,$BG_B,0.95);
+    color: $FG_HEX;
+}
+
+entry {
+    background-color: rgba($BG_R,$BG_G,$BG_B,0.85);
+    color: $FG_HEX;
+    border: 1px solid $COLOR1_HEX;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+scrollbar {
+    background-color: $COLOR0_HEX;
+    width: 8px;
+}
+
+scrollbar slider {
+    background-color: $COLOR1_HEX;
+}
+EOF
+
+    print_success "Wofi CSS updated."
 else
-    print_warning "Dunst config not found at $DUNSTRC"
+    print_warning "Wofi CSS not found at $WOFI_CSS."
 fi
 
 # ===============================
@@ -118,10 +164,10 @@ if command -v yazi &>/dev/null; then
         run_as_user "env DISPLAY=$DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE setsid yazi >/dev/null 2>&1 &"
         print_success "Yazi launched."
     else
-        print_info "Yazi already running (should auto-refresh colors)."
+        print_info "Yazi is already running and should auto-refresh colors."
     fi
 else
-    print_warning "Yazi not installed."
+    print_warning "Yazi not installed. Skipping."
 fi
 
 print_success "Wallpaper selection and theming complete!"
