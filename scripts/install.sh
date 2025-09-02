@@ -75,11 +75,11 @@ run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninj
 # -------------------------------
 # Packages categorized
 # -------------------------------
-
 CORE_PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
   sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
   polkit polkit-gnome hyprland wofi swww waybar hyprpicker hyprlock grimblast hypridle
+  yazi
 )
 
 FONT_PACKAGES=(
@@ -109,6 +109,8 @@ MENU_PACKAGES=(
 PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${THEME_PACKAGES[@]}" "${MENU_PACKAGES[@]}")
 
 run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
+
+# Enable services
 run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
 
