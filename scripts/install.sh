@@ -70,7 +70,7 @@ print_header "Phase 1: Prerequisites Setup"
 run_command "pacman -Syyu --noconfirm" "Update system packages"
 
 # Install essential tools
-run_command "pacman -S --noconfirm --needed git base-devel rust cargo" "Install essential build tools and Rust"
+run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninja" "Install essential build tools and Rust"
 
 # -------------------------------
 # Packages categorized
@@ -121,22 +121,22 @@ sudo -u "$USER_NAME" bash <<'EOF'
 set -e
 TOFI_DIR="$HOME/.local/src/tofi"
 
-# Ensure source directory exists
 mkdir -p "$HOME/.local/src"
 
 if [ ! -d "$TOFI_DIR" ]; then
-    git clone https://github.com/dylanaraps/tofi.git "$TOFI_DIR"
+    git clone https://github.com/philj56/tofi.git "$TOFI_DIR"
 else
     cd "$TOFI_DIR"
-    git pull
+    git pull --ff-only
 fi
 
 cd "$TOFI_DIR"
-cargo install --path .
+meson setup --prefix="$HOME/.local" build --wipe
+ninja -C build install
 
-# Ensure cargo bin is in PATH
-if ! grep -q 'export PATH="$HOME/.cargo/bin:$PATH"' "$HOME/.bashrc"; then
-    echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.bashrc"
+# Ensure local bin is in PATH
+if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc"; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
 fi
 EOF
 
@@ -175,8 +175,8 @@ copy_as_user "$REPO_DIR/configs/tofi" "$CONFIG_DIR/tofi"
 copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
 copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
 
-# Fastfetch in shells
-FASTFETCH_LINE="fastfetch --kitty-direct $USER_HOME/.config/fastfetch/archkitty.png"
+# Fastfetch in shells (only config, no picture copy)
+FASTFETCH_LINE="fastfetch"
 for rc in ".bashrc" ".zshrc"; do
   RC_PATH="$USER_HOME/$rc"
   if [ -f "$RC_PATH" ] && ! grep -qF "$FASTFETCH_LINE" "$RC_PATH"; then
