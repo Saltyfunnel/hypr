@@ -1,19 +1,20 @@
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
- "logo": {
-  "source": "$(find \"${XDG_CONFIG_HOME:-$HOME/.config}/fastfetch/pngs/\" -name \"*.png\" | sort -R | head -1)",
-  "height": 28,
-  "padding": { "top": 3, "right": 4, "bottom": 1, "left": 4 }
-},
-
+  
+  "logo": {
+    "source": "ascii", // use ASCII logo instead of PNG
+    "height": 28,
+    "padding": { "top": 3, "right": 4, "bottom": 1, "left": 4 }
+  },
 
   "display": {
     "separator": " : "
   },
+
   "modules": [
     {
       "type": "custom",
-      "format": "  \u001b[90m               "  // muted gray circles for subtle decor
+      "format": "  \u001b[90m               "
     },
     {
       "type": "custom",
@@ -22,7 +23,7 @@
     {
       "type": "custom",
       "format": "     My conscience is clean — I have never used it.  ",
-      "keyColor": "90"  // dark gray text
+      "keyColor": "90"
     },
     {
       "type": "custom",
@@ -31,12 +32,12 @@
     {
       "type": "os",
       "key": "   OS",
-      "keyColor": "245"  // medium gray
+      "keyColor": "245"
     },
     {
       "type": "kernel",
       "key": "   Kernel",
-      "keyColor": "250"  // lighter gray
+      "keyColor": "250"
     },
     {
       "type": "packages",
