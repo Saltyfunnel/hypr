@@ -83,15 +83,39 @@ else
   print_success "Yay is already installed."
 fi
 
-PACKAGES=(
+# -------------------------------
+# Packages categorized
+# -------------------------------
+
+# Core system & utilities
+CORE_PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
-  ttf-cascadia-code-nerd ttf-cascadia-mono-nerd ttf-fira-code ttf-fira-mono ttf-fira-sans
-  ttf-iosevka-nerd ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
-  sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo python-pywal
-  thunar thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
-  gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
+  sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
   polkit polkit-gnome
 )
+
+# Fonts
+FONT_PACKAGES=(
+  ttf-cascadia-code-nerd ttf-cascadia-mono-nerd
+  ttf-fira-code ttf-fira-mono ttf-fira-sans
+  ttf-iosevka-nerd ttf-jetbrains-mono-nerd
+  ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
+)
+
+# File management
+FILE_PACKAGES=(
+  thunar thunar-archive-plugin thunar-volman
+  tumbler ffmpegthumbnailer file-roller
+  gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
+)
+
+# Themeing / wallpaper
+THEME_PACKAGES=(
+  python-pywal
+)
+
+# Merge all packages
+PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${THEME_PACKAGES[@]}")
 
 run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
 run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
@@ -157,7 +181,7 @@ for rc in ".bashrc:bash" ".zshrc:zsh"; do
 done
 
 run_command "pacman -S --noconfirm cliphist" "Install Cliphist"
-copy_as_user "$ASSETS_SRC/backgrounds" "$ASSETS_DEST/backgrounds"
+copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
 
 # ============================================================
 #                     Phase 3: GPU Drivers
