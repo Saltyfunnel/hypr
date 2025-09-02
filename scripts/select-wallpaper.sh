@@ -50,10 +50,15 @@ print_info "Generating Pywal colors..."
 wal -i "$WALL_PATH"
 print_success "Pywal colors applied."
 
+# Reload Fastfetch immediately so current session updates
+print_info "Updating Fastfetch with new colors..."
+run_as_user "fastfetch --kitty-direct $CONFIG_DIR/fastfetch/archkitty.png"
+print_success "Fastfetch updated."
+
 # ===============================
 # Step 4: Reload GTK apps / terminals
 # ===============================
-print_info "Reloading Waybar, Starship, Fastfetch..."
+print_info "Configuring terminals for Fastfetch and Starship..."
 for rc in ".bashrc" ".zshrc"; do
     RC_PATH="$USER_HOME/$rc"
     if [[ -f "$RC_PATH" ]]; then
@@ -77,7 +82,7 @@ print_info "Launching or refreshing Yazi..."
 if command -v yazi &>/dev/null; then
     if ! pgrep -x yazi >/dev/null; then
         # Launch Yazi in user session with Wayland variables
-        run_as_user "env DISPLAY=$DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE QT_QPA_PLATFORM=wayland setsid yazi >/dev/null 2>&1 &"
+        run_as_user "env DISPLAY=$DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE setsid yazi >/dev/null 2>&1 &"
         print_success "Yazi launched."
     else
         print_info "Yazi is already running and should auto-refresh colors from Pywal."
