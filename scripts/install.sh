@@ -69,19 +69,8 @@ print_header "Phase 1: Prerequisites Setup"
 
 run_command "pacman -Syyu --noconfirm" "Update system packages"
 
-if ! command -v yay &>/dev/null; then
-  print_info "Yay not found. Installing yay..."
-  run_command "pacman -S --noconfirm --needed git base-devel" "Install git and base-devel"
-  sudo -u "$USER_NAME" bash -c "
-    cd /tmp &&
-    git clone https://aur.archlinux.org/yay.git &&
-    cd yay &&
-    makepkg -si --noconfirm
-  "
-  rm -rf /tmp/yay
-else
-  print_success "Yay is already installed."
-fi
+# Install essential tools
+run_command "pacman -S --noconfirm --needed git base-devel rust cargo" "Install essential build tools and Rust"
 
 # -------------------------------
 # Packages categorized
@@ -94,7 +83,7 @@ CORE_PACKAGES=(
   polkit polkit-gnome
 )
 
-# Fonts (official Arch only)
+# Fonts
 FONT_PACKAGES=(
   ttf-cascadia-code
   ttf-fira-code
@@ -123,8 +112,35 @@ run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
 run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
 
-# AUR-only packages
-sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm tofi
+# ============================================================
+#                     Phase 1b: Install/Update Tofi
+# ============================================================
+print_header "Installing/Updating Tofi Menu"
+
+sudo -u "$USER_NAME" bash <<'EOF'
+set -e
+TOFI_DIR="$HOME/.local/src/tofi"
+
+# Ensure source directory exists
+mkdir -p "$HOME/.local/src"
+
+if [ ! -d "$TOFI_DIR" ]; then
+    git clone https://github.com/dylanaraps/tofi.git "$TOFI_DIR"
+else
+    cd "$TOFI_DIR"
+    git pull
+fi
+
+cd "$TOFI_DIR"
+cargo install --path .
+
+# Ensure cargo bin is in PATH
+if ! grep -q 'export PATH="$HOME/.cargo/bin:$PATH"' "$HOME/.bashrc"; then
+    echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.bashrc"
+fi
+EOF
+
+print_success "Tofi installation/update completed."
 
 # ============================================================
 #                     Phase 2: Utilities
