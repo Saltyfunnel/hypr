@@ -113,37 +113,7 @@ run_command "systemctl enable --now polkit.service" "Enable and start polkit dae
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
 
 # ============================================================
-#                     Phase 1b: Install/Update Tofi
-# ============================================================
-print_header "Installing/Updating Tofi Menu"
-
-sudo -u "$USER_NAME" bash <<'EOF'
-set -e
-TOFI_DIR="$HOME/.local/src/tofi"
-
-mkdir -p "$HOME/.local/src"
-
-if [ ! -d "$TOFI_DIR" ]; then
-    git clone https://github.com/philj56/tofi.git "$TOFI_DIR"
-else
-    cd "$TOFI_DIR"
-    git pull --ff-only
-fi
-
-cd "$TOFI_DIR"
-meson setup --prefix="$HOME/.local" build --wipe
-ninja -C build install
-
-# Ensure local bin is in PATH
-if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc"; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-fi
-EOF
-
-print_success "Tofi installation/update completed."
-
-# ============================================================
-#                     Phase 2: Utilities
+#                     Phase 2: Utilities Setup
 # ============================================================
 print_header "Phase 2: Utilities Setup"
 
@@ -164,14 +134,16 @@ copy_as_user() {
   chown -R "$USER_NAME:$USER_NAME" "$dest"
 }
 
+
+
 # Core utility
 run_command "pacman -S --noconfirm waybar" "Install Waybar"
 copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
 
 # Official packages
-run_command "pacman -S --noconfirm fastfetch swww hyprpicker hyprlock grimblast hypridle starship firefox" "Install Hyprland utilities"
+run_command "pacman -S --noconfirm fastfetch wofi swww hyprpicker hyprlock grimblast hypridle starship firefox" "Install Hyprland utilities"
 
-copy_as_user "$REPO_DIR/configs/tofi" "$CONFIG_DIR/tofi"
+copy_as_user "$REPO_DIR/configs/wofi" "$CONFIG_DIR/wofi"
 copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
 copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
 
