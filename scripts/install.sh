@@ -79,7 +79,7 @@ CORE_PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
   sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
   polkit polkit-gnome hyprland wofi swww waybar hyprpicker hyprlock hypridle
-  yazi python-pywal grim slurp
+  yazi python-pywal grim slurp fastfetch starship
 )
 
 FONT_PACKAGES=(
@@ -143,37 +143,44 @@ copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
 copy_as_user "$REPO_DIR/configs/wofi" "$CONFIG_DIR/wofi"
 copy_as_user "$REPO_DIR/configs/dunst" "$CONFIG_DIR/dunst"
 copy_as_user "$REPO_DIR/configs/kitty" "$CONFIG_DIR/kitty"
+copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
+
+# ============================================================
+#                     Phase 2b: Shell Enhancements
+# ============================================================
 
 # Fastfetch in shells (only config)
-FASTFETCH_LINE="fastfetch"
-for rc in ".bashrc" ".zshrc"; do
-  RC_PATH="$USER_HOME/$rc"
-  if [ -f "$RC_PATH" ] && ! grep -qF "$FASTFETCH_LINE" "$RC_PATH"; then
-    echo -e "\n# Run fastfetch on terminal start\n$FASTFETCH_LINE" >> "$RC_PATH"
-    chown "$USER_NAME:$USER_NAME" "$RC_PATH"
-  fi
+for rc_file in ".bashrc" ".zshrc"; do
+    RC_PATH="$USER_HOME/$rc_file"
+    if [ ! -f "$RC_PATH" ]; then
+        # Create the RC file if it doesn't exist
+        sudo -u "$USER_NAME" touch "$RC_PATH"
+    fi
+
+    # Add fastfetch if missing
+    if ! grep -qxF "fastfetch" "$RC_PATH"; then
+        echo -e "\n# Show system info on terminal start\nfastfetch" | sudo -u "$USER_NAME" tee -a "$RC_PATH" >/dev/null
+    fi
 done
 
-# Starship config
+# Starship prompt
 STARSHIP_SRC="$REPO_DIR/configs/starship/starship.toml"
 STARSHIP_DEST="$CONFIG_DIR/starship.toml"
 if [ -f "$STARSHIP_SRC" ]; then
-  cp "$STARSHIP_SRC" "$STARSHIP_DEST"
-  chown "$USER_NAME:$USER_NAME" "$STARSHIP_DEST"
+    cp "$STARSHIP_SRC" "$STARSHIP_DEST"
+    chown "$USER_NAME:$USER_NAME" "$STARSHIP_DEST"
 fi
-for rc in ".bashrc:bash" ".zshrc:zsh"; do
-  shell_rc="${rc%%:*}"
-  shell_name="${rc##*:}"
-  RC_PATH="$USER_HOME/$shell_rc"
-  STARSHIP_LINE="eval \"\$(starship init $shell_name)\""
-  if [ -f "$RC_PATH" ] && ! grep -qF "$STARSHIP_LINE" "$RC_PATH"; then
-    echo -e "\n$STARSHIP_LINE" >> "$RC_PATH"
-    chown "$USER_NAME:$USER_NAME" "$RC_PATH"
-  fi
-done
 
-run_command "pacman -S --noconfirm cliphist" "Install Cliphist"
-copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
+for rc_pair in ".bashrc:bash" ".zshrc:zsh"; do
+    shell_rc="${rc_pair%%:*}"
+    shell_name="${rc_pair##*:}"
+    RC_PATH="$USER_HOME/$shell_rc"
+    STARSHIP_LINE="eval \"\$(starship init $shell_name)\""
+
+    if ! grep -qxF "$STARSHIP_LINE" "$RC_PATH"; then
+        echo -e "\n# Starship prompt\n$STARSHIP_LINE" | sudo -u "$USER_NAME" tee -a "$RC_PATH" >/dev/null
+    fi
+done
 
 # ============================================================
 #                     Phase 3: GPU Drivers
@@ -196,4 +203,4 @@ fi
 # ============================================================
 #                     Done
 # ============================================================
-print_bold_blue "\n✅ Setup Complete! You can now reboot to apply changes."
+print_bold_blue "\n✅ Setup Complete! Reboot to apply changes."
