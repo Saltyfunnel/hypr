@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ──────────────────────────────
-# Helper functions (from helper.sh)
+# Helper functions
 # ──────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -18,7 +18,6 @@ print_info()    { echo -e "${BLUE}$1${NC}"; }
 print_bold_blue() { echo -e "${BLUE}${BOLD}$1${NC}"; }
 print_header()  { echo -e "\n${BOLD}${BLUE}==> $1${NC}"; }
 
-# Run commands without confirmation
 run_command() {
   local cmd="$1"
   local description="$2"
@@ -139,9 +138,6 @@ for rc in ".bashrc" ".zshrc"; do
   fi
 done
 
-run_command "pacman -S --noconfirm cliphist" "Install Cliphist"
-copy_as_user "$ASSETS_SRC/backgrounds" "$ASSETS_DEST/backgrounds"
-
 # Starship config
 STARSHIP_SRC="$REPO_DIR/configs/starship/starship.toml"
 STARSHIP_DEST="$CONFIG_DIR/starship.toml"
@@ -159,72 +155,6 @@ for rc in ".bashrc:bash" ".zshrc:zsh"; do
     chown "$USER_NAME:$USER_NAME" "$RC_PATH"
   fi
 done
-
-# Papirus icons
-run_command "pacman -S --noconfirm papirus-icon-theme" "Install Papirus Icon Theme"
-if ! command -v papirus-folders &>/dev/null; then
-  TMP_DIR=$(mktemp -d)
-  git clone https://github.com/PapirusDevelopmentTeam/papirus-folders.git "$TMP_DIR"
-  install -Dm755 "$TMP_DIR/papirus-folders" /usr/local/bin/papirus-folders
-  rm -rf "$TMP_DIR"
-fi
-sudo -u "$USER_NAME" dbus-launch papirus-folders -C grey --theme Papirus-Dark
-
-# GTK theming
-GTK3_CONFIG_DIR="$USER_HOME/.config/gtk-3.0"
-GTK4_CONFIG_DIR="$USER_HOME/.config/gtk-4.0"
-mkdir -p "$GTK3_CONFIG_DIR" "$GTK4_CONFIG_DIR"
-GTK_SETTINGS_CONTENT="[Settings]
-gtk-theme-name=FlatColor
-gtk-icon-theme-name=Papirus-Dark
-gtk-font-name=JetBrainsMono 10"
-echo "$GTK_SETTINGS_CONTENT" | sudo -u "$USER_NAME" tee "$GTK3_CONFIG_DIR/settings.ini" "$GTK4_CONFIG_DIR/settings.ini" >/dev/null
-chown -R "$USER_NAME:$USER_NAME" "$GTK3_CONFIG_DIR" "$GTK4_CONFIG_DIR"
-sudo -u "$USER_NAME" dbus-launch gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
-
-# SDDM theming
-MONO_SDDM_REPO="https://github.com/pwyde/monochrome-kde.git"
-MONO_THEME_NAME="monochrome"
-git clone --depth=1 "$MONO_SDDM_REPO" /tmp/monochrome-kde
-cp -r /tmp/monochrome-kde/sddm/themes/$MONO_THEME_NAME /usr/share/sddm/themes/$MONO_THEME_NAME
-chown -R root:root /usr/share/sddm/themes/$MONO_THEME_NAME
-mkdir -p /etc/sddm.conf.d
-echo -e "[Theme]\nCurrent=$MONO_THEME_NAME" > /etc/sddm.conf.d/10-theme.conf
-rm -rf /tmp/monochrome-kde
-
-# Thunar custom action
-UCA_DIR="$CONFIG_DIR/Thunar"
-UCA_FILE="$UCA_DIR/uca.xml"
-mkdir -p "$UCA_DIR"
-chown "$USER_NAME:$USER_NAME" "$UCA_DIR"
-chmod 700 "$UCA_DIR"
-KITTY_ACTION='<action>
-  <icon>utilities-terminal</icon>
-  <name>Open Kitty Here</name>
-  <command>kitty --directory=%d</command>
-  <description>Open kitty terminal in the current folder</description>
-  <patterns>*</patterns>
-  <directories_only>true</directories_only>
-  <startup_notify>true</startup_notify>
-</action>'
-if [ ! -f "$UCA_FILE" ]; then
-  cat > "$UCA_FILE" <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<actions>
-$KITTY_ACTION
-</actions>
-EOF
-  chown "$USER_NAME:$USER_NAME" "$UCA_FILE"
-else
-  if ! grep -q "<name>Open Kitty Here</name>" "$UCA_FILE"; then
-    sed -i "/<\/actions>/ i\\
-$KITTY_ACTION
-" "$UCA_FILE"
-    chown "$USER_NAME:$USER_NAME" "$UCA_FILE"
-  fi
-fi
-
-print_success "\nUtilities setup complete!"
 
 # ──────────────────────────────
 # Phase 3: GPU Drivers
@@ -248,4 +178,3 @@ fi
 # Done
 # ──────────────────────────────
 print_bold_blue "\n✅ Setup Complete! You can now reboot to apply changes."
-
