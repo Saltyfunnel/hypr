@@ -25,8 +25,8 @@ run_as_user() {
 # ===============================
 # Step 1: Select wallpaper
 # ===============================
-print_info "Selecting wallpaper via Tofi..."
-WALL_NAME=$(ls "$WALLPAPERS_DIR" | tofi --prompt-text="Select Wallpaper:" --fuzzy-match=true)
+print_info "Selecting wallpaper via Wofi..."
+WALL_NAME=$(ls "$WALLPAPERS_DIR" | wofi --show dmenu --prompt "Select Wallpaper:")
 
 if [[ -z "$WALL_NAME" ]]; then
     print_error "No wallpaper selected. Exiting."
