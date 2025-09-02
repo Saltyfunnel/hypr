@@ -115,7 +115,7 @@ run_command "systemctl enable --now polkit.service" "Enable and start polkit dae
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
 
 # ============================================================
-#                     Phase 2: Configs
+#                     Phase 2: Copy Configs
 # ============================================================
 print_header "Phase 2: Copying Configurations"
 
@@ -148,16 +148,12 @@ copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
 # ============================================================
 #                     Phase 2b: Shell Enhancements
 # ============================================================
-
 # Fastfetch in shells (only config)
 for rc_file in ".bashrc" ".zshrc"; do
     RC_PATH="$USER_HOME/$rc_file"
     if [ ! -f "$RC_PATH" ]; then
-        # Create the RC file if it doesn't exist
         sudo -u "$USER_NAME" touch "$RC_PATH"
     fi
-
-    # Add fastfetch if missing
     if ! grep -qxF "fastfetch" "$RC_PATH"; then
         echo -e "\n# Show system info on terminal start\nfastfetch" | sudo -u "$USER_NAME" tee -a "$RC_PATH" >/dev/null
     fi
@@ -176,11 +172,29 @@ for rc_pair in ".bashrc:bash" ".zshrc:zsh"; do
     shell_name="${rc_pair##*:}"
     RC_PATH="$USER_HOME/$shell_rc"
     STARSHIP_LINE="eval \"\$(starship init $shell_name)\""
-
     if ! grep -qxF "$STARSHIP_LINE" "$RC_PATH"; then
         echo -e "\n# Starship prompt\n$STARSHIP_LINE" | sudo -u "$USER_NAME" tee -a "$RC_PATH" >/dev/null
     fi
 done
+
+# ============================================================
+#                     Phase 2c: Copy select-wallpaper.sh
+# ============================================================
+print_header "Phase 2c: Copy select-wallpaper.sh"
+
+SCRIPTS_DIR="$CONFIG_DIR/hypr/scripts"
+SELECT_WALLPAPER_SRC="$REPO_DIR/scripts/select-wallpaper.sh"
+SELECT_WALLPAPER_DEST="$SCRIPTS_DIR/select-wallpaper.sh"
+
+if [ -f "$SELECT_WALLPAPER_SRC" ]; then
+    sudo -u "$USER_NAME" mkdir -p "$SCRIPTS_DIR"
+    cp "$SELECT_WALLPAPER_SRC" "$SELECT_WALLPAPER_DEST"
+    chown "$USER_NAME:$USER_NAME" "$SELECT_WALLPAPER_DEST"
+    chmod +x "$SELECT_WALLPAPER_DEST"
+    print_success "✅ select-wallpaper.sh copied to $SELECT_WALLPAPER_DEST and made executable."
+else
+    print_warning "select-wallpaper.sh not found in $SELECT_WALLPAPER_SRC. Please add it to your repo."
+fi
 
 # ============================================================
 #                     Phase 3: GPU Drivers
