@@ -87,7 +87,7 @@ PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
   ttf-cascadia-code-nerd ttf-cascadia-mono-nerd ttf-fira-code ttf-fira-mono ttf-fira-sans
   ttf-iosevka-nerd ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
-  sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
+  sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo python-pywal
   thunar thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
   gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
   polkit polkit-gnome
