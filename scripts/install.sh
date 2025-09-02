@@ -94,12 +94,14 @@ CORE_PACKAGES=(
   polkit polkit-gnome
 )
 
-# Fonts
+# Fonts (official Arch only)
 FONT_PACKAGES=(
-  ttf-cascadia-code-nerd ttf-cascadia-mono-nerd
-  ttf-fira-code ttf-fira-mono ttf-fira-sans
-  ttf-iosevka-nerd ttf-jetbrains-mono-nerd
-  ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
+  ttf-cascadia-code
+  ttf-fira-code
+  ttf-fira-mono
+  ttf-fira-sans
+  ttf-jetbrains-mono
+  ttf-iosevka
 )
 
 # File management
@@ -120,6 +122,9 @@ PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${T
 run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
 run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
+
+# AUR-only packages
+sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm tofi
 
 # ============================================================
 #                     Phase 2: Utilities
@@ -146,9 +151,6 @@ copy_as_user() {
 # Core utility
 run_command "pacman -S --noconfirm waybar" "Install Waybar"
 copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
-
-# AUR packages
-sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm tofi
 
 # Official packages
 run_command "pacman -S --noconfirm fastfetch swww hyprpicker hyprlock grimblast hypridle starship firefox" "Install Hyprland utilities"
