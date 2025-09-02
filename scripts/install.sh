@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-#                     Helper Functions
+#             Helper Functions
 # ============================================================
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -51,7 +51,7 @@ check_os() {
 }
 
 # ============================================================
-#                     Initialization
+#             Initialization
 # ============================================================
 check_root
 check_os
@@ -63,13 +63,13 @@ print_bold_blue "\n🚀 Starting Full Hyprland Setup"
 echo "-------------------------------------"
 
 # ============================================================
-#                     Phase 1: Prerequisites
+#             Phase 1: Prerequisites
 # ============================================================
 print_header "Phase 1: Prerequisites Setup"
 
 run_command "pacman -Syyu --noconfirm" "Update system packages"
 
-# Install essential tools
+# Install essential tools for building from source
 run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninja" "Install essential build tools and Rust"
 
 # -------------------------------
@@ -78,8 +78,8 @@ run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninj
 CORE_PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
   sddm firefox kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
-  polkit polkit-gnome hyprland rofi swww waybar hyprpicker hyprlock hypridle
-  yazi python-pywal grim slurp fastfetch starship
+  polkit polkit-gnome hyprland swww waybar hyprpicker hyprlock hypridle
+  yazi python-pywal grim slurp fastfetch starship pango cairo
 )
 
 FONT_PACKAGES=(
@@ -101,21 +101,29 @@ THEME_PACKAGES=(
   python-pywal
 )
 
-MENU_PACKAGES=(
-  wofi
-)
-
-# Merge all packages
-PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${THEME_PACKAGES[@]}" "${MENU_PACKAGES[@]}")
+# Merge all packages (rofi and wofi have been removed)
+PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${THEME_PACKAGES[@]}")
 
 run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
+
+# ============================================================
+#             Phase 1b: Build and Install Tofi from Source
+# ============================================================
+print_header "Phase 1b: Building and Installing tofi from Source"
+TOFI_BUILD_DIR=$(mktemp -d)
+
+run_command "sudo -u '$USER_NAME' git clone https://github.com/Tofide/tofi.git '$TOFI_BUILD_DIR'" "Cloning tofi from GitHub"
+run_command "cd '$TOFI_BUILD_DIR' && sudo -u '$USER_NAME' meson setup build --prefix=/usr" "Configuring build with meson"
+run_command "cd '$TOFI_BUILD_DIR' && sudo -u '$USER_NAME' ninja -C build" "Compiling tofi"
+run_command "cd '$TOFI_BUILD_DIR' && ninja -C build install" "Installing tofi (requires root)"
+run_command "rm -rf '$TOFI_BUILD_DIR'" "Cleaning up temporary build directory"
 
 # Enable services
 run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
 
 # ============================================================
-#                     Phase 2: Copy Configs
+#             Phase 2: Copy Configs
 # ============================================================
 print_header "Phase 2: Copying Configurations"
 
@@ -140,13 +148,17 @@ copy_as_user() {
 copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
 copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
 copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
-copy_as_user "$REPO_DIR/configs/rofi" "$CONFIG_DIR/rofi"
+# NOTE: Removed rofi config copy
 copy_as_user "$REPO_DIR/configs/dunst" "$CONFIG_DIR/dunst"
 copy_as_user "$REPO_DIR/configs/kitty" "$CONFIG_DIR/kitty"
 copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
 
+# You may also need to copy tofi's configuration if you have one.
+# For example:
+# copy_as_user "$REPO_DIR/configs/tofi" "$CONFIG_DIR/tofi"
+
 # ============================================================
-#                     Phase 2b: Shell Enhancements
+#             Phase 2b: Shell Enhancements
 # ============================================================
 # Fastfetch in shells (only config)
 for rc_file in ".bashrc" ".zshrc"; do
@@ -178,7 +190,7 @@ for rc_pair in ".bashrc:bash" ".zshrc:zsh"; do
 done
 
 # ============================================================
-#                     Phase 2c: Copy select-wallpaper.sh
+#             Phase 2c: Copy select-wallpaper.sh
 # ============================================================
 print_header "Phase 2c: Copy select-wallpaper.sh"
 
@@ -197,7 +209,7 @@ else
 fi
 
 # ============================================================
-#                     Phase 3: GPU Drivers
+#             Phase 3: GPU Drivers
 # ============================================================
 print_header "Phase 3: GPU Setup"
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
@@ -215,6 +227,6 @@ else
 fi
 
 # ============================================================
-#                     Done
+#             Done
 # ============================================================
 print_bold_blue "\n✅ Setup Complete! Reboot to apply changes."
