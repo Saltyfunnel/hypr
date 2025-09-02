@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-# ──────────────────────────────
-# Helper functions
-# ──────────────────────────────
+# ============================================================
+#                     Helper Functions
+# ============================================================
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -50,9 +50,9 @@ check_os() {
   fi
 }
 
-# ──────────────────────────────
-# Setup
-# ──────────────────────────────
+# ============================================================
+#                     Initialization
+# ============================================================
 check_root
 check_os
 
@@ -62,10 +62,10 @@ USER_HOME=$(eval echo "~$USER_NAME")
 print_bold_blue "\n🚀 Starting Full Hyprland Setup"
 echo "-------------------------------------"
 
-# ──────────────────────────────
-# Phase 1: Prerequisites
-# ──────────────────────────────
-print_header "Prerequisites Setup"
+# ============================================================
+#                     Phase 1: Prerequisites
+# ============================================================
+print_header "Phase 1: Prerequisites Setup"
 
 run_command "pacman -Syyu --noconfirm" "Update system packages"
 
@@ -98,10 +98,10 @@ run_command "systemctl enable --now polkit.service" "Enable and start polkit dae
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
 sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm firefox
 
-# ──────────────────────────────
-# Phase 2: Utilities
-# ──────────────────────────────
-print_header "Utilities Setup"
+# ============================================================
+#                     Phase 2: Utilities
+# ============================================================
+print_header "Phase 2: Utilities Setup"
 
 CONFIG_DIR="$USER_HOME/.config"
 REPO_DIR="$USER_HOME/hyprbw"
@@ -156,10 +156,13 @@ for rc in ".bashrc:bash" ".zshrc:zsh"; do
   fi
 done
 
-# ──────────────────────────────
-# Phase 3: GPU Drivers
-# ──────────────────────────────
-print_header "GPU Setup"
+run_command "pacman -S --noconfirm cliphist" "Install Cliphist"
+copy_as_user "$ASSETS_SRC/backgrounds" "$ASSETS_DEST/backgrounds"
+
+# ============================================================
+#                     Phase 3: GPU Drivers
+# ============================================================
+print_header "Phase 3: GPU Setup"
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
 if echo "$GPU_INFO" | grep -qi "nvidia"; then
   print_bold_blue "NVIDIA GPU detected."
@@ -174,7 +177,7 @@ else
   print_warning "No supported GPU detected. Info: $GPU_INFO"
 fi
 
-# ──────────────────────────────
-# Done
-# ──────────────────────────────
+# ============================================================
+#                     Done
+# ============================================================
 print_bold_blue "\n✅ Setup Complete! You can now reboot to apply changes."
