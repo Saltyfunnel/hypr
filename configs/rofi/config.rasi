@@ -1,0 +1,50 @@
+/* ===============================
+   Rofi Configuration (Pywal Themed)
+   =============================== */
+
+/* General window appearance */
+window {
+    background-color: @background;
+    border: 2px solid @color1;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+/* Listview styling */
+listview {
+    lines: 10;
+    fixed-height: 0;
+    dynamic-width: 0;
+    padding: 5px;
+}
+
+element {
+    background-color: @background;
+    color: @foreground;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+element selected {
+    background-color: @color1;
+    color: @foreground;
+}
+
+/* Input box (prompt) */
+textbox {
+    background-color: @background;
+    border: 1px solid @color1;
+    color: @foreground;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+/* Scrollbar (optional) */
+scrollbar {
+    background-color: @color0;
+    width: 8px;
+}
+
+scrollbar slider {
+    background-color: @color1;
+}
