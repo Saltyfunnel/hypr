@@ -123,14 +123,11 @@ for rc in ".bashrc" ".zshrc"; do
 done
 print_success "Fastfetch configured for ASCII output."
 
-# ===============================
-# Step 7: Launch or refresh Yazi
-# ===============================
 print_info "Launching or refreshing Yazi..."
 if command -v yazi &>/dev/null; then
     if ! pgrep -x yazi >/dev/null; then
-        run_as_user "env DISPLAY=$DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE setsid yazi >/dev/null 2>&1 &"
-        print_success "Yazi launched."
+        run_as_user "bash -c 'source $USER_HOME/.cache/wal/colors.sh; env DISPLAY=$DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE setsid yazi >/dev/null 2>&1 &'"
+        print_success "Yazi launched with Pywal colors."
     else
         print_info "Yazi is already running and should auto-refresh colors from Pywal."
     fi
