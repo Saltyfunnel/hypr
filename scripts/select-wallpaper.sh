@@ -1,232 +1,132 @@
 #!/bin/bash
 set -euo pipefail
 
-# ============================================================
-#             Helper Functions
-# ============================================================
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m'
-
-print_error()   { echo -e "${RED}$1${NC}"; }
-print_success() { echo -e "${GREEN}$1${NC}"; }
-print_warning() { echo -e "${YELLOW}$1${NC}"; }
-print_info()    { echo -e "${BLUE}$1${NC}"; }
-print_bold_blue() { echo -e "${BLUE}${BOLD}$1${NC}"; }
-print_header()  { echo -e "\n${BOLD}${BLUE}==> $1${NC}"; }
-
-run_command() {
-  local cmd="$1"
-  local description="$2"
-  print_info "\n$description..."
-  if eval "$cmd"; then
-    print_success "$description completed."
-  else
-    print_error "$description failed."
-    exit 1
-  fi
-}
-
-check_root() {
-  if [[ "$EUID" -ne 0 ]]; then
-    print_error "Please run as root."
-    exit 1
-  fi
-}
-
-check_os() {
-  if [[ -f /etc/os-release ]]; then
-    . /etc/os-release
-    if [[ "$ID" != "arch" ]]; then
-      print_warning "This script is designed for Arch Linux. Detected: $PRETTY_NAME"
-    else
-      print_success "Arch Linux detected. Proceeding."
-    fi
-  else
-    print_error "/etc/os-release not found. Cannot determine OS."
-  fi
-}
-
-# ============================================================
-#             Initialization
-# ============================================================
-check_root
-check_os
-
+# ===============================
+# Variables
+# ===============================
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME=$(eval echo "~$USER_NAME")
 
-print_bold_blue "\n🚀 Starting Full Hyprland Setup"
-echo "-------------------------------------"
-
-# ============================================================
-#             Phase 1: Prerequisites
-# ============================================================
-print_header "Phase 1: Prerequisites Setup"
-
-run_command "pacman -Syyu --noconfirm" "Update system packages"
-
-# Install essential tools for building from source
-run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninja" "Install essential build tools and Rust"
-
-# -------------------------------
-# Packages categorized
-# -------------------------------
-CORE_PACKAGES=(
-  pipewire wireplumber pamixer brightnessctl
-  sddm firefox kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
-  polkit polkit-gnome hyprland swww waybar hyprpicker hyprlock hypridle
-  yazi python-pywal grim slurp fastfetch starship pango cairo
-)
-
-FONT_PACKAGES=(
-  ttf-cascadia-code
-  ttf-fira-code
-  ttf-fira-mono
-  ttf-fira-sans
-  ttf-jetbrains-mono
-  ttf-iosevka-nerd
-)
-
-FILE_PACKAGES=(
-  thunar thunar-archive-plugin thunar-volman
-  tumbler ffmpegthumbnailer file-roller
-  gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
-)
-
-THEME_PACKAGES=(
-  python-pywal
-)
-
-# Merge all packages (rofi and wofi have been removed)
-PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${THEME_PACKAGES[@]}")
-
-run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
-
-# ============================================================
-#             Phase 1b: Build and Install Tofi from Source
-# ============================================================
-print_header "Phase 1b: Building and Installing tofi from Source"
-TOFI_BUILD_DIR=$(mktemp -d)
-
-run_command "sudo -u '$USER_NAME' git clone https://github.com/Tofide/tofi.git '$TOFI_BUILD_DIR'" "Cloning tofi from GitHub"
-run_command "cd '$TOFI_BUILD_DIR' && sudo -u '$USER_NAME' meson setup build --prefix=/usr" "Configuring build with meson"
-run_command "cd '$TOFI_BUILD_DIR' && sudo -u '$USER_NAME' ninja -C build" "Compiling tofi"
-run_command "cd '$TOFI_BUILD_DIR' && ninja -C build install" "Installing tofi (requires root)"
-run_command "rm -rf '$TOFI_BUILD_DIR'" "Cleaning up temporary build directory"
-
-# Enable services
-run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
-run_command "systemctl enable sddm.service" "Enable SDDM display manager"
-
-# ============================================================
-#             Phase 2: Copy Configs
-# ============================================================
-print_header "Phase 2: Copying Configurations"
-
 CONFIG_DIR="$USER_HOME/.config"
-REPO_DIR="$USER_HOME/hypr"
-ASSETS_SRC="$REPO_DIR/assets"
-ASSETS_DEST="$CONFIG_DIR/assets"
+WALLPAPERS_DIR="$CONFIG_DIR/assets/wallpapers"
+KITTY_CONFIG="$CONFIG_DIR/kitty/colors.conf"
+STARSHIP_CONFIG="$CONFIG_DIR/starship.toml"
 
-copy_as_user() {
-  local src="$1"
-  local dest="$2"
-  if [ ! -d "$src" ]; then
-    print_warning "Source folder not found: $src"
-    return 1
-  fi
-  sudo -u "$USER_NAME" mkdir -p "$dest"
-  cp -r "$src"/* "$dest"
-  chown -R "$USER_NAME:$USER_NAME" "$dest"
+# ===============================
+# Helper functions
+# ===============================
+print_info()    { echo -e "\033[0;34m[I]\033[0m $1"; }
+print_success() { echo -e "\033[0;32m[S]\033[0m $1"; }
+print_warning() { echo -e "\033[0;33m[W]\033[0m $1"; }
+print_error()   { echo -e "\033[0;31m[E]\033[0m $1"; }
+
+run_as_user() {
+    sudo -u "$USER_NAME" bash -c "$1"
 }
 
-# Copy all relevant configs
-copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
-copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
-copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
-# NOTE: Removed rofi config copy
-copy_as_user "$REPO_DIR/configs/dunst" "$CONFIG_DIR/dunst"
-copy_as_user "$REPO_DIR/configs/kitty" "$CONFIG_DIR/kitty"
-copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
+# ===============================
+# Step 1: Select wallpaper via Tofi
+# ===============================
+print_info "Selecting wallpaper via Tofi..."
+WALL_NAME=$(ls "$WALLPAPERS_DIR" | tofi --prompt-text "Select Wallpaper:")
 
-# You may also need to copy tofi's configuration if you have one.
-# For example:
-# copy_as_user "$REPO_DIR/configs/tofi" "$CONFIG_DIR/tofi"
+if [[ -z "$WALL_NAME" ]]; then
+    print_error "No wallpaper selected. Exiting."
+    exit 1
+fi
 
-# ============================================================
-#             Phase 2b: Shell Enhancements
-# ============================================================
-# Fastfetch in shells (only config)
-for rc_file in ".bashrc" ".zshrc"; do
-    RC_PATH="$USER_HOME/$rc_file"
-    if [ ! -f "$RC_PATH" ]; then
-        sudo -u "$USER_NAME" touch "$RC_PATH"
-    fi
-    if ! grep -qxF "fastfetch" "$RC_PATH"; then
-        echo -e "\n# Show system info on terminal start\nfastfetch" | sudo -u "$USER_NAME" tee -a "$RC_PATH" >/dev/null
+WALL_PATH="$WALLPAPERS_DIR/$WALL_NAME"
+print_success "Selected wallpaper: $WALL_PATH"
+
+# ===============================
+# Step 2: Set wallpaper via swww
+# ===============================
+print_info "Setting wallpaper via swww..."
+swww img "$WALL_PATH" --transition-fps 255 --transition-type outer --transition-duration 0.8
+print_success "Wallpaper applied."
+
+# ===============================
+# Step 3: Generate Pywal colors
+# ===============================
+print_info "Generating Pywal colors..."
+wal -i "$WALL_PATH" --backend wal
+print_success "Pywal colors applied."
+
+# ===============================
+# Step 4: Update Kitty config from Pywal
+# ===============================
+WAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
+if [[ -f "$KITTY_CONFIG" ]] && [[ -f "$WAL_COLORS" ]]; then
+    print_info "Updating Kitty config with Pywal colors..."
+    awk -F= '/^color/ {gsub(/"/,"",$2); printf "color%s %s\n", substr($1,6), $2}' "$WAL_COLORS" > "$KITTY_CONFIG"
+    chown "$USER_NAME:$USER_NAME" "$KITTY_CONFIG"
+    print_success "Kitty config updated."
+else
+    print_warning "Kitty config or Pywal colors.sh not found. Skipping Kitty update."
+fi
+
+# ===============================
+# Step 5: Update Starship config
+# ===============================
+print_info "Updating Starship prompt with Pywal colors..."
+COLOR_BG=$(awk -F: '/background/ {gsub(/[ ;]/,"",$2); print $2}' "$USER_HOME/.cache/wal/colors.css" | head -1)
+COLOR_FG=$(awk -F: '/foreground/ {gsub(/[ ;]/,"",$2); print $2}' "$USER_HOME/.cache/wal/colors.css" | head -1)
+COLOR_ACCENT=$(awk -F: '/color1/ {gsub(/[ ;]/,"",$2); print $2}' "$USER_HOME/.cache/wal/colors.css" | head -1)
+
+# fallback if parsing failed
+COLOR_BG=${COLOR_BG:-"#222222"}
+COLOR_FG=${COLOR_FG:-"#eeeeee"}
+COLOR_ACCENT=${COLOR_ACCENT:-"#ff5555"}
+
+cat > "$STARSHIP_CONFIG" <<EOF
+# Auto-generated by select-wallpaper.sh
+
+[character]
+symbol = "❯"
+style = "fg=$COLOR_ACCENT"
+
+[username]
+style_user = "fg=$COLOR_ACCENT"
+
+[directory]
+style = "fg=$COLOR_FG"
+
+[git_status]
+style = "fg=$COLOR_ACCENT"
+
+[time]
+style = "fg=$COLOR_FG"
+EOF
+
+chown "$USER_NAME:$USER_NAME" "$STARSHIP_CONFIG"
+print_success "Starship configured."
+
+# ===============================
+# Step 6: Fastfetch ASCII output
+# ===============================
+FASTFETCH_LINE="fastfetch --no-image"
+for rc in ".bashrc" ".zshrc"; do
+    RC_PATH="$USER_HOME/$rc"
+    if [[ -f "$RC_PATH" ]] && ! grep -qF "$FASTFETCH_LINE" "$RC_PATH"; then
+        echo -e "\n# Run Fastfetch on terminal start\n$FASTFETCH_LINE" >> "$RC_PATH"
+        chown "$USER_NAME:$USER_NAME" "$RC_PATH"
     fi
 done
+print_success "Fastfetch configured for ASCII output."
 
-# Starship prompt
-STARSHIP_SRC="$REPO_DIR/configs/starship/starship.toml"
-STARSHIP_DEST="$CONFIG_DIR/starship.toml"
-if [ -f "$STARSHIP_SRC" ]; then
-    cp "$STARSHIP_SRC" "$STARSHIP_DEST"
-    chown "$USER_NAME:$USER_NAME" "$STARSHIP_DEST"
-fi
-
-for rc_pair in ".bashrc:bash" ".zshrc:zsh"; do
-    shell_rc="${rc_pair%%:*}"
-    shell_name="${rc_pair##*:}"
-    RC_PATH="$USER_HOME/$shell_rc"
-    STARSHIP_LINE="eval \"\$(starship init $shell_name)\""
-    if ! grep -qxF "$STARSHIP_LINE" "$RC_PATH"; then
-        echo -e "\n# Starship prompt\n$STARSHIP_LINE" | sudo -u "$USER_NAME" tee -a "$RC_PATH" >/dev/null
+# ===============================
+# Step 7: Launch or refresh Yazi
+# ===============================
+print_info "Launching or refreshing Yazi..."
+if command -v yazi &>/dev/null; then
+    if ! pgrep -x yazi >/dev/null; then
+        run_as_user "env DISPLAY=$DISPLAY XDG_SESSION_TYPE=$XDG_SESSION_TYPE setsid yazi >/dev/null 2>&1 &"
+        print_success "Yazi launched."
+    else
+        print_info "Yazi is already running."
     fi
-done
-
-# ============================================================
-#             Phase 2c: Copy select-wallpaper.sh
-# ============================================================
-print_header "Phase 2c: Copy select-wallpaper.sh"
-
-SCRIPTS_DIR="$CONFIG_DIR/hypr/scripts"
-SELECT_WALLPAPER_SRC="$REPO_DIR/scripts/select-wallpaper.sh"
-SELECT_WALLPAPER_DEST="$SCRIPTS_DIR/select-wallpaper.sh"
-
-if [ -f "$SELECT_WALLPAPER_SRC" ]; then
-    sudo -u "$USER_NAME" mkdir -p "$SCRIPTS_DIR"
-    cp "$SELECT_WALLPAPER_SRC" "$SELECT_WALLPAPER_DEST"
-    chown "$USER_NAME:$USER_NAME" "$SELECT_WALLPAPER_DEST"
-    chmod +x "$SELECT_WALLPAPER_DEST"
-    print_success "✅ select-wallpaper.sh copied to $SELECT_WALLPAPER_DEST and made executable."
 else
-    print_warning "select-wallpaper.sh not found in $SELECT_WALLPAPER_SRC. Please add it to your repo."
+    print_warning "Yazi not installed. Skipping Qt theming."
 fi
 
-# ============================================================
-#             Phase 3: GPU Drivers
-# ============================================================
-print_header "Phase 3: GPU Setup"
-GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
-if echo "$GPU_INFO" | grep -qi "nvidia"; then
-  print_bold_blue "NVIDIA GPU detected."
-  run_command "pacman -S --noconfirm nvidia nvidia-utils nvidia-settings" "Install NVIDIA drivers"
-elif echo "$GPU_INFO" | grep -qi "amd"; then
-  print_bold_blue "AMD GPU detected."
-  run_command "pacman -S --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau" "Install AMD drivers"
-elif echo "$GPU_INFO" | grep -qi "intel"; then
-  print_bold_blue "Intel GPU detected."
-  run_command "pacman -S --noconfirm mesa libva-intel-driver intel-media-driver vulkan-intel" "Install Intel drivers"
-else
-  print_warning "No supported GPU detected. Info: $GPU_INFO"
-fi
-
-# ============================================================
-#             Done
-# ============================================================
-print_bold_blue "\n✅ Setup Complete! Reboot to apply changes."
+print_success "Wallpaper selection and theming complete!"
