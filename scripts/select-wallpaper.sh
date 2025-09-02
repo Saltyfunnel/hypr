@@ -9,6 +9,7 @@ USER_HOME=$(eval echo "~$USER_NAME")
 
 CONFIG_DIR="$USER_HOME/.config"
 WALLPAPERS_DIR="$CONFIG_DIR/assets/wallpapers"
+WOFI_CSS="$CONFIG_DIR/wofi/style.css"  # Your Wofi CSS
 
 # ===============================
 # Helper functions
@@ -26,7 +27,7 @@ run_as_user() {
 # Step 1: Select wallpaper
 # ===============================
 print_info "Selecting wallpaper via Wofi..."
-WALL_NAME=$(ls "$WALLPAPERS_DIR" | wofi --show dmenu --prompt "Select Wallpaper:")
+WALL_NAME=$(ls "$WALLPAPERS_DIR" | wofi --prompt "Select Wallpaper:" --dmenu)
 
 if [[ -z "$WALL_NAME" ]]; then
     print_error "No wallpaper selected. Exiting."
@@ -51,7 +52,24 @@ wal -i "$WALL_PATH" --backend wal
 print_success "Pywal colors applied."
 
 # ===============================
-# Step 4: Configure Starship with Pywal
+# Step 4: Update Wofi CSS from Pywal
+# ===============================
+if [[ -f "$WOFI_CSS" ]]; then
+    print_info "Updating Wofi CSS with Pywal colors..."
+    WAL_CACHE="$USER_HOME/.cache/wal/colors.css"
+
+    sed -i -e "s/@background/$(awk -F: '/background/ {gsub(/[ ;]/,"",$2); print $2}' $WAL_CACHE)/" \
+           -e "s/@foreground/$(awk -F: '/foreground/ {gsub(/[ ;]/,"",$2); print $2}' $WAL_CACHE)/" \
+           -e "s/@color0/$(awk -F: '/color0/ {gsub(/[ ;]/,"",$2); print $2}' $WAL_CACHE)/" \
+           -e "s/@color1/$(awk -F: '/color1/ {gsub(/[ ;]/,"",$2); print $2}' $WAL_CACHE)/" \
+           "$WOFI_CSS"
+    print_success "Wofi CSS updated."
+else
+    print_warning "Wofi CSS not found at $WOFI_CSS. Please create it manually first."
+fi
+
+# ===============================
+# Step 5: Configure Starship with Pywal
 # ===============================
 print_info "Updating Starship prompt with Pywal colors..."
 STARSHIP_CONFIG="$CONFIG_DIR/starship.toml"
@@ -93,7 +111,7 @@ chown "$USER_NAME:$USER_NAME" "$STARSHIP_CONFIG"
 print_success "Starship configured with Pywal colors."
 
 # ===============================
-# Step 5: Ensure Fastfetch ASCII runs
+# Step 6: Ensure Fastfetch ASCII runs
 # ===============================
 FASTFETCH_LINE="fastfetch --no-image"
 for rc in ".bashrc" ".zshrc"; do
@@ -106,7 +124,7 @@ done
 print_success "Fastfetch configured for ASCII output."
 
 # ===============================
-# Step 6: Launch or refresh Yazi
+# Step 7: Launch or refresh Yazi
 # ===============================
 print_info "Launching or refreshing Yazi..."
 if command -v yazi &>/dev/null; then
