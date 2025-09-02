@@ -31,19 +31,6 @@
     "on-click": "playerctl play-pause --player=spotify"
   },
 
-"custom/updates": {
-  "exec": "~/.config/waybar/scripts/checkupdates.sh",
-  "interval": 600,
-  "format": "",
-  "tooltip": true,
-  "tooltip-format": "{} updates available",
-  "on-click": "kitty -e yay -Syu"
-}
-
-
-
-,
-
   "hyprland/window": {
     "format": "󰣇 {}"
   },
