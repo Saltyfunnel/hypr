@@ -120,7 +120,6 @@ PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${T
 run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
 run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
-sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm firefox
 
 # ============================================================
 #                     Phase 2: Utilities
@@ -144,10 +143,16 @@ copy_as_user() {
   chown -R "$USER_NAME:$USER_NAME" "$dest"
 }
 
+# Core utility
 run_command "pacman -S --noconfirm waybar" "Install Waybar"
 copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
 
-sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm tofi fastfetch swww hyprpicker hyprlock grimblast hypridle starship
+# AUR packages
+sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm tofi
+
+# Official packages
+run_command "pacman -S --noconfirm fastfetch swww hyprpicker hyprlock grimblast hypridle starship firefox" "Install Hyprland utilities"
+
 copy_as_user "$REPO_DIR/configs/tofi" "$CONFIG_DIR/tofi"
 copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
 copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
