@@ -187,7 +187,7 @@ PACKAGES=(
   pipewire wireplumber pamixer brightnessctl
   ttf-cascadia-code-nerd ttf-cascadia-mono-nerd ttf-fira-code ttf-fira-mono ttf-fira-sans
   ttf-iosevka-nerd ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
-  sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
+  sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo firefox yazi
   thunar thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
   gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
   polkit polkit-gnome
@@ -196,7 +196,6 @@ PACKAGES=(
 run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages" "yes"
 run_command "systemctl enable --now polkit.service" "Enable polkit" "yes"
 run_command "systemctl enable sddm.service" "Enable SDDM" "yes"
-run_command "yay -S --sudoloop --noconfirm firefox" "Install Firefox" "yes" "no"
 
 # --------------------------
 # Utilities
@@ -206,7 +205,7 @@ run_command "pacman -S --noconfirm waybar cliphist" "Install Waybar and Cliphist
 copy_as_user "$CONFIG_SRC/waybar" "$CONFIG_DIR/waybar"
 copy_as_user "$CONFIG_SRC/dunst" "$CONFIG_DIR/dunst"
 
-run_command "yay -S --sudoloop --noconfirm tofi fastfetch swww hyprpicker hyprlock grimblast hypridle starship pywal16" "Install AUR utilities including pywal16" "yes" "no"
+run_command "yay -S --sudoloop --noconfirm tofi fastfetch swww hyprland hyprpicker hyprlock grimblast hypridle starship pywal16" "Install AUR utilities including pywal16" "yes" "no"
 
 copy_as_user "$CONFIG_SRC/tofi" "$CONFIG_DIR/tofi"
 copy_as_user "$CONFIG_SRC/fastfetch" "$CONFIG_DIR/fastfetch"
