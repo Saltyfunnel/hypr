@@ -1,9 +1,25 @@
 #!/bin/bash
+# ==========================
+# Full Hyprland Installer for Arch Linux
+# Repo structure:
+# hypr/
+# ├── assets/
+# │   └── wallpapers/
+# ├── configs/
+# │   ├── waybar/
+# │   ├── hypr/
+# │   ├── tofi/
+# │   ├── fastfetch/
+# │   ├── starship/
+# │   └── dunst/
+# └── scripts/
+# ==========================
+
 set -euo pipefail
 
-# ============================================================
-#             Helper Functions
-# ============================================================
+# --------------------------
+# Helper functions
+# --------------------------
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -18,16 +34,55 @@ print_info()    { echo -e "${BLUE}$1${NC}"; }
 print_bold_blue() { echo -e "${BLUE}${BOLD}$1${NC}"; }
 print_header()  { echo -e "\n${BOLD}${BLUE}==> $1${NC}"; }
 
+ask_confirmation() {
+  while true; do
+    read -rp "$(print_warning "$1 (y/n): ")" -n 1
+    echo
+    case $REPLY in
+      [Yy]) return 0 ;;
+      [Nn]) print_error "Operation cancelled."; return 1 ;;
+      *) print_error "Invalid input. Please answer y or n." ;;
+    esac
+  done
+}
+
 run_command() {
   local cmd="$1"
   local description="$2"
-  print_info "\n$description..."
-  if eval "$cmd"; then
-    print_success "$description completed."
+  local ask_confirm="${3:-yes}"
+  local use_sudo="${4:-yes}"
+
+  local full_cmd=""
+  if [[ "$use_sudo" == "no" ]]; then
+    full_cmd="sudo -u $SUDO_USER bash -c \"$cmd\""
   else
-    print_error "$description failed."
-    exit 1
+    full_cmd="$cmd"
   fi
+
+  print_info "\nCommand: $full_cmd"
+  if [[ "$ask_confirm" == "yes" ]]; then
+    if ! ask_confirmation "$description"; then
+      return 1
+    fi
+  else
+    print_info "$description"
+  fi
+
+  until eval "$full_cmd"; do
+    print_error "Command failed: $cmd"
+    if [[ "$ask_confirm" == "yes" ]]; then
+      if ! ask_confirmation "Retry $description?"; then
+        print_warning "$description not completed."
+        return 1
+      fi
+    else
+      print_warning "$description failed, no retry (auto mode)."
+      return 1
+    fi
+  done
+
+  print_success "$description completed successfully."
+  return 0
 }
 
 check_root() {
@@ -42,192 +97,123 @@ check_os() {
     . /etc/os-release
     if [[ "$ID" != "arch" ]]; then
       print_warning "This script is designed for Arch Linux. Detected: $PRETTY_NAME"
+      if ! ask_confirmation "Continue anyway?"; then
+        exit 1
+      fi
     else
       print_success "Arch Linux detected. Proceeding."
     fi
   else
     print_error "/etc/os-release not found. Cannot determine OS."
+    if ! ask_confirmation "Continue anyway?"; then
+      exit 1
+    fi
   fi
 }
 
-# ============================================================
-#             Initialization
-# ============================================================
-check_root
-check_os
-
+# --------------------------
+# Setup variables
+# --------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME=$(eval echo "~$USER_NAME")
-
-print_bold_blue "\n🚀 Starting Full Hyprland Setup"
-echo "-------------------------------------"
-
-# ============================================================
-#             Phase 1: Prerequisites
-# ============================================================
-print_header "Phase 1: Prerequisites Setup"
-
-run_command "pacman -Syyu --noconfirm" "Update system packages"
-
-# Install only essential AUR build tools
-run_command "pacman -S --noconfirm --needed git base-devel" "Install essential AUR build tools"
-
-# -------------------------------
-# Packages categorized
-# -------------------------------
-CORE_PACKAGES=(
-  pipewire wireplumber pamixer brightnessctl
-  sddm firefox kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
-  polkit polkit-gnome hyprland swww waybar hyprpicker hyprlock hypridle
-  yazi python-pywal grim slurp fastfetch starship pango cairo
-)
-
-FONT_PACKAGES=(
-  ttf-cascadia-code
-  ttf-fira-code
-  ttf-fira-mono
-  ttf-fira-sans
-  ttf-jetbrains-mono
-  ttf-iosevka-nerd
-)
-
-FILE_PACKAGES=(
-  thunar thunar-archive-plugin thunar-volman
-  tumbler ffmpegthumbnailer file-roller
-  gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
-)
-
-THEME_PACKAGES=(
-  python-pywal
-)
-
-PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${THEME_PACKAGES[@]}")
-
-run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
-
-# ============================================================
-#             Phase 1b: Install Tofi using yay
-# ============================================================
-print_header "Phase 1b: Installing Tofi via yay (AUR)"
-
-# Ensure yay is installed
-if ! command -v yay &>/dev/null; then
-    print_info "yay not found. Installing yay..."
-    sudo -u "$USER_NAME" git clone https://aur.archlinux.org/yay.git /tmp/yay
-    cd /tmp/yay
-    sudo -u "$USER_NAME" makepkg -si --noconfirm
-    cd -
-    rm -rf /tmp/yay
-    print_success "yay installed successfully."
-fi
-
-# Install Tofi using yay as the non-root user
-run_command "sudo -u '$USER_NAME' yay -S --noconfirm tofi" "Install Tofi from AUR"
-
-# Enable essential services
-run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
-run_command "systemctl enable sddm.service" "Enable SDDM display manager"
-
-# ============================================================
-#             Phase 2: Copy Configurations
-# ============================================================
-print_header "Phase 2: Copying Configurations"
-
 CONFIG_DIR="$USER_HOME/.config"
 REPO_DIR="$USER_HOME/hypr"
 ASSETS_SRC="$REPO_DIR/assets"
-ASSETS_DEST="$CONFIG_DIR/assets"
+CONFIG_SRC="$REPO_DIR/configs"
 
+# --------------------------
+# Helper functions for configs
+# --------------------------
 copy_as_user() {
-  local src="$1"
-  local dest="$2"
-  if [ ! -d "$src" ]; then
-    print_warning "Source folder not found: $src"
-    return 1
-  fi
-  sudo -u "$USER_NAME" mkdir -p "$dest"
-  cp -r "$src"/* "$dest"
-  chown -R "$USER_NAME:$USER_NAME" "$dest"
+    local src="$1"
+    local dest="$2"
+    if [ ! -d "$src" ]; then
+        print_warning "Source folder not found: $src"
+        return 1
+    fi
+    run_command "mkdir -p \"$dest\"" "Create destination directory $dest" "no" "no"
+    run_command "cp -r \"$src\"/* \"$dest\"" "Copy from $src to $dest" "yes" "no"
+    run_command "chown -R $USER_NAME:$USER_NAME \"$dest\"" "Fix ownership for $dest" "no" "yes"
 }
 
-# Copy all configs
-copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
-copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
-copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
-copy_as_user "$REPO_DIR/configs/dunst" "$CONFIG_DIR/dunst"
-copy_as_user "$REPO_DIR/configs/kitty" "$CONFIG_DIR/kitty"
-copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
-copy_as_user "$REPO_DIR/configs/tofi" "$CONFIG_DIR/tofi"
-
-# ============================================================
-#             Phase 2b: Shell Enhancements
-# ============================================================
-for rc_file in ".bashrc" ".zshrc"; do
-    RC_PATH="$USER_HOME/$rc_file"
-    if [ ! -f "$RC_PATH" ]; then
-        sudo -u "$USER_NAME" touch "$RC_PATH"
+add_fastfetch_to_shell() {
+    local shell_rc="$1"
+    local shell_rc_path="$USER_HOME/$shell_rc"
+    local fastfetch_line='fastfetch --kitty-direct /home/'"$USER_NAME"'/.config/fastfetch/archkitty.png'
+    if [ -f "$shell_rc_path" ] && ! grep -qF "$fastfetch_line" "$shell_rc_path"; then
+        echo -e "\n# Run fastfetch on terminal start\n$fastfetch_line" >> "$shell_rc_path"
+        chown "$USER_NAME:$USER_NAME" "$shell_rc_path"
     fi
-    if ! grep -qxF "fastfetch" "$RC_PATH"; then
-        echo -e "\n# Show system info on terminal start\nfastfetch" | sudo -u "$USER_NAME" tee -a "$RC_PATH" >/dev/null
-    fi
-done
+}
 
-# Starship prompt config
-STARSHIP_SRC="$REPO_DIR/configs/starship/starship.toml"
+add_starship_to_shell() {
+    local shell_rc="$1"
+    local shell_name="$2"
+    local shell_rc_path="$USER_HOME/$shell_rc"
+    local starship_line='eval "$(starship init '"$shell_name"')"'
+    if [ -f "$shell_rc_path" ] && ! grep -qF "$starship_line" "$shell_rc_path"; then
+        echo -e "\n$starship_line" >> "$shell_rc_path"
+        chown "$USER_NAME:$USER_NAME" "$shell_rc_path"
+    fi
+}
+
+# --------------------------
+# Start script
+# --------------------------
+check_root
+check_os
+print_bold_blue "\n🚀 Starting Full Hyprland + Pywal Setup"
+echo "-------------------------------------"
+
+# --------------------------
+# Prerequisites
+# --------------------------
+print_header "Updating system and installing prerequisites"
+run_command "pacman -Syyu --noconfirm" "Update system packages" "yes"
+
+if ! command -v yay &>/dev/null; then
+    print_info "Yay not found. Installing yay..."
+    run_command "pacman -S --noconfirm --needed git base-devel" "Install git and base-devel" "yes"
+    run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay repository" "no" "no"
+    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Fix ownership of yay build directory" "no" "no"
+    run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay" "no" "no"
+    run_command "rm -rf /tmp/yay" "Clean up yay build directory" "no" "no"
+else
+    print_success "Yay is already installed."
+fi
+
+PACKAGES=(
+  pipewire wireplumber pamixer brightnessctl
+  ttf-cascadia-code-nerd ttf-cascadia-mono-nerd ttf-fira-code ttf-fira-mono ttf-fira-sans
+  ttf-iosevka-nerd ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
+  sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
+  thunar thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
+  gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
+  polkit polkit-gnome
+)
+
+run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages" "yes"
+run_command "systemctl enable --now polkit.service" "Enable polkit" "yes"
+run_command "systemctl enable sddm.service" "Enable SDDM" "yes"
+run_command "yay -S --sudoloop --noconfirm firefox" "Install Firefox" "yes" "no"
+
+# --------------------------
+# Utilities
+# --------------------------
+print_header "Installing Utilities and configs"
+run_command "pacman -S --noconfirm waybar cliphist" "Install Waybar and Cliphist" "yes"
+copy_as_user "$CONFIG_SRC/waybar" "$CONFIG_DIR/waybar"
+copy_as_user "$CONFIG_SRC/dunst" "$CONFIG_DIR/dunst"
+
+run_command "yay -S --sudoloop --noconfirm tofi fastfetch swww hyprpicker hyprlock grimblast hypridle starship pywal16" "Install AUR utilities including pywal16" "yes" "no"
+
+copy_as_user "$CONFIG_SRC/tofi" "$CONFIG_DIR/tofi"
+copy_as_user "$CONFIG_SRC/fastfetch" "$CONFIG_DIR/fastfetch"
+copy_as_user "$CONFIG_SRC/hypr" "$CONFIG_DIR/hypr"
+
+STARSHIP_SRC="$CONFIG_SRC/starship/starship.toml"
 STARSHIP_DEST="$CONFIG_DIR/starship.toml"
 if [ -f "$STARSHIP_SRC" ]; then
     cp "$STARSHIP_SRC" "$STARSHIP_DEST"
-    chown "$USER_NAME:$USER_NAME" "$STARSHIP_DEST"
-fi
-
-for rc_pair in ".bashrc:bash" ".zshrc:zsh"; do
-    shell_rc="${rc_pair%%:*}"
-    shell_name="${rc_pair##*:}"
-    RC_PATH="$USER_HOME/$shell_rc"
-    STARSHIP_LINE="eval \"\$(starship init $shell_name)\""
-    if ! grep -qxF "$STARSHIP_LINE" "$RC_PATH"; then
-        echo -e "\n# Starship prompt\n$STARSHIP_LINE" | sudo -u "$USER_NAME" tee -a "$RC_PATH" >/dev/null
-    fi
-done
-
-# ============================================================
-#             Phase 2c: Copy select-wallpaper.sh
-# ============================================================
-print_header "Phase 2c: Copy select-wallpaper.sh"
-
-SCRIPTS_DIR="$CONFIG_DIR/hypr/scripts"
-SELECT_WALLPAPER_SRC="$REPO_DIR/scripts/select-wallpaper.sh"
-SELECT_WALLPAPER_DEST="$SCRIPTS_DIR/select-wallpaper.sh"
-
-if [ -f "$SELECT_WALLPAPER_SRC" ]; then
-    sudo -u "$USER_NAME" mkdir -p "$SCRIPTS_DIR"
-    cp "$SELECT_WALLPAPER_SRC" "$SELECT_WALLPAPER_DEST"
-    chown "$USER_NAME:$USER_NAME" "$SELECT_WALLPAPER_DEST"
-    chmod +x "$SELECT_WALLPAPER_DEST"
-    print_success "✅ select-wallpaper.sh copied to $SELECT_WALLPAPER_DEST and made executable."
-else
-    print_warning "select-wallpaper.sh not found in $SELECT_WALLPAPER_SRC. Please add it to your repo."
-fi
-
-# ============================================================
-#             Phase 3: GPU Drivers
-# ============================================================
-print_header "Phase 3: GPU Setup"
-GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
-if echo "$GPU_INFO" | grep -qi "nvidia"; then
-  print_bold_blue "NVIDIA GPU detected."
-  run_command "pacman -S --noconfirm nvidia nvidia-utils nvidia-settings" "Install NVIDIA drivers"
-elif echo "$GPU_INFO" | grep -qi "amd"; then
-  print_bold_blue "AMD GPU detected."
-  run_command "pacman -S --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau" "Install AMD drivers"
-elif echo "$GPU_INFO" | grep -qi "intel"; then
-  print_bold_blue "Intel GPU detected."
-  run_command "pacman -S --noconfirm mesa libva-intel-driver intel-media-driver vulkan-intel" "Install Intel drivers"
-else
-  print_warning "No supported GPU detected. Info: $GPU_INFO"
-fi
-
-# ============================================================
-#             Done
-# ============================================================
-print_bold_blue "\n✅ Setup Complete! Reboot to apply changes."
+    chown "$USER_NAME:$
