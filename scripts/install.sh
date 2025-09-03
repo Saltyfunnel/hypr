@@ -63,6 +63,8 @@ pacman -Syyu --noconfirm
 if ! command -v yay &>/dev/null; then
     print_info "Installing yay..."
     pacman -S --noconfirm --needed git base-devel
+    mkdir -p /tmp
+    rm -rf /tmp/yay
     git clone https://aur.archlinux.org/yay.git /tmp/yay
     chown -R "$USER_NAME:$USER_NAME" /tmp/yay
     cd /tmp/yay
@@ -129,17 +131,22 @@ mkdir -p "$WALLPAPERS_DEST"
 copy_as_user "$ASSETS_SRC/wallpapers" "$WALLPAPERS_DEST"
 
 # --------------------------
-# SDDM Theme setup
+# SDDM Theme setup (fixed clone)
 # --------------------------
 MONO_SDDM_REPO="https://github.com/pwyde/monochrome-kde.git"
 MONO_SDDM_TEMP="/tmp/monochrome-kde"
 MONO_THEME_NAME="monochrome"
 
+mkdir -p /tmp
+rm -rf "$MONO_SDDM_TEMP"
 git clone --depth=1 "$MONO_SDDM_REPO" "$MONO_SDDM_TEMP"
+
 cp -r "$MONO_SDDM_TEMP/sddm/themes/$MONO_THEME_NAME" "/usr/share/sddm/themes/$MONO_THEME_NAME"
 chown -R root:root "/usr/share/sddm/themes/$MONO_THEME_NAME"
+
 mkdir -p /etc/sddm.conf.d
 echo -e "[Theme]\nCurrent=$MONO_THEME_NAME" > /etc/sddm.conf.d/10-theme.conf
+
 rm -rf "$MONO_SDDM_TEMP"
 
 # --------------------------
