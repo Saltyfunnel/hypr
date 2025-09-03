@@ -99,7 +99,7 @@ systemctl enable sddm.service
 # --------------------------
 # AUR packages
 # --------------------------
-AUR_PACKAGES=(tofi pywal16)
+AUR_PACKAGES=(tofi python-pywal16)
 print_bold_blue "Installing AUR packages..."
 for pkg in "${AUR_PACKAGES[@]}"; do
     sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm "$pkg"
