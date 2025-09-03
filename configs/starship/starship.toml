@@ -1,13 +1,17 @@
+# -------------------------
+# STARSHIP CONFIG (pywal-aware)
+# -------------------------
+
 format = """
-[](#444444)\
+[](bg:${WAL_COLOR_0:-#444444})\
 $os\
 $username\
-[](bg:#444444 fg:#888888)\
+[](bg:${WAL_COLOR_0:-#444444} fg:${WAL_COLOR_7:-#888888})\
 $directory\
-[](fg:#888888 bg:#bbbbbb)\
+[](bg:${WAL_COLOR_7:-#888888} fg:${WAL_COLOR_15:-#bbbbbb})\
 $git_branch\
 $git_status\
-[](fg:#bbbbbb bg:#dddddd)\
+[](bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_16:-#dddddd})\
 $c\
 $elixir\
 $elm\
@@ -20,28 +24,31 @@ $nodejs\
 $nim\
 $rust\
 $scala\
-[](fg:#dddddd bg:#eeeeee)\
+[](bg:${WAL_COLOR_16:-#dddddd} fg:${WAL_COLOR_15:-#eeeeee})\
 $docker_context\
-[](fg:#eeeeee bg:#ffffff)\
+[](bg:${WAL_COLOR_15:-#eeeeee} fg:${WAL_COLOR_0:-#ffffff})\
 $time\
-[ ](fg:#ffffff)\
+[ ](fg:${WAL_COLOR_0:-#ffffff})
 """
 
 add_newline = false
 
+# -------------------------
+# USER
+# -------------------------
 [username]
 show_always = true
-style_user = "bg:#444444 fg:#bbbbbb"
-style_root = "bg:#444444 fg:#bbbbbb"
+style_user = "bg:${WAL_COLOR_0:-#444444} fg:${WAL_COLOR_7:-#bbbbbb}"
+style_root = "bg:${WAL_COLOR_0:-#444444} fg:${WAL_COLOR_7:-#bbbbbb}"
 format = '[$user ]($style)'
 disabled = false
 
 [os]
-style = "bg:#444444 fg:#bbbbbb"
+style = "bg:${WAL_COLOR_0:-#444444} fg:${WAL_COLOR_7:-#bbbbbb}"
 disabled = true
 
 [directory]
-style = "bg:#888888 fg:#222222"
+style = "bg:${WAL_COLOR_7:-#888888} fg:${WAL_COLOR_0:-#222222}"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
@@ -52,86 +59,96 @@ truncation_symbol = "…/"
 "Music" = " "
 "Pictures" = " "
 
+# -------------------------
+# LANGUAGE / ENV SEGMENTS
+# -------------------------
 [c]
 symbol = " "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [cpp]
 symbol = " "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
-
-[docker_context]
-symbol = " "
-style = "bg:#eeeeee fg:#222222"
-format = '[ $symbol $context ]($style)'
 
 [elixir]
 symbol = " "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [elm]
 symbol = " "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
-
-[git_branch]
-symbol = ""
-style = "bg:#bbbbbb fg:#222222"
-format = '[ $symbol $branch ]($style)'
-
-[git_status]
-style = "bg:#bbbbbb fg:#222222"
-format = '[$all_status$ahead_behind ]($style)'
 
 [golang]
 symbol = " "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [gradle]
-style = "bg:#bbbbbb fg:#222222"
+symbol = " "
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [haskell]
 symbol = " "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [java]
 symbol = " "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [julia]
 symbol = " "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [nodejs]
 symbol = ""
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [nim]
 symbol = "󰆥 "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [rust]
 symbol = ""
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
 [scala]
 symbol = " "
-style = "bg:#bbbbbb fg:#222222"
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
 format = '[ $symbol ($version) ]($style)'
 
+[docker_context]
+symbol = " "
+style = "bg:${WAL_COLOR_15:-#eeeeee} fg:${WAL_COLOR_0:-#222222}"
+format = '[ $symbol $context ]($style)'
+
+# -------------------------
+# GIT
+# -------------------------
+[git_branch]
+symbol = ""
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
+format = '[ $symbol $branch ]($style)'
+
+[git_status]
+style = "bg:${WAL_COLOR_15:-#bbbbbb} fg:${WAL_COLOR_0:-#222222}"
+format = '[$all_status$ahead_behind ]($style)'
+
+# -------------------------
+# TIME
+# -------------------------
 [time]
-disabled = false
-time_format = "%R" # Hour:Minute Format
-style = "bg:#eeeeee fg:#222222"
+time_format = "%R"
+style = "bg:${WAL_COLOR_15:-#eeeeee} fg:${WAL_COLOR_0:-#222222}"
 format = '[ ⏰ $time ]($style)'
+disabled = false
