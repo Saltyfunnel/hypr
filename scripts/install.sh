@@ -59,7 +59,7 @@ check_os
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME=$(eval echo "~$USER_NAME")
 
-print_bold_blue "\n🚀 Starting Full Hyprland + Tofi Setup"
+print_bold_blue "\n🚀 Starting Full Hyprland Setup"
 echo "-------------------------------------"
 
 # ============================================================
@@ -69,7 +69,7 @@ print_header "Phase 1: Prerequisites Setup"
 
 run_command "pacman -Syyu --noconfirm" "Update system packages"
 
-# Install minimum required tools for AUR building
+# Install only essential AUR build tools
 run_command "pacman -S --noconfirm --needed git base-devel" "Install essential AUR build tools"
 
 # -------------------------------
@@ -106,20 +106,25 @@ PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${T
 run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
 
 # ============================================================
-#             Phase 1b: Install Tofi via AUR
+#             Phase 1b: Install Tofi using yay
 # ============================================================
-print_header "Phase 1b: Installing Tofi from AUR"
+print_header "Phase 1b: Installing Tofi via yay (AUR)"
 
-# Install yay if missing
+# Ensure yay is installed
 if ! command -v yay &>/dev/null; then
     print_info "yay not found. Installing yay..."
-    run_command "sudo -u '$USER_NAME' git clone https://aur.archlinux.org/yay.git /tmp/yay && cd /tmp/yay && makepkg -si --noconfirm" "Install yay AUR helper"
+    sudo -u "$USER_NAME" git clone https://aur.archlinux.org/yay.git /tmp/yay
+    cd /tmp/yay
+    sudo -u "$USER_NAME" makepkg -si --noconfirm
+    cd -
+    rm -rf /tmp/yay
+    print_success "yay installed successfully."
 fi
 
-# Install tofi using yay
-run_command "sudo -u '$USER_NAME' yay -S --noconfirm tofi" "Install tofi from AUR"
+# Install Tofi using yay as the non-root user
+run_command "sudo -u '$USER_NAME' yay -S --noconfirm tofi" "Install Tofi from AUR"
 
-# Enable services
+# Enable essential services
 run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
 
@@ -145,17 +150,13 @@ copy_as_user() {
   chown -R "$USER_NAME:$USER_NAME" "$dest"
 }
 
-# Copy Hyprland ecosystem configs
+# Copy all configs
 copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
 copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
 copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
 copy_as_user "$REPO_DIR/configs/dunst" "$CONFIG_DIR/dunst"
 copy_as_user "$REPO_DIR/configs/kitty" "$CONFIG_DIR/kitty"
-
-# Copy wallpapers
 copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
-
-# Copy Tofi configuration
 copy_as_user "$REPO_DIR/configs/tofi" "$CONFIG_DIR/tofi"
 
 # ============================================================
@@ -171,7 +172,7 @@ for rc_file in ".bashrc" ".zshrc"; do
     fi
 done
 
-# Starship config
+# Starship prompt config
 STARSHIP_SRC="$REPO_DIR/configs/starship/starship.toml"
 STARSHIP_DEST="$CONFIG_DIR/starship.toml"
 if [ -f "$STARSHIP_SRC" ]; then
@@ -179,7 +180,6 @@ if [ -f "$STARSHIP_SRC" ]; then
     chown "$USER_NAME:$USER_NAME" "$STARSHIP_DEST"
 fi
 
-# Add Starship prompt to shells
 for rc_pair in ".bashrc:bash" ".zshrc:zsh"; do
     shell_rc="${rc_pair%%:*}"
     shell_name="${rc_pair##*:}"
