@@ -1,12 +1,13 @@
-# ~/.config/starship.toml
-# Auto-generated from Pywal colors
-
 format = """
+[](#444444)\
 $os\
 $username\
+[](bg:#444444 fg:#888888)\
 $directory\
+[](fg:#888888 bg:#bbbbbb)\
 $git_branch\
 $git_status\
+[](fg:#bbbbbb bg:#dddddd)\
 $c\
 $elixir\
 $elm\
@@ -19,26 +20,28 @@ $nodejs\
 $nim\
 $rust\
 $scala\
+[](fg:#dddddd bg:#eeeeee)\
 $docker_context\
-$time
+[](fg:#eeeeee bg:#ffffff)\
+$time\
+[ ](fg:#ffffff)\
 """
 
 add_newline = false
 
-# ==============================
-# Core modules
-# ==============================
 [username]
 show_always = true
-style_user = "fg:#bbbbbb,bg:#444444"
-style_root = "fg:#bbbbbb,bg:#444444"
-format = '[$user]($style)'
+style_user = "bg:#444444 fg:#bbbbbb"
+style_root = "bg:#444444 fg:#bbbbbb"
+format = '[$user ]($style)'
+disabled = false
 
 [os]
+style = "bg:#444444 fg:#bbbbbb"
 disabled = true
 
 [directory]
-style = "fg:#222222,bg:#888888"
+style = "bg:#888888 fg:#222222"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
@@ -49,98 +52,86 @@ truncation_symbol = "…/"
 "Music" = " "
 "Pictures" = " "
 
-# ==============================
-# Programming languages
-# ==============================
 [c]
 symbol = " "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [cpp]
 symbol = " "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
+
+[docker_context]
+symbol = " "
+style = "bg:#eeeeee fg:#222222"
+format = '[ $symbol $context ]($style)'
 
 [elixir]
 symbol = " "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [elm]
 symbol = " "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
+
+[git_branch]
+symbol = ""
+style = "bg:#bbbbbb fg:#222222"
+format = '[ $symbol $branch ]($style)'
+
+[git_status]
+style = "bg:#bbbbbb fg:#222222"
+format = '[$all_status$ahead_behind ]($style)'
 
 [golang]
 symbol = " "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [gradle]
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [haskell]
 symbol = " "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [java]
 symbol = " "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [julia]
 symbol = " "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [nodejs]
 symbol = ""
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [nim]
 symbol = "󰆥 "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [rust]
 symbol = ""
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
 [scala]
 symbol = " "
-style = "fg:#222222,bg:#bbbbbb"
+style = "bg:#bbbbbb fg:#222222"
 format = '[ $symbol ($version) ]($style)'
 
-# ==============================
-# Git
-# ==============================
-[git_branch]
-symbol = ""
-style = "fg:#222222,bg:#bbbbbb"
-format = '[ $symbol $branch ]($style)'
-
-[git_status]
-style = "fg:#222222,bg:#bbbbbb"
-format = '[$all_status$ahead_behind]($style)'
-
-# ==============================
-# Docker
-# ==============================
-[docker_context]
-symbol = " "
-style = "fg:#222222,bg:#eeeeee"
-format = '[ $symbol $context ]($style)'
-
-# ==============================
-# Time
-# ==============================
 [time]
 disabled = false
-time_format = "%R"
-style = "fg:#222222,bg:#eeeeee"
+time_format = "%R" # Hour:Minute Format
+style = "bg:#eeeeee fg:#222222"
 format = '[ ⏰ $time ]($style)'
