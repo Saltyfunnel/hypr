@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==========================
-# Full Automatic Hyprland Installer with Pywal16
+# Full Automatic Hyprland Installer (Grim + Slurp, no Pywal config)
 # ==========================
 
 set -euo pipefail
@@ -10,7 +10,6 @@ set -euo pipefail
 # --------------------------
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m'
@@ -38,7 +37,7 @@ ASSETS_SRC="$REPO_DIR/assets"
 CONFIG_SRC="$REPO_DIR/configs"
 
 # --------------------------
-# Helper functions
+# Helper function to copy files
 # --------------------------
 copy_as_user() {
     local src="$1"
@@ -80,11 +79,12 @@ PACMAN_PACKAGES=(
   ttf-iosevka-nerd ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
   sddm kitty nano tar gnome-disk-utility code mpv dunst pacman-contrib exo
   thunar thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
-  gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb yazi
+  gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
   polkit polkit-gnome
   waybar cliphist papirus-icon-theme
   starship fastfetch swww hyprpicker hyprlock hypridle
-  firefox
+  firefox yazi
+  grim slurp wl-clipboard jq
 )
 
 print_bold_blue "Installing official repo packages..."
@@ -97,7 +97,7 @@ systemctl enable sddm.service
 # --------------------------
 # AUR packages
 # --------------------------
-AUR_PACKAGES=(tofi grimblast pywal16)
+AUR_PACKAGES=(tofi pywal16)
 print_bold_blue "Installing AUR packages..."
 for pkg in "${AUR_PACKAGES[@]}"; do
     sudo -u "$USER_NAME" yay -S --sudoloop --noconfirm "$pkg"
@@ -112,6 +112,7 @@ copy_as_user "$CONFIG_SRC/fastfetch" "$CONFIG_DIR/fastfetch"
 copy_as_user "$CONFIG_SRC/tofi" "$CONFIG_DIR/tofi"
 copy_as_user "$CONFIG_SRC/hypr" "$CONFIG_DIR/hypr"
 copy_as_user "$CONFIG_SRC/dunst" "$CONFIG_DIR/dunst"
+
 STARSHIP_SRC="$CONFIG_SRC/starship/starship.toml"
 STARSHIP_DEST="$CONFIG_DIR/starship.toml"
 if [ -f "$STARSHIP_SRC" ]; then
@@ -120,22 +121,26 @@ if [ -f "$STARSHIP_SRC" ]; then
 fi
 
 # --------------------------
-# Pywal setup
+# Copy wallpapers
 # --------------------------
+print_bold_blue "Copying wallpapers..."
 WALLPAPERS_DEST="$CONFIG_DIR/assets/wallpapers"
 mkdir -p "$WALLPAPERS_DEST"
 copy_as_user "$ASSETS_SRC/wallpapers" "$WALLPAPERS_DEST"
 
-PYWAL_SCRIPT="$CONFIG_DIR/pywal-apply.sh"
-mkdir -p "$(dirname "$PYWAL_SCRIPT")"
-cat > "$PYWAL_SCRIPT" << 'EOF'
-#!/bin/bash
-WALL_DIR="$HOME/.config/assets/wallpapers"
-WALL=$(find "$WALL_DIR" -type f | shuf -n1)
-wal -i "$WALL"
-EOF
-chmod +x "$PYWAL_SCRIPT"
-chown "$USER_NAME:$USER_NAME" "$PYWAL_SCRIPT"
+# --------------------------
+# SDDM Theme setup
+# --------------------------
+MONO_SDDM_REPO="https://github.com/pwyde/monochrome-kde.git"
+MONO_SDDM_TEMP="/tmp/monochrome-kde"
+MONO_THEME_NAME="monochrome"
+
+git clone --depth=1 "$MONO_SDDM_REPO" "$MONO_SDDM_TEMP"
+cp -r "$MONO_SDDM_TEMP/sddm/themes/$MONO_THEME_NAME" "/usr/share/sddm/themes/$MONO_THEME_NAME"
+chown -R root:root "/usr/share/sddm/themes/$MONO_THEME_NAME"
+mkdir -p /etc/sddm.conf.d
+echo -e "[Theme]\nCurrent=$MONO_THEME_NAME" > /etc/sddm.conf.d/10-theme.conf
+rm -rf "$MONO_SDDM_TEMP"
 
 # --------------------------
 # GPU detection and drivers
@@ -152,4 +157,4 @@ else
     echo "Warning: No supported GPU detected."
 fi
 
-print_success "✅ Full Hyprland + Pywal16 setup complete! Reboot recommended."
+print_success "✅ Full Hyprland setup complete! Reboot recommended."
