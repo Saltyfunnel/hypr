@@ -10,8 +10,10 @@ USER_HOME="/home/$USER_NAME"
 
 ASSETS_SRC="$SCRIPT_DIR/../assets"
 CONFIGS_SRC="$SCRIPT_DIR/../configs"
+SCRIPTS_SRC="$SCRIPT_DIR/../scripts"
 ASSETS_DEST="$USER_HOME/.config/assets"
 CONFIGS_DEST="$USER_HOME/.config"
+SCRIPTS_DEST="$USER_HOME/.config/scripts"
 
 # ------------------------
 # Helper functions
@@ -153,7 +155,18 @@ else
 fi
 
 # ------------------------
+# Step 8: Copy user scripts (themes-wallpaper.sh)
+# ------------------------
+if [[ -d "$SCRIPTS_SRC" ]]; then
+  run_command "mkdir -p \"$SCRIPTS_DEST\"" "Create scripts directory"
+  run_command "cp -r \"$SCRIPTS_SRC/\"* \"$SCRIPTS_DEST/\"" "Copy user scripts"
+  run_command "chown -R $USER_NAME:$USER_NAME \"$SCRIPTS_DEST\"" "Fix ownership of scripts"
+else
+  print_warning "No scripts folder found at $SCRIPTS_SRC"
+fi
+
+# ------------------------
 # Finish
 # ------------------------
 print_header "✅ Full setup complete!"
-echo "Reboot to start Hyprland with SDDM. Waypaper and Yazi are installed for wallpaper management."
+echo "Reboot to start Hyprland with SDDM. Waypaper, Yazi, and themes-wallpaper.sh are installed for wallpaper management."
