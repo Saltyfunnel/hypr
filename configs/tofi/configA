@@ -1,3 +1,7 @@
+# -------------------------
+# Tofi Config A (pywal-aware)
+# -------------------------
+
 width = 50%
 height = 40%
 border-width = 0
@@ -10,10 +14,10 @@ num-results = 10
 font = JetBrainsMono Nerd Font
 font-size = 12
 
-text-color = #f0f0f0
-
+# Use pywal colors with fallbacks
+text-color = ${WAL_COLOR_7:-#f0f0f0}
 prompt-text = " : "
 
-background-color = #1a1a1acc
-selection-color = #7d7c7cff
-selection-text-color = #000000
+background-color = ${WAL_COLOR_0:-#1a1a1acc}
+selection-color = ${WAL_COLOR_7:-#7d7c7cff}
+selection-text-color = ${WAL_COLOR_0:-#000000}
