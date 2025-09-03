@@ -144,7 +144,7 @@ else
 fi
 
 # ------------------------
-# Step X: Configure shell for Starship and Pywal
+# Step X: Configure shell for Starship Fastfetch and Pywal
 # ------------------------
 SHELL_RC="$USER_HOME/.bashrc"
 
@@ -157,6 +157,12 @@ fi
 if ! grep -q 'colors.sh' "$SHELL_RC"; then
   echo '[ -f $HOME/.cache/wal/colors.sh ] && source $HOME/.cache/wal/colors.sh' >> "$SHELL_RC"
 fi
+
+# Fastfetch
+if ! grep -q 'fastfetch' "$SHELL_RC"; then
+    echo 'if command -v fastfetch &>/dev/null; then fastfetch; fi' >> "$SHELL_RC"
+fi
+
 
 chown $USER_NAME:$USER_NAME "$SHELL_RC"
 
