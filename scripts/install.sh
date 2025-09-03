@@ -84,7 +84,7 @@ PACMAN_PACKAGES=(
   gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb
   polkit polkit-gnome
   waybar cliphist papirus-icon-theme
-  starship fastfetch swww hyprpicker hyprlock hypridle
+  starship fastfetch swww hyprpicker hyprlock hypridle hyprland
   firefox yazi
   grim slurp wl-clipboard jq
 )
