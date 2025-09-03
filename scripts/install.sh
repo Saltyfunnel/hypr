@@ -126,6 +126,7 @@ run_command "systemctl enable sddm.service" "Enable SDDM"
 # Step 5: Install AUR packages
 # ------------------------
 AUR_PACKAGES=(
+  tofi
   waypaper
   python-pywal
 )
