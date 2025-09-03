@@ -128,7 +128,7 @@ run_command "systemctl enable sddm.service" "Enable SDDM"
 AUR_PACKAGES=(
   tofi
   waypaper
-  python-pywal
+  matugen-bin
 )
 
 run_command "sudo -u $USER_NAME yay -S --noconfirm --sudoloop ${AUR_PACKAGES[*]}" "Install AUR packages"
