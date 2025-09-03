@@ -179,6 +179,20 @@ else
 fi
 
 # ------------------------
+# Step 7b: Copy Waypaper config
+# ------------------------
+WAYPAPER_CONFIG_SRC="$CONFIGS_SRC/waypaper/config.ini"
+WAYPAPER_CONFIG_DEST="$CONFIGS_DEST/waypaper/config.ini"
+
+if [[ -f "$WAYPAPER_CONFIG_SRC" ]]; then
+    run_command "mkdir -p \"$CONFIGS_DEST/waypaper\"" "Create Waypaper config directory"
+    run_command "cp \"$WAYPAPER_CONFIG_SRC\" \"$WAYPAPER_CONFIG_DEST\"" "Copy Waypaper config"
+    run_command "chown $USER_NAME:$USER_NAME \"$WAYPAPER_CONFIG_DEST\"" "Fix ownership of Waypaper config"
+else
+    print_warning "No Waypaper config found at $WAYPAPER_CONFIG_SRC"
+fi
+
+# ------------------------
 # Step 8: Copy user scripts (themes-wallpaper.sh)
 # ------------------------
 if [[ -d "$SCRIPTS_SRC" ]]; then
