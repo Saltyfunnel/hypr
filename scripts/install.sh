@@ -5,8 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USER_HOME="/home/${SUDO_USER:-$USER}"
 export SUDO_USER  # needed for helper functions
 
-source "$SCRIPT_DIR/helper.sh"
-
 check_root
 check_os
 
