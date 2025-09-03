@@ -1,44 +1,66 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Log for debugging
-LOG_FILE="/tmp/themes_wallpaper_debug.log"
-echo "Starting wallpaper theming script..." > "$LOG_FILE"
-
-# Directories
 WALL_DIR="$HOME/.config/assets/wallpapers"
+FASTFETCH_CONFIG="$HOME/.config/fastfetch/config.json"
+DUNST_CONFIG="$HOME/.config/dunst/dunstrc"
+WAYBAR_CONFIG="$HOME/.config/waybar/config"
+KITTY_CONFIG="$HOME/.config/kitty/kitty.conf"
+TOFI_CONFIG="$HOME/.config/tofi/configA"
 
-# Check that the wallpaper directory exists
-if [ ! -d "$WALL_DIR" ]; then
-    echo "Error: Wallpaper directory not found at $WALL_DIR" >> "$LOG_FILE"
+log() { echo -e "\033[0;34m[wallpaper-theme]\033[0m $1"; }
+
+log "Launching Waypaper interactive selection..."
+waypaper --folder "$WALL_DIR" fill
+
+# Get currently applied wallpaper path from Waypaper state file
+STATE_FILE="${HOME}/.config/waypaper/state.json"
+if [[ -f "$STATE_FILE" ]]; then
+    WALL=$(jq -r '.wallpaper' "$STATE_FILE")
+    log "Selected wallpaper: $WALL"
+else
+    log "Waypaper state file not found. Pywal theming skipped."
     exit 1
 fi
 
-# Launch Waypaper to pick a wallpaper
-SELECTED_WALL=$(waypaper --folder "$WALL_DIR" --backend swww --fill fit --no-post-command)
-
-if [ -z "$SELECTED_WALL" ]; then
-    echo "No wallpaper selected." >> "$LOG_FILE"
-    exit 1
+# Apply Pywal
+if command -v wal &>/dev/null; then
+    wal -i "$WALL" -q -n
+    log "Pywal colors generated"
+else
+    log "Pywal not installed, skipping theming"
 fi
 
-echo "Selected wallpaper: $SELECTED_WALL" >> "$LOG_FILE"
-
-# Apply wallpaper using swww
-if ! pgrep -x "swww-daemon" > /dev/null; then
-    echo "Starting swww-daemon..." >> "$LOG_FILE"
-    swww-daemon &
-    sleep 1
+# Theme Fastfetch
+if [[ -f "$FASTFETCH_CONFIG" && -f "$HOME/.cache/wal/colors.json" ]]; then
+    ACCENT=$(jq -r '.colors.color2' "$HOME/.cache/wal/colors.json")
+    jq --arg accent "$ACCENT" '(.modules[] | select(.keyColor) | .keyColor) |= $accent' \
+        "$FASTFETCH_CONFIG" > "$FASTFETCH_CONFIG.tmp" && mv "$FASTFETCH_CONFIG.tmp" "$FASTFETCH_CONFIG"
+    log "Fastfetch themed"
 fi
 
-swww img "$SELECTED_WALL" --transition-type grow --transition-duration 1 --transition-fps 60
-echo "Wallpaper applied with swww." >> "$LOG_FILE"
+# Theme Dunst
+if [[ -f "$DUNST_CONFIG" ]]; then
+    COLOR=$(xrdb -query | grep '*color2:' | awk '{print $2}' || echo "#ffffff")
+    sed -i "s/^frame_color = .*/frame_color = \"$COLOR\"/" "$DUNST_CONFIG"
+    pkill -USR1 dunst || true
+    log "Dunst themed"
+fi
 
-# Generate pywal colors
-wal -i "$SELECTED_WALL" -n
-echo "Pywal colors generated." >> "$LOG_FILE"
+# Restart Waybar
+systemctl --user restart waybar || log "Waybar restarted"
+log "Waybar themed"
 
-# Restart Waybar to apply colors
-pkill waybar && waybar &
-echo "Waybar restarted." >> "$LOG_FILE"
+# Theme Kitty
+if [[ -f "$KITTY_CONFIG" ]]; then
+    kitty @ set-colors --all --config-file "$KITTY_CONFIG" || true
+    log "Kitty themed"
+fi
 
-echo "Done!" >> "$LOG_FILE"
+# Reload Tofi
+if [[ -f "$TOFI_CONFIG" ]]; then
+    pkill -USR1 tofi || true
+    log "Tofi themed"
+fi
+
+log "Done!"
