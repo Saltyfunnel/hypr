@@ -59,7 +59,7 @@ check_os
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME=$(eval echo "~$USER_NAME")
 
-print_bold_blue "\n🚀 Starting Full Hyprland Setup"
+print_bold_blue "\n🚀 Starting Full Hyprland + Tofi Setup"
 echo "-------------------------------------"
 
 # ============================================================
@@ -69,8 +69,8 @@ print_header "Phase 1: Prerequisites Setup"
 
 run_command "pacman -Syyu --noconfirm" "Update system packages"
 
-# Install essential tools for building from source
-run_command "pacman -S --noconfirm --needed git base-devel rust cargo meson ninja" "Install essential build tools and Rust"
+# Install minimum required tools for AUR building
+run_command "pacman -S --noconfirm --needed git base-devel" "Install essential AUR build tools"
 
 # -------------------------------
 # Packages categorized
@@ -101,29 +101,30 @@ THEME_PACKAGES=(
   python-pywal
 )
 
-# Merge all packages (rofi and wofi have been removed)
 PACKAGES=("${CORE_PACKAGES[@]}" "${FONT_PACKAGES[@]}" "${FILE_PACKAGES[@]}" "${THEME_PACKAGES[@]}")
 
 run_command "pacman -S --noconfirm ${PACKAGES[*]}" "Install system packages"
 
 # ============================================================
-#             Phase 1b: Build and Install Tofi from Source
+#             Phase 1b: Install Tofi via AUR
 # ============================================================
-print_header "Phase 1b: Building and Installing tofi from Source"
-TOFI_BUILD_DIR=$(mktemp -d)
+print_header "Phase 1b: Installing Tofi from AUR"
 
-run_command "sudo -u '$USER_NAME' git clone https://github.com/Tofide/tofi.git '$TOFI_BUILD_DIR'" "Cloning tofi from GitHub"
-run_command "cd '$TOFI_BUILD_DIR' && sudo -u '$USER_NAME' meson setup build --prefix=/usr" "Configuring build with meson"
-run_command "cd '$TOFI_BUILD_DIR' && sudo -u '$USER_NAME' ninja -C build" "Compiling tofi"
-run_command "cd '$TOFI_BUILD_DIR' && ninja -C build install" "Installing tofi (requires root)"
-run_command "rm -rf '$TOFI_BUILD_DIR'" "Cleaning up temporary build directory"
+# Install yay if missing
+if ! command -v yay &>/dev/null; then
+    print_info "yay not found. Installing yay..."
+    run_command "sudo -u '$USER_NAME' git clone https://aur.archlinux.org/yay.git /tmp/yay && cd /tmp/yay && makepkg -si --noconfirm" "Install yay AUR helper"
+fi
+
+# Install tofi using yay
+run_command "sudo -u '$USER_NAME' yay -S --noconfirm tofi" "Install tofi from AUR"
 
 # Enable services
 run_command "systemctl enable --now polkit.service" "Enable and start polkit daemon"
 run_command "systemctl enable sddm.service" "Enable SDDM display manager"
 
 # ============================================================
-#             Phase 2: Copy Configs
+#             Phase 2: Copy Configurations
 # ============================================================
 print_header "Phase 2: Copying Configurations"
 
@@ -144,23 +145,22 @@ copy_as_user() {
   chown -R "$USER_NAME:$USER_NAME" "$dest"
 }
 
-# Copy all relevant configs
+# Copy Hyprland ecosystem configs
 copy_as_user "$REPO_DIR/configs/hypr" "$CONFIG_DIR/hypr"
 copy_as_user "$REPO_DIR/configs/waybar" "$CONFIG_DIR/waybar"
 copy_as_user "$REPO_DIR/configs/fastfetch" "$CONFIG_DIR/fastfetch"
-# NOTE: Removed rofi config copy
 copy_as_user "$REPO_DIR/configs/dunst" "$CONFIG_DIR/dunst"
 copy_as_user "$REPO_DIR/configs/kitty" "$CONFIG_DIR/kitty"
+
+# Copy wallpapers
 copy_as_user "$ASSETS_SRC/wallpapers" "$ASSETS_DEST/wallpapers"
 
-# You may also need to copy tofi's configuration if you have one.
-# For example:
-# copy_as_user "$REPO_DIR/configs/tofi" "$CONFIG_DIR/tofi"
+# Copy Tofi configuration
+copy_as_user "$REPO_DIR/configs/tofi" "$CONFIG_DIR/tofi"
 
 # ============================================================
 #             Phase 2b: Shell Enhancements
 # ============================================================
-# Fastfetch in shells (only config)
 for rc_file in ".bashrc" ".zshrc"; do
     RC_PATH="$USER_HOME/$rc_file"
     if [ ! -f "$RC_PATH" ]; then
@@ -171,7 +171,7 @@ for rc_file in ".bashrc" ".zshrc"; do
     fi
 done
 
-# Starship prompt
+# Starship config
 STARSHIP_SRC="$REPO_DIR/configs/starship/starship.toml"
 STARSHIP_DEST="$CONFIG_DIR/starship.toml"
 if [ -f "$STARSHIP_SRC" ]; then
@@ -179,6 +179,7 @@ if [ -f "$STARSHIP_SRC" ]; then
     chown "$USER_NAME:$USER_NAME" "$STARSHIP_DEST"
 fi
 
+# Add Starship prompt to shells
 for rc_pair in ".bashrc:bash" ".zshrc:zsh"; do
     shell_rc="${rc_pair%%:*}"
     shell_name="${rc_pair##*:}"
