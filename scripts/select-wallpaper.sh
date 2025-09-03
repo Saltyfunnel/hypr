@@ -1,8 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
+# -----------------------------
+# User and environment
+# -----------------------------
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME=$(eval echo "~$USER_NAME")
+
+# Ensure Wayland session environment
+export XDG_RUNTIME_DIR="/run/user/$(id -u $USER_NAME)"
+export WAYLAND_DISPLAY="wayland-0"
 
 CONFIG_DIR="$USER_HOME/.config"
 WALLPAPERS_DIR="$CONFIG_DIR/assets/wallpapers"
@@ -11,24 +18,19 @@ TOFI_CONFIG_V="$CONFIG_DIR/tofi/configV"
 KITTY_CONFIG="$CONFIG_DIR/kitty/colors.conf"
 STARSHIP_CONFIG="$CONFIG_DIR/starship.toml"
 
+# -----------------------------
+# Logging functions
+# -----------------------------
 print_info()    { echo -e "\033[0;34m[I]\033[0m $1"; }
 print_success() { echo -e "\033[0;32m[S]\033[0m $1"; }
 print_warning() { echo -e "\033[0;33m[W]\033[0m $1"; }
 print_error()   { echo -e "\033[0;31m[E]\033[0m $1"; }
 
-# ============================================================
-# Step 0: Verify wallpapers exist
-# ============================================================
-if [[ ! -d "$WALLPAPERS_DIR" ]] || [[ -z "$(ls -A "$WALLPAPERS_DIR" 2>/dev/null)" ]]; then
-    print_error "No wallpapers found in $WALLPAPERS_DIR."
-    exit 1
-fi
-
-# ============================================================
-# Step 1: Select wallpaper using Tofi
-# ============================================================
+# -----------------------------
+# Step 1: Select wallpaper
+# -----------------------------
 print_info "Selecting wallpaper via Tofi..."
-WALL_NAME=$(ls "$WALLPAPERS_DIR" | sudo -u "$USER_NAME" tofi -c "$TOFI_CONFIG" --prompt-text "Select Wallpaper: ")
+WALL_NAME=$(ls "$WALLPAPERS_DIR" | tofi -c "$TOFI_CONFIG" --prompt-text "Select Wallpaper:")
 
 if [[ -z "$WALL_NAME" ]]; then
     print_error "No wallpaper selected. Exiting."
@@ -38,71 +40,60 @@ fi
 WALL_PATH="$WALLPAPERS_DIR/$WALL_NAME"
 print_success "Selected wallpaper: $WALL_PATH"
 
-# ============================================================
-# Step 2: Set wallpaper with swww
-# ============================================================
+# -----------------------------
+# Step 2: Set wallpaper via swww
+# -----------------------------
 print_info "Setting wallpaper via swww..."
-sudo -u "$USER_NAME" swww img "$WALL_PATH" \
-    --transition-fps 255 \
-    --transition-type outer \
-    --transition-duration 0.8
+swww img "$WALL_PATH" --transition-fps 255 --transition-type outer --transition-duration 0.8
 print_success "Wallpaper applied."
 
-# ============================================================
-# Step 3: Generate Pywal palette
-# ============================================================
+# -----------------------------
+# Step 3: Generate Pywal colors
+# -----------------------------
 print_info "Generating Pywal colors..."
-sudo -u "$USER_NAME" wal -i "$WALL_PATH" --backend wal
+wal -i "$WALL_PATH" --backend wal
 print_success "Pywal colors applied."
 
-# ============================================================
+# -----------------------------
 # Step 4: Update Kitty config
-# ============================================================
+# -----------------------------
 if [[ -f "$KITTY_CONFIG" ]]; then
-    print_info "Updating Kitty config using Pywal template..."
-    sudo -u "$USER_NAME" wal -o "$KITTY_CONFIG"
-    chown "$USER_NAME:$USER_NAME" "$KITTY_CONFIG"
-    print_success "Kitty config updated."
-else
-    print_warning "Kitty config file not found: $KITTY_CONFIG"
+    WAL_COLORS="$USER_HOME/.cache/wal/colors.sh"
+    if [[ -f "$WAL_COLORS" ]]; then
+        awk -F= '/^color/ {gsub(/"/,"",$2); printf "color%s %s\n", substr($1,6), $2}' "$WAL_COLORS" > "$KITTY_CONFIG"
+        chown "$USER_NAME:$USER_NAME" "$KITTY_CONFIG"
+        print_success "Kitty config updated."
+    else
+        print_warning "Pywal colors.sh not found. Kitty will not be themed."
+    fi
 fi
 
-# ============================================================
-# Step 5: Update Tofi configs with Pywal colors
-# ============================================================
+# -----------------------------
+# Step 5: Update Tofi configs
+# -----------------------------
 WAL_CSS="$USER_HOME/.cache/wal/colors.css"
+BACKGROUND=$(awk -F: '/background/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CSS" | head -1)
+FOREGROUND=$(awk -F: '/foreground/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CSS" | head -1)
+COLOR_ACCENT=$(awk -F: '/color1/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CSS" | head -1)
 
-if [[ ! -f "$WAL_CSS" ]]; then
-    print_warning "Pywal colors.css not found. Skipping Tofi theming."
-else
-    BACKGROUND=$(awk -F: '/background/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CSS" | head -1)
-    FOREGROUND=$(awk -F: '/foreground/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CSS" | head -1)
-    COLOR_ACCENT=$(awk -F: '/color1/ {gsub(/[ ;]/,"",$2); print $2}' "$WAL_CSS" | head -1)
+BACKGROUND=${BACKGROUND:-"#222222"}
+FOREGROUND=${FOREGROUND:-"#eeeeee"}
+COLOR_ACCENT=${COLOR_ACCENT:-"#ff5555"}
 
-    BACKGROUND=${BACKGROUND:-"#222222"}
-    FOREGROUND=${FOREGROUND:-"#eeeeee"}
-    COLOR_ACCENT=${COLOR_ACCENT:-"#ff5555"}
+for TOFI_FILE in "$TOFI_CONFIG" "$TOFI_CONFIG_V"; do
+    if [[ -f "$TOFI_FILE" ]]; then
+        sed -i \
+            -e "s|^background-color = .*|background-color = $BACKGROUND|" \
+            -e "s|^text-color = .*|text-color = $FOREGROUND|" \
+            -e "s|^selection-color = .*|selection-color = $COLOR_ACCENT|" \
+            "$TOFI_FILE"
+        print_success "Updated Tofi config: $TOFI_FILE"
+    fi
+done
 
-    for TOFI_FILE in "$TOFI_CONFIG" "$TOFI_CONFIG_V"; do
-        if [[ -f "$TOFI_FILE" ]]; then
-            sed -i \
-                -e "s|^background-color = .*|background-color = $BACKGROUND|" \
-                -e "s|^text-color = .*|text-color = $FOREGROUND|" \
-                -e "s|^selection-color = .*|selection-color = $COLOR_ACCENT|" \
-                "$TOFI_FILE" || true
-            print_success "Updated Tofi config: $TOFI_FILE"
-        fi
-    done
-fi
-
-# ============================================================
-# Step 6: Update Starship prompt
-# ============================================================
-if [[ -f "$STARSHIP_CONFIG" ]]; then
-    cp "$STARSHIP_CONFIG" "$STARSHIP_CONFIG.bak"
-    print_info "Backup of old Starship config saved to $STARSHIP_CONFIG.bak"
-fi
-
+# -----------------------------
+# Step 6: Update Starship
+# -----------------------------
 cat > "$STARSHIP_CONFIG" <<EOF
 # Auto-generated by select-wallpaper.sh
 
@@ -125,7 +116,4 @@ EOF
 chown "$USER_NAME:$USER_NAME" "$STARSHIP_CONFIG"
 print_success "Starship configured with Pywal colors."
 
-# ============================================================
-# Done
-# ============================================================
 print_success "Wallpaper selection and theming complete!"
