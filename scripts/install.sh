@@ -108,7 +108,7 @@ fi
 # Step 4: Install pacman packages
 # ------------------------
 PACMAN_PACKAGES=(
-  hyprland waybar swww starship firefox cliphist thunar kitty yazi
+  hyprland waybar swww starship firefox cliphist thunar kitty yazi fastfetch
   thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
   gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb polkit polkit-gnome nano tar code mpv dunst
   ttf-cascadia-code-nerd ttf-cascadia-mono-nerd ttf-fira-code ttf-fira-mono ttf-fira-sans
