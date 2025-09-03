@@ -144,6 +144,24 @@ else
 fi
 
 # ------------------------
+# Step X: Configure shell for Starship and Pywal
+# ------------------------
+SHELL_RC="$USER_HOME/.bashrc"
+
+# Starship
+if ! grep -q 'starship init' "$SHELL_RC"; then
+  echo 'eval "$(starship init bash)"' >> "$SHELL_RC"
+fi
+
+# Pywal
+if ! grep -q 'colors.sh' "$SHELL_RC"; then
+  echo '[ -f $HOME/.cache/wal/colors.sh ] && source $HOME/.cache/wal/colors.sh' >> "$SHELL_RC"
+fi
+
+chown $USER_NAME:$USER_NAME "$SHELL_RC"
+
+
+# ------------------------
 # Step 7: Copy configs
 # ------------------------
 if [[ -d "$CONFIGS_SRC" ]]; then
