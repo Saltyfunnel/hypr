@@ -14,6 +14,7 @@
   "modules-center": ["hyprland/window"],
   "modules-right": [
     "custom/spotify",
+    "custom/updates",
     "memory",
     "cpu",
     "network",
