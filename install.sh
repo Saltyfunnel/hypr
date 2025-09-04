@@ -87,7 +87,7 @@ install_yay() {
 install_pacman_packages() {
     print_header "Installing Pacman packages"
 
-    PACMAN_PACKAGES=(
+PACMAN_PACKAGES=(
     hyprland dunst grim htop iwd kitty nano openssh polkit polkit-kde-agent
     qt5-wayland qt6-wayland slurp smartmontools wget rofi wpa_supplicant
     xdg-desktop-portal-hyprland xdg-utils lite-xl firefox thunar gvfs
