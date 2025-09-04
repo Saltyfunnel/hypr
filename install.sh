@@ -13,11 +13,9 @@ print_error()     { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 run_command() {
     local cmd="$1"
     local desc="$2"
-
     if [[ "$CONFIRMATION" == "yes" ]]; then
-        read -p "Proceed with: $desc? (Press Enter to continue or Ctrl+C to abort) "
+        read -p "Proceed with: $desc? (Enter to continue, Ctrl+C to abort) "
     fi
-
     echo -e "\nRunning: $desc"
     if ! eval "$cmd"; then
         print_error "Failed: $desc"
@@ -29,12 +27,10 @@ copy_configs() {
     local src="$1"
     local dest="$2"
     local name="$3"
-
     if [[ ! -d "$src" ]]; then
-        print_warning "Skipping $name - source folder missing: $src"
+        print_warning "Skipping $name - source missing: $src"
         return
     fi
-
     sudo -u "$USER_NAME" mkdir -p "$dest"
     sudo -u "$USER_NAME" cp -rf "$src/." "$dest/"
     print_success "✅ $name config copied to $dest"
@@ -49,7 +45,7 @@ USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
 CONFIRMATION="yes" # default interactive mode
 
-# Check for --noconfirm flag
+# Check for --noconfirm
 if [[ $# -eq 1 && "$1" == "--noconfirm" ]]; then
     CONFIRMATION="no"
 elif [[ $# -gt 0 ]]; then
@@ -60,15 +56,10 @@ fi
 # =====================================
 # Pre-run Checks
 # =====================================
-if [[ "$EUID" -ne 0 ]]; then
-    print_error "This script must be run as root. Try: sudo $0"
-fi
-
-print_header "Checking Environment"
-
+[[ "$EUID" -eq 0 ]] || print_error "This script must be run as root (sudo $0)"
 [[ -d "$SCRIPT_DIR/configs" ]] || print_error "Missing configs folder at $SCRIPT_DIR/configs"
-command -v git &>/dev/null || print_error "git not installed. Install with: sudo pacman -S git"
-command -v curl &>/dev/null || print_error "curl not installed. Install with: sudo pacman -S curl"
+command -v git &>/dev/null || print_error "git not installed. Install: sudo pacman -S git"
+command -v curl &>/dev/null || print_error "curl not installed. Install: sudo pacman -S curl"
 
 print_success "✅ Environment checks passed"
 
@@ -82,7 +73,6 @@ run_command "pacman -Syyu --noconfirm" "System package update"
 # GPU Driver Installation
 # =====================================
 print_header "Detecting and Installing GPU Drivers"
-
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
 
 if echo "$GPU_INFO" | grep -qi "nvidia"; then
@@ -99,20 +89,18 @@ else
 fi
 
 # =====================================
-# Install Core Pacman Packages
+# Core Pacman Packages
 # =====================================
 print_header "Installing Core Packages"
-
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano rofi wget jq
     sddm polkit polkit-kde-agent
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2
-    thunar-archive-plugin thunar-volman ffmpegthumbnailer file-roller tumbler
+    thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     lite-xl firefox yazi fastfetch mpv
     qt5-wayland qt6-wayland
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
-
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Core package installation"
 
 # Enable essential services
@@ -122,15 +110,14 @@ run_command "systemctl enable sddm.service" "Enable SDDM"
 # =====================================
 # Install Yay (AUR Helper)
 # =====================================
-print_header "Installing yay (AUR Helper)"
-
+print_header "Installing yay"
 if command -v yay &>/dev/null; then
-    print_success "Yay is already installed"
+    print_success "Yay already installed"
 else
     run_command "pacman -S --noconfirm --needed git base-devel" "Install git and base-devel"
     run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay repository"
     run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
-    run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay as user"
+    run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
     run_command "rm -rf /tmp/yay" "Clean up temporary yay files"
 fi
 
@@ -138,22 +125,36 @@ fi
 # Install AUR Packages
 # =====================================
 print_header "Installing AUR Packages"
-AUR_PACKAGES=( python-pywalfox )
+AUR_PACKAGES=( python-pywal16 python-pywalfox )
 
 if [[ ${#AUR_PACKAGES[@]} -gt 0 ]]; then
     run_command "sudo -u $USER_NAME yay -S --noconfirm --sudoloop ${AUR_PACKAGES[*]}" "AUR package installation"
 fi
 
+
 # =====================================
 # Copy Configuration Files
 # =====================================
 print_header "Copying Configurations"
-
 copy_configs "$SCRIPT_DIR/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
 copy_configs "$SCRIPT_DIR/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
+
+# =====================================
+# Setup Pywal16 Wallpaper Keybind (Optional)
+# =====================================
+print_header "Setting up Pywal16 Wallpaper + Colors"
+WALLPAPER_DIR="$USER_HOME/Pictures/Wallpapers"
+DEFAULT_WALLPAPER="$WALLPAPER_DIR/cats.png"
+if [[ -f "$DEFAULT_WALLPAPER" ]]; then
+    print_success "You can now run as user:"
+    echo "wal -i \"$DEFAULT_WALLPAPER\""
+    echo "Then add 'source = ~/.cache/wal/colors-hyprland.conf' to your hyprland.conf"
+else
+    print_warning "Default wallpaper not found: $DEFAULT_WALLPAPER"
+fi
 
 # =====================================
 # Final Message
 # =====================================
 print_header "Setup Complete!"
-print_success "🎉 Reboot and log in via SDDM to start using Hyprland with your custom configs."
+print_success "🎉 Reboot and log in via SDDM to start using Hyprland with your configs."
