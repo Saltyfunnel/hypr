@@ -139,6 +139,16 @@ print_header "Copying Configurations"
 copy_configs "$SCRIPT_DIR/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
 copy_configs "$SCRIPT_DIR/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
 
+# Copy default wallpaper
+WALLPAPER_SRC="$SCRIPT_DIR/assets/wallpapers/cats.png"
+WALLPAPER_DEST="$USER_HOME/Pictures/Wallpapers/cats.png"
+
+sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures/Wallpapers"
+sudo -u "$USER_NAME" cp -f "$WALLPAPER_SRC" "$WALLPAPER_DEST"
+
+print_success "✅ Default wallpaper copied to $WALLPAPER_DEST"
+
+
 # =====================================
 # Setup Pywal16 Wallpaper Keybind (Optional)
 # =====================================
