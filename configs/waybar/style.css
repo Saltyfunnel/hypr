@@ -1,10 +1,20 @@
 * {
-    font-family: monospace;
-    font-size: 12px;
+    font-family: JetBrainsMono, sans-serif;
+    font-size: 14px;
     color: #ffffff;
-    background: #222222;
 }
 
-#clock {
-    padding: 0 10px;
+window#waybar {
+    background-color: #000000;
+    border-bottom: 2px solid #5FCFF9;
 }
+
+#workspaces button {
+    padding: 0 10px;
+    color: #30C4FA;
+}
+
+#network { color: #18C1FD; }
+#battery { color: #25B3EC; }
+#pulseaudio { color: #18C1FD; }
+#clock { color: #30C4FA; }

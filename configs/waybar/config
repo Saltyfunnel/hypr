@@ -1,7 +1,30 @@
 {
-    "layer": "top",
-    "position": "top",
-    "modules-left": ["sway/workspaces", "sway/mode"],
-    "modules-center": ["clock"],
-    "modules-right": ["pulseaudio", "battery", "network"]
+  "layer": "top",
+  "position": "top",
+  "modules-left": ["hyprland/workspaces", "network"],
+  "modules-center": ["clock"],
+  "modules-right": ["pulseaudio", "battery", "cpu", "memory"],
+
+  "clock": {
+    "format": "🕒 {:%a %b %d %H:%M}"
+  },
+  "network": {
+    "format-wifi": " {essid} ({signalStrength}%)",
+    "format-ethernet": " {ipaddr}"
+  },
+  "pulseaudio": {
+    "format": " {volume}%",
+    "format-muted": " muted"
+  },
+  "battery": {
+    "format": "{capacity}% {icon}",
+    "format-icons": ["", "", "", "", ""]
+  },
+  "cpu": {
+    "format": " {usage}%"
+  },
+  "memory": {
+    "format": " {used}/{total}MB"
+  }
 }
+
