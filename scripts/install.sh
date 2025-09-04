@@ -41,8 +41,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
-CACHE_DIR="$USER_HOME/.cache/wal"
-COLORS_FILE="$CACHE_DIR/colors-hyprland.conf"
 
 # =====================================
 # Pre-run Checks
@@ -147,22 +145,33 @@ sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
-# Create minimal default colors-hyprland.conf if missing
+# Setup Default Hyprland Colors
 # =====================================
-print_header "Creating default Hyprland colors"
-sudo -u "$USER_NAME" mkdir -p "$CACHE_DIR"
-if [[ ! -f "$COLORS_FILE" ]]; then
-    sudo -u "$USER_NAME" tee "$COLORS_FILE" >/dev/null <<'EOF'
-col.background = rgba(000000ff)
-col.foreground = rgba(ffffffff)
-col.active_border = rgba(ff0000ff)
-col.inactive_border = rgba(888888aa)
-col.group_border_active = rgba(00ff00ff)
-col.group_border_inactive = rgba(888888aa)
-EOF
-    print_success "✅ Default colors-hyprland.conf created at $COLORS_FILE"
+print_header "Setting Up Default Hyprland Colors"
+
+DEFAULT_COLORS="$REPO_ROOT/scripts/colors-hyprland.conf"
+USER_COLORS="$USER_HOME/.cache/wal/colors-hyprland.conf"
+
+sudo -u "$USER_NAME" mkdir -p "$(dirname "$USER_COLORS")"
+
+if [[ ! -f "$USER_COLORS" ]]; then
+    sudo -u "$USER_NAME" cp "$DEFAULT_COLORS" "$USER_COLORS"
+    print_success "✅ Default colors file copied to $USER_COLORS"
 else
-    print_success "✅ colors-hyprland.conf already exists"
+    print_warning "Colors file already exists, skipping copy"
+fi
+
+# =====================================
+# Pywal / Wallpaper Info
+# =====================================
+print_header "Setup Pywal16 Wallpaper + Colors"
+DEFAULT_WALLPAPER="$WALLPAPER_DEST_DIR/cats.png"
+if [[ -f "$DEFAULT_WALLPAPER" ]]; then
+    print_success "You can now run as user:"
+    echo "wal -i \"$DEFAULT_WALLPAPER\""
+    echo "Then Hyprland will source: ~/.cache/wal/colors-hyprland.conf"
+else
+    print_warning "Default wallpaper not found: $DEFAULT_WALLPAPER"
 fi
 
 # =====================================
@@ -170,4 +179,3 @@ fi
 # =====================================
 print_header "Setup Complete!"
 print_success "🎉 Reboot and log in via SDDM to start using Hyprland with your configs."
-print_success "You can now use '~/.local/bin/setwallpaper.sh' to choose wallpapers and update Hyprland + Waybar colors."
