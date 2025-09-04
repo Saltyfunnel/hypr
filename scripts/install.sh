@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland Setup Script for Arch Linux
+# Hyprland Setup Script for Arch Linux (Non-interactive)
 set -euo pipefail
 
 # =====================================
@@ -13,9 +13,6 @@ print_error()     { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 run_command() {
     local cmd="$1"
     local desc="$2"
-    if [[ "$CONFIRMATION" == "yes" ]]; then
-        read -p "Proceed with: $desc? (Enter to continue, Ctrl+C to abort) "
-    fi
     echo -e "\nRunning: $desc"
     if ! eval "$cmd"; then
         print_error "Failed: $desc"
@@ -44,15 +41,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
-CONFIRMATION="yes"
-
-# Check for --noconfirm
-if [[ $# -eq 1 && "$1" == "--noconfirm" ]]; then
-    CONFIRMATION="no"
-elif [[ $# -gt 0 ]]; then
-    echo "Usage: $0 [--noconfirm]"
-    exit 1
-fi
+CONFIRMATION="no"  # fully non-interactive
 
 # =====================================
 # Pre-run Checks
@@ -129,7 +118,7 @@ print_header "Installing AUR Packages"
 AUR_PACKAGES=( python-pywal16 python-pywalfox )
 
 if [[ ${#AUR_PACKAGES[@]} -gt 0 ]]; then
-    run_command "sudo -u $USER_NAME yay -S --noconfirm --sudoloop ${AUR_PACKAGES[*]}" "AUR package installation"
+    run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 fi
 
 # =====================================
@@ -139,20 +128,18 @@ print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
 copy_configs "$REPO_ROOT/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
 
-# Copy default wallpaper
-WALLPAPER_SRC="$REPO_ROOT/assets/wallpapers/cats.png"
-WALLPAPER_DEST="$USER_HOME/Pictures/Wallpapers/cats.png"
-
-sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures/Wallpapers"
-sudo -u "$USER_NAME" cp -f "$WALLPAPER_SRC" "$WALLPAPER_DEST"
-print_success "✅ Default wallpaper copied to $WALLPAPER_DEST"
+# Copy all wallpapers
+WALLPAPER_SRC_DIR="$REPO_ROOT/assets/wallpapers"
+WALLPAPER_DEST_DIR="$USER_HOME/Pictures/Wallpapers"
+sudo -u "$USER_NAME" mkdir -p "$WALLPAPER_DEST_DIR"
+sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
+print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
 # Pywal16 / Wallpaper Info
 # =====================================
 print_header "Setup Pywal16 Wallpaper + Colors"
-WALLPAPER_DIR="$USER_HOME/Pictures/Wallpapers"
-DEFAULT_WALLPAPER="$WALLPAPER_DIR/cats.png"
+DEFAULT_WALLPAPER="$WALLPAPER_DEST_DIR/cats.png"
 if [[ -f "$DEFAULT_WALLPAPER" ]]; then
     print_success "You can now run as user:"
     echo "wal -i \"$DEFAULT_WALLPAPER\""
