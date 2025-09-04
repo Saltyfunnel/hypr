@@ -9,147 +9,150 @@ USER_NAME="${SUDO_USER:-$USER}"
 # ------------------------
 # Helper functions
 # ------------------------
-print_info()    { echo -e "\033[0;34m$1\033[0m"; }
-print_success() { echo -e "\033[0;32m$1\033[0m"; }
-print_warning() { echo -e "\033[0;33m$1\033[0m"; }
-print_error()   { echo -e "\033[0;31m$1\033[0m"; }
-print_header()  { echo -e "\n\033[1;34m==> $1\033[0m"; }
+print_info()    { printf "\033[0;34m%s\033[0m\n" "$1"; }
+print_success() { printf "\033[0;32m%s\033[0m\n" "$1"; }
+print_warning() { printf "\033[0;33m%s\033[0m\n" "$1"; }
+print_error()   { printf "\033[0;31m%s\033[0m\n" "$1"; }
+print_header()  { printf "\n\033[1;34m==> %s\033[0m\n" "$1"; }
 
 check_root() {
-    if [[ "$EUID" -ne 0 ]]; then
-        print_error "Please run this script as root."
-        exit 1
-    fi
+    if [[ "$EUID" -ne 0 ]]; then
+        print_error "This script must be run as root."
+        exit 1
+    fi
 }
 
 check_os() {
-    if [[ -f /etc/os-release ]]; then
-        . /etc/os-release
-        if [[ "$ID" != "arch" ]]; then
-            print_warning "This script is designed for Arch Linux. Detected: $PRETTY_NAME"
-        else
-            print_success "Arch Linux detected. Proceeding."
-        fi
-    else
-        print_warning "/etc/os-release not found. Cannot determine OS."
-    fi
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        if [[ "$ID" == "arch" ]]; then
+            print_success "Arch Linux detected. Proceeding..."
+        else
+            print_warning "This script is intended for Arch Linux. Detected: $PRETTY_NAME"
+        fi
+    else
+        print_warning "/etc/os-release not found. Unable to verify OS."
+    fi
 }
 
 run_command() {
-    local cmd="$1"
-    local description="$2"
+    local cmd="$1"
+    local description="$2"
 
-    print_info "Running: $cmd"
-    if ! eval "$cmd"; then
-        print_error "Failed: $description"
-        exit 1
-    else
-        print_success "$description completed successfully."
-    fi
+    print_info "Running: $description"
+    if ! eval "$cmd"; then
+        print_error "Failed to complete: $description"
+        exit 1
+    fi
+    print_success "Completed: $description"
 }
 
-# ------------------------
-# Install functions
-# ------------------------
-install_base_system() {
-    print_header "Updating system"
-    run_command "pacman -Syyu --noconfirm" "System package update"
+---
+
+## Installation Functions
+
+```bash
+install_pacman_packages() {
+    print_header "Installing core Pacman packages..."
+    local packages=(
+        hyprland waybar dunst grim htop iwd kitty nano openssh polkit polkit-kde-agent
+        qt5-wayland qt6-wayland slurp smartmontools wget rofi wpa_supplicant
+        xdg-desktop-portal-hyprland xdg-utils lite-xl firefox thunar gvfs
+        gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 lxappearance
+        thunar-archive-plugin thunar-volman ffmpegthumbnailer file-roller tumbler
+        python-pywal python-gobject gtk3 sddm yazi fastfetch mpv
+    )
+    run_command "pacman -S --noconfirm --needed ${packages[*]}" "Pacman package installation"
+
+    print_header "Enabling system services..."
+    run_command "systemctl enable --now polkit.service" "Enable polkit"
+    run_command "systemctl enable sddm.service" "Enable SDDM"
 }
 
 install_gpu_drivers() {
-    print_header "Detecting GPU and installing drivers"
-    GPU_INFO=$(lspci | grep -Ei "VGA|3D")
+    print_header "Detecting GPU and installing drivers..."
+    local gpu_info
+    if ! gpu_info=$(lspci | grep -Ei "VGA|3D"); then
+        print_warning "Could not detect GPU. Skipping driver installation."
+        return
+    fi
 
-    if echo "$GPU_INFO" | grep -qi "nvidia"; then
-        run_command "pacman -S --noconfirm nvidia nvidia-utils nvidia-settings" "Install NVIDIA drivers"
-    elif echo "$GPU_INFO" | grep -qi "amd"; then
-        run_command "pacman -S --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau" "Install AMD drivers"
-    elif echo "$GPU_INFO" | grep -qi "intel"; then
-        run_command "pacman -S --noconfirm mesa libva-intel-driver intel-media-driver vulkan-intel" "Install Intel drivers"
-    else
-        print_warning "No supported GPU detected. Skipping GPU driver installation."
-    fi
+    if echo "$gpu_info" | grep -qi "nvidia"; then
+        run_command "pacman -S --noconfirm nvidia nvidia-utils nvidia-settings" "NVIDIA drivers"
+    elif echo "$gpu_info" | grep -qi "amd"; then
+        run_command "pacman -S --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau" "AMD drivers"
+    elif echo "$gpu_info" | grep -qi "intel"; then
+        run_command "pacman -S --noconfirm mesa libva-intel-driver intel-media-driver vulkan-intel" "Intel drivers"
+    else
+        print_warning "No supported GPU detected. Skipping driver installation."
+    fi
 }
 
 install_yay() {
-    print_header "Installing yay (AUR helper)"
-    if ! command -v yay &>/dev/null; then
-        run_command "pacman -S --noconfirm --needed git base-devel" "Install git and base-devel"
-        run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay repository"
-        run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Fix permissions"
-        run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
-        run_command "rm -rf /tmp/yay" "Clean up yay directory"
-    else
-        print_success "Yay is already installed."
-    fi
-}
+    print_header "Installing yay (AUR helper)..."
+    if command -v yay &>/dev/null; then
+        print_success "Yay is already installed."
+        return
+    fi
 
-install_pacman_packages() {
-    print_header "Installing Pacman packages"
-
-    PACMAN_PACKAGES=(
-        hyprland waybar dunst grim htop iwd kitty nano openssh polkit polkit-kde-agent
-        qt5-wayland qt6-wayland slurp smartmontools wget rofi wpa_supplicant
-        xdg-desktop-portal-hyprland xdg-utils lite-xl firefox thunar gvfs
-        gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 lxappearance
-        thunar-archive-plugin thunar-volman ffmpegthumbnailer file-roller tumbler
-        python-pywal python-gobject gtk3 sddm yazi fastfetch mpv
-    )
-
-    run_command "pacman -S --noconfirm ${PACMAN_PACKAGES[*]}" "Install core system packages"
-
-    # Enable services
-    run_command "systemctl enable --now polkit.service" "Enable polkit"
-    run_command "systemctl enable sddm.service" "Enable SDDM"
+    run_command "pacman -S --noconfirm --needed git base-devel" "Install git and base-devel"
+    run_command "git clone [https://aur.archlinux.org/yay.git](https://aur.archlinux.org/yay.git) /tmp/yay" "Clone yay repository"
+    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
+    run_command "sudo -u $USER_NAME makepkg -si --noconfirm --needed" "Build and install yay as user"
+    run_command "rm -rf /tmp/yay" "Clean up"
 }
 
 install_aur_packages() {
-    print_header "Installing AUR packages"
-
-    AUR_PACKAGES=(
-        yay python-pywalfox
-    )
-
-    run_command "sudo -u $USER_NAME yay -S --noconfirm --sudoloop ${AUR_PACKAGES[*]}" "Install AUR packages"
+    print_header "Installing AUR packages..."
+    local packages=(
+        python-pywalfox
+    )
+    if [[ ${#packages[@]} -gt 0 ]]; then
+        run_command "sudo -u $USER_NAME yay -S --noconfirm --sudoloop ${packages[*]}" "AUR package installation"
+    fi
 }
 
-copy_hyprland_conf() {
-    print_header "Copying Hyprland main config"
+---
 
-    SOURCE_FILE="./configs/hypr/hyprland.conf"
-    DEST_DIR="/home/$USER_NAME/.config/hypr"
+## Configuration Functions
 
-    if [[ ! -f "$SOURCE_FILE" ]]; then
-        print_warning "Source file $SOURCE_FILE does not exist. Skipping."
-        return
-    fi
+```bash
+copy_configs() {
+    print_header "Copying configuration files..."
+    local source_dir="./configs"
+    local dest_dir="/home/$USER_NAME/.config"
 
-    mkdir -p "$DEST_DIR"
+    if [[ ! -d "$source_dir" ]]; then
+        print_warning "Source config directory '$source_dir' not found. Skipping configuration."
+        return
+    fi
 
-    # Copy and overwrite existing file
-    cp -f "$SOURCE_FILE" "$DEST_DIR/hyprland.conf"
-    chown "$USER_NAME:$USER_NAME" "$DEST_DIR/hyprland.conf"
-
-    print_success "Hyprland config copied to $DEST_DIR/hyprland.conf (overwritten if it existed)"
+    run_command "sudo -u $USER_NAME rsync -a --exclude 'README.md' '$source_dir/' '$dest_dir/'" "Copy configs to ~/.config"
 }
 
-# ------------------------
-# Main function
-# ------------------------
+---
+
+## Main Execution
+
+```bash
 main() {
-    check_root
-    check_os
+    check_root
+    check_os
+    
+    # System setup
+    run_command "pacman -Syyu --noconfirm" "System package update"
+    install_pacman_packages
+    install_gpu_drivers
+    
+    # AUR setup
+    install_yay
+    install_aur_packages
+    
+    # Configuration
+    copy_configs
 
-    install_base_system
-    install_gpu_drivers
-    install_yay
-    install_pacman_packages
-    install_aur_packages
-
-    copy_hyprland_conf   # <-- copies and overwrites hyprland.conf
-
-    print_header "✅ Environment setup complete!"
-    echo "Hyprland will run with your config. Log in via SDDM."
+    print_header "✅ Environment setup complete!"
+    print_success "You can now reboot and log in via SDDM to your new Hyprland environment."
 }
 
 main
