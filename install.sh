@@ -64,6 +64,7 @@ install_pacman_packages() {
         gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 lxappearance
         thunar-archive-plugin thunar-volman ffmpegthumbnailer file-roller tumbler
         python-pywal python-gobject gtk3 sddm yazi fastfetch mpv
+         ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
     )
     run_command "pacman -S --noconfirm --needed ${packages[*]}" "Pacman package installation"
 
