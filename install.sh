@@ -87,14 +87,14 @@ install_yay() {
 install_pacman_packages() {
     print_header "Installing Pacman packages"
 
-PACMAN_PACKAGES=(
-    hyprland dunst grim htop iwd kitty nano openssh polkit polkit-kde-agent
-    qt5-wayland qt6-wayland slurp smartmontools wget rofi wpa_supplicant
-    xdg-desktop-portal-hyprland xdg-utils lite-xl firefox thunar gvfs
-    gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 lxappearance
-    thunar-archive-plugin thunar-volman ffmpegthumbnailer file-roller tumbler
-    python-pywal python-gobject gtk3 sddm yazi fastfetch mpv
-)
+    PACMAN_PACKAGES=(
+        hyprland waybar dunst grim htop iwd kitty nano openssh polkit polkit-kde-agent
+        qt5-wayland qt6-wayland slurp smartmontools wget rofi wpa_supplicant
+        xdg-desktop-portal-hyprland xdg-utils lite-xl firefox thunar gvfs
+        gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 lxappearance
+        thunar-archive-plugin thunar-volman ffmpegthumbnailer file-roller tumbler
+        python-pywal python-gobject gtk3 sddm yazi fastfetch mpv
+    )
 
     run_command "pacman -S --noconfirm ${PACMAN_PACKAGES[*]}" "Install core system packages"
 
@@ -113,6 +113,26 @@ install_aur_packages() {
     run_command "sudo -u $USER_NAME yay -S --noconfirm --sudoloop ${AUR_PACKAGES[*]}" "Install AUR packages"
 }
 
+copy_hyprland_conf() {
+    print_header "Copying Hyprland main config"
+
+    SOURCE_FILE="./configs/hypr/hyprland.conf"
+    DEST_DIR="/home/$USER_NAME/.config/hypr"
+
+    if [[ ! -f "$SOURCE_FILE" ]]; then
+        print_warning "Source file $SOURCE_FILE does not exist. Skipping."
+        return
+    fi
+
+    mkdir -p "$DEST_DIR"
+
+    # Copy and overwrite existing file
+    cp -f "$SOURCE_FILE" "$DEST_DIR/hyprland.conf"
+    chown "$USER_NAME:$USER_NAME" "$DEST_DIR/hyprland.conf"
+
+    print_success "Hyprland config copied to $DEST_DIR/hyprland.conf (overwritten if it existed)"
+}
+
 # ------------------------
 # Main function
 # ------------------------
@@ -126,8 +146,10 @@ main() {
     install_pacman_packages
     install_aur_packages
 
+    copy_hyprland_conf   # <-- copies and overwrites hyprland.conf
+
     print_header "✅ Environment setup complete!"
-    echo "Hyprland will run with default settings. Log in via SDDM."
+    echo "Hyprland will run with your config. Log in via SDDM."
 }
 
 main
