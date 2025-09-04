@@ -88,13 +88,13 @@ install_pacman_packages() {
     print_header "Installing Pacman packages"
 
     PACMAN_PACKAGES=(
-        hyprland dunst grim htop iwd kitty nano openssh polkit polkit-kde-agent
-        qt5-wayland qt6-wayland slurp smartmontools vwsm wget wireless-tools rofi
-        wpa_supplicant xdg-desktop-portal-hyprland xdg-utils lite-xl firefox
-        thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks lxappearance
-        thunar-archive-plugin thunar-volman ffmpegthumbnailer file-roller tumbler
-        python-pywal python-gobject gtk3 sddm yazi fastfetch tar mpv
-    )
+    hyprland dunst grim htop iwd kitty nano openssh polkit polkit-kde-agent
+    qt5-wayland qt6-wayland slurp smartmontools wget rofi wpa_supplicant
+    xdg-desktop-portal-hyprland xdg-utils lite-xl firefox thunar gvfs
+    gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 lxappearance
+    thunar-archive-plugin thunar-volman ffmpegthumbnailer file-roller tumbler
+    python-pywal python-gobject gtk3 sddm yazi fastfetch mpv
+)
 
     run_command "pacman -S --noconfirm ${PACMAN_PACKAGES[*]}" "Install core system packages"
 
