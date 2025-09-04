@@ -40,10 +40,11 @@ copy_configs() {
 # Setup Variables
 # =====================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
-CONFIRMATION="yes" # default interactive mode
+CONFIRMATION="yes"
 
 # Check for --noconfirm
 if [[ $# -eq 1 && "$1" == "--noconfirm" ]]; then
@@ -57,7 +58,7 @@ fi
 # Pre-run Checks
 # =====================================
 [[ "$EUID" -eq 0 ]] || print_error "This script must be run as root (sudo $0)"
-[[ -d "$SCRIPT_DIR/configs" ]] || print_error "Missing configs folder at $SCRIPT_DIR/configs"
+[[ -d "$REPO_ROOT/configs" ]] || print_error "Missing configs folder at $REPO_ROOT/configs"
 command -v git &>/dev/null || print_error "git not installed. Install: sudo pacman -S git"
 command -v curl &>/dev/null || print_error "curl not installed. Install: sudo pacman -S curl"
 
@@ -131,28 +132,25 @@ if [[ ${#AUR_PACKAGES[@]} -gt 0 ]]; then
     run_command "sudo -u $USER_NAME yay -S --noconfirm --sudoloop ${AUR_PACKAGES[*]}" "AUR package installation"
 fi
 
-
 # =====================================
 # Copy Configuration Files
 # =====================================
 print_header "Copying Configurations"
-copy_configs "$SCRIPT_DIR/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
-copy_configs "$SCRIPT_DIR/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
+copy_configs "$REPO_ROOT/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
+copy_configs "$REPO_ROOT/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
 
 # Copy default wallpaper
-WALLPAPER_SRC="$SCRIPT_DIR/assets/wallpapers/cats.png"
+WALLPAPER_SRC="$REPO_ROOT/assets/wallpapers/cats.png"
 WALLPAPER_DEST="$USER_HOME/Pictures/Wallpapers/cats.png"
 
 sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures/Wallpapers"
 sudo -u "$USER_NAME" cp -f "$WALLPAPER_SRC" "$WALLPAPER_DEST"
-
 print_success "✅ Default wallpaper copied to $WALLPAPER_DEST"
 
-
 # =====================================
-# Setup Pywal16 Wallpaper Keybind (Optional)
+# Pywal16 / Wallpaper Info
 # =====================================
-print_header "Setting up Pywal16 Wallpaper + Colors"
+print_header "Setup Pywal16 Wallpaper + Colors"
 WALLPAPER_DIR="$USER_HOME/Pictures/Wallpapers"
 DEFAULT_WALLPAPER="$WALLPAPER_DIR/cats.png"
 if [[ -f "$DEFAULT_WALLPAPER" ]]; then
