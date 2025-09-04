@@ -41,7 +41,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
-CONFIRMATION="no"  # fully non-interactive
 
 # =====================================
 # Pre-run Checks
@@ -128,12 +127,24 @@ print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
 copy_configs "$REPO_ROOT/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
 
-# Copy all wallpapers
+# =====================================
+# Copy Wallpapers
+# =====================================
 WALLPAPER_SRC_DIR="$REPO_ROOT/assets/wallpapers"
 WALLPAPER_DEST_DIR="$USER_HOME/Pictures/Wallpapers"
 sudo -u "$USER_NAME" mkdir -p "$WALLPAPER_DEST_DIR"
 sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
+
+# =====================================
+# Copy User Scripts (e.g., setwallpaper.sh)
+# =====================================
+SCRIPTS_SRC_DIR="$REPO_ROOT/scripts"
+SCRIPTS_DEST_DIR="$USER_HOME/.local/bin"
+sudo -u "$USER_NAME" mkdir -p "$SCRIPTS_DEST_DIR"
+sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC_DIR/." "$SCRIPTS_DEST_DIR"
+sudo -u "$USER_NAME" chmod +x "$SCRIPTS_DEST_DIR/"*
+print_success "✅ User scripts copied to $SCRIPTS_DEST_DIR"
 
 # =====================================
 # Pywal16 / Wallpaper Info
