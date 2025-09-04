@@ -8,7 +8,7 @@ set -euo pipefail
 print_header()    { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success()   { echo -e "\e[32m$1\e[0m"; }
 print_warning()   { echo -e "\e[33mWarning: $1\e[0m" >&2; }
-print_error()     { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
+print_error()     { echo -e "\e[31mError: $1\e[0m"; exit 1; }
 
 run_command() {
     local cmd="$1"
@@ -145,31 +145,26 @@ sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
-# Setup Default Hyprland Colors
+# Remove Old Hyprland Colors
 # =====================================
-print_header "Setting Up Default Hyprland Colors"
+print_header "Preparing Hyprland Colors"
 
-DEFAULT_COLORS="$REPO_ROOT/scripts/colors-hyprland.conf"
 USER_COLORS="$USER_HOME/.cache/wal/colors-hyprland.conf"
-
 sudo -u "$USER_NAME" mkdir -p "$(dirname "$USER_COLORS")"
 
-if [[ ! -f "$USER_COLORS" ]]; then
-    sudo -u "$USER_NAME" cp "$DEFAULT_COLORS" "$USER_COLORS"
-    print_success "✅ Default colors file copied to $USER_COLORS"
-else
-    print_warning "Colors file already exists, skipping copy"
+if [[ -f "$USER_COLORS" ]]; then
+    sudo -u "$USER_NAME" rm "$USER_COLORS"
+    print_success "✅ Old colors file removed: $USER_COLORS"
 fi
+print_success "✅ Hyprland colors will be generated dynamically by setwallpaper.sh"
 
 # =====================================
-# Pywal / Wallpaper Info
+# Apply Default Wallpaper (optional)
 # =====================================
-print_header "Setup Pywal16 Wallpaper + Colors"
 DEFAULT_WALLPAPER="$WALLPAPER_DEST_DIR/cats.png"
 if [[ -f "$DEFAULT_WALLPAPER" ]]; then
-    print_success "You can now run as user:"
-    echo "wal -i \"$DEFAULT_WALLPAPER\""
-    echo "Then Hyprland will source: ~/.cache/wal/colors-hyprland.conf"
+    print_header "Applying Default Wallpaper"
+    sudo -u "$USER_NAME" "$USER_HOME/.local/bin/setwallpaper.sh" "$DEFAULT_WALLPAPER" || print_warning "Failed to apply default wallpaper"
 else
     print_warning "Default wallpaper not found: $DEFAULT_WALLPAPER"
 fi
