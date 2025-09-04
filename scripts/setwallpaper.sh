@@ -1,18 +1,19 @@
 #!/bin/bash
 # setwallpaper.sh
-# Select a wallpaper, apply it, and safely update Hyprland colors
+# Apply wallpaper, generate Hyprland + Waybar colors with Pywal
 
 set -euo pipefail
 
 WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
-HYPR_COLORS="$HOME/.cache/wal/colors-hyprland.hypr"
+HYPR_COLORS="$HOME/.cache/wal/colors-hyprland.conf"
+WAYBAR_THEME="$HOME/.config/waybar/style.css"
 
-# Ensure colors file directory exists
-mkdir -p "$(dirname "$HYPR_COLORS")"
+# Ensure directories exist
+mkdir -p "$WALLPAPER_DIR" "$(dirname "$HYPR_COLORS")" "$(dirname "$WAYBAR_THEME")"
 
-# Step 0: Create default colors if missing
+# Step 0: Create default Hyprland colors if missing
 if [[ ! -f "$HYPR_COLORS" ]]; then
-    cat > "$HYPR_COLORS" <<'EOF'
+cat > "$HYPR_COLORS" <<'EOF'
 col.background = rgba(000000ff)
 col.foreground = rgba(ffffffff)
 col.active_border = rgba(ff0000ff)
@@ -31,39 +32,78 @@ if [[ -z "$WALLPAPER" ]]; then
     exit 1
 fi
 
-# Step 2: Apply wallpaper
+# Step 2: Apply wallpaper with swww
+if ! pgrep -x swww-daemon >/dev/null; then
+    swww init
+fi
 swww img "$WALLPAPER"
 
-# Step 3: Generate Pywal colors safely
+# Step 3: Generate Pywal colors
 wal -i "$WALLPAPER" -n
 
-# Step 4: Convert Pywal JSON to Hyprland-friendly format
-python3 - <<EOF
+# Step 4: Convert Pywal JSON to Hyprland format and Waybar CSS
+python3 - <<'EOF'
 import json, os
 
-colors_json = os.path.expanduser("$HOME/.cache/wal/colors.json")
-output_file = os.path.expanduser("$HYPR_COLORS")
+HOME = os.path.expanduser("~")
+colors_json = os.path.join(HOME, ".cache/wal/colors.json")
+hypr_file = os.path.join(HOME, ".cache/wal/colors-hyprland.conf")
+waybar_file = os.path.join(HOME, ".config/waybar/style.css")
 
 with open(colors_json) as f:
     data = json.load(f)
 
-def clean(c): 
-    return c.replace("#","").upper()
+def clean(c): return c.replace("#","").upper()
 
-lines = [
-    f"col.background = rgba({clean(data['colors']['background'])}ff)",
-    f"col.foreground = rgba({clean(data['colors']['foreground'])}ff)",
-    f"col.active_border = rgba({clean(data['colors']['color1'])}ff)",
-    f"col.inactive_border = rgba({clean(data['colors']['color0'])}aa)",
-    f"col.group_border_active = rgba({clean(data['colors']['color2'])}ff)",
-    f"col.group_border_inactive = rgba({clean(data['colors']['color3'])}aa)"
+# Special colors for background/foreground
+bg = clean(data['special'].get('background', '000000'))
+fg = clean(data['special'].get('foreground', 'FFFFFF'))
+
+# Standard colors
+c0 = clean(data['colors'].get('color0', '888888'))
+c1 = clean(data['colors'].get('color1', 'FF0000'))
+c2 = clean(data['colors'].get('color2', '00FF00'))
+c3 = clean(data['colors'].get('color3', '888888'))
+
+# Hyprland colors
+hypr_lines = [
+    f"col.background = rgba({bg}ff)",
+    f"col.foreground = rgba({fg}ff)",
+    f"col.active_border = rgba({c1}ff)",
+    f"col.inactive_border = rgba({c0}aa)",
+    f"col.group_border_active = rgba({c2}ff)",
+    f"col.group_border_inactive = rgba({c3}aa)"
 ]
 
-with open(output_file, "w") as f:
-    f.write("\n".join(lines))
+with open(hypr_file, "w") as f:
+    f.write("\n".join(hypr_lines))
+
+# Waybar CSS
+waybar_lines = f"""
+* {{
+    background: #{bg};
+    color: #{fg};
+}}
+
+#workspaces {{
+    background: #{bg};
+}}
+
+.module {{
+    color: #{fg};
+}}
+
+.module:hover {{
+    color: #{c2};
+}}
+"""
+
+with open(waybar_file, "w") as f:
+    f.write(waybar_lines)
 EOF
 
-# Step 5: Reload Hyprland
-hyprctl reload || echo "⚠️ hyprctl reload failed, check Hyprland logs"
+# Step 5: Reload Hyprland + Waybar
+hyprctl reload || echo "⚠️ hyprctl reload failed"
+pkill -USR1 waybar || echo "⚠️ Waybar reload failed"
 
-echo "✅ Wallpaper applied and colors updated."
+echo "✅ Wallpaper applied and colors updated for Hyprland + Waybar."
