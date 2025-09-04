@@ -1,0 +1,10 @@
+* {
+    font-family: monospace;
+    font-size: 12px;
+    color: #ffffff;
+    background: #222222;
+}
+
+#clock {
+    padding: 0 10px;
+}
