@@ -80,6 +80,11 @@ EOF
 
 # Step 5: Reload Hyprland + Waybar
 hyprctl reload || echo "⚠️ hyprctl reload failed"
-pkill -USR1 waybar || echo "⚠️ Waybar reload failed"
+# Instead of pkill, we'll send a proper signal to Waybar
+if pgrep -x waybar > /dev/null; then
+    waybar-msg cmd restart
+else
+    echo "⚠️ Waybar is not running."
+fi
 
 echo "✅ Wallpaper applied and colors updated for Hyprland + Waybar."
