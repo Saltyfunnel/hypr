@@ -104,7 +104,7 @@ fi
 print_header "Installing Core Packages"
 
 PACMAN_PACKAGES=(
-    hyprland waybar dunst grim slurp kitty nano rofi wget jq
+    hyprland waybar swww dunst grim slurp kitty nano rofi wget jq
     sddm polkit polkit-kde-agent
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2
     thunar-archive-plugin thunar-volman ffmpegthumbnailer file-roller tumbler
