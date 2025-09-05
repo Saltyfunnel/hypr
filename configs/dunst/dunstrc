@@ -1,0 +1,21 @@
+[global]
+monitor = 0
+geometry = "300x5-20+20"
+transparency = 0
+frame_width = 2
+frame_color = "#18C1FD"
+font = JetBrains Mono 10
+markup = full
+
+[urgency_low]
+background = "#142f1f"
+foreground = "#c4cbc7"
+
+[urgency_normal]
+background = "#142f1f"
+foreground = "#c4cbc7"
+
+[urgency_critical]
+background = "#142f1f"
+foreground = "#c4cbc7"
+frame_color = "#FF0000"
