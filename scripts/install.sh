@@ -8,7 +8,7 @@ set -euo pipefail
 print_header()    { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success()   { echo -e "\e[32m$1\e[0m"; }
 print_warning()   { echo -e "\e[33mWarning: $1\e[0m" >&2; }
-print_error()     { echo -e "\e[31mError: $1\e[0m"; exit 1; }
+print_error()     { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 
 run_command() {
     local cmd="$1"
@@ -63,18 +63,22 @@ run_command "pacman -Syyu --noconfirm" "System package update"
 # =====================================
 print_header "Detecting and Installing GPU Drivers"
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
+
 if echo "$GPU_INFO" | grep -qi "nvidia"; then
+    print_success "NVIDIA GPU detected"
     run_command "pacman -S --noconfirm nvidia nvidia-utils nvidia-settings" "NVIDIA drivers"
 elif echo "$GPU_INFO" | grep -qi "amd"; then
+    print_success "AMD GPU detected"
     run_command "pacman -S --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau" "AMD drivers"
 elif echo "$GPU_INFO" | grep -qi "intel"; then
+    print_success "Intel GPU detected"
     run_command "pacman -S --noconfirm mesa libva-intel-driver intel-media-driver vulkan-intel" "Intel drivers"
 else
     print_warning "No supported GPU detected. Skipping driver installation."
 fi
 
 # =====================================
-# Core Packages
+# Core Pacman Packages
 # =====================================
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
@@ -96,14 +100,14 @@ run_command "systemctl enable sddm.service" "Enable SDDM"
 # Install Yay (AUR Helper)
 # =====================================
 print_header "Installing yay"
-if ! command -v yay &>/dev/null; then
+if command -v yay &>/dev/null; then
+    print_success "Yay already installed"
+else
     run_command "pacman -S --noconfirm --needed git base-devel" "Install git and base-devel"
     run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay repository"
     run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
     run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
     run_command "rm -rf /tmp/yay" "Clean up temporary yay files"
-else
-    print_success "Yay already installed"
 fi
 
 # =====================================
@@ -114,14 +118,14 @@ AUR_PACKAGES=( python-pywal16 python-pywalfox )
 run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
-# Copy Configs
+# Copy Configuration Files
 # =====================================
 print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
 copy_configs "$REPO_ROOT/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
 
 # =====================================
-# Copy Scripts
+# Copy Scripts and Make Executable
 # =====================================
 print_header "Copying Scripts"
 SCRIPT_DEST="$USER_HOME/.local/bin"
@@ -141,32 +145,25 @@ sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
-# Setup Default Hyprland Colors (auto-generated)
+# Setup Default Hyprland Colors
 # =====================================
 print_header "Setting Up Default Hyprland Colors"
+DEFAULT_COLORS="$REPO_ROOT/scripts/colors-hyprland.conf"
 USER_COLORS="$USER_HOME/.cache/wal/colors-hyprland.conf"
 sudo -u "$USER_NAME" mkdir -p "$(dirname "$USER_COLORS")"
 
-# Only create empty template if it doesn’t exist yet
 if [[ ! -f "$USER_COLORS" ]]; then
-    cat <<'EOF' | sudo -u "$USER_NAME" tee "$USER_COLORS" >/dev/null
-col.background = rgba(000000ff)
-col.foreground = rgba(ffffffff)
-col.active_border = rgba(ff0000ff)
-col.inactive_border = rgba888888aa
-col.group_border_active = rgba00ff00ff
-col.group_border_inactive = rgba888888aa
-EOF
-    print_success "✅ Default colors file created at $USER_COLORS"
+    sudo -u "$USER_NAME" cp "$DEFAULT_COLORS" "$USER_COLORS"
+    print_success "✅ Default colors file copied to $USER_COLORS"
 else
-    print_warning "Colors file already exists, skipping creation"
+    print_warning "Colors file already exists, skipping copy"
 fi
 
 # =====================================
-# Pywal / Wallpaper Info (Wayland-only)
+# Pywal / Wallpaper Info (Wayland-safe)
 # =====================================
 print_header "Setup Pywal16 Wallpaper + Colors"
-if [[ -n "$WAYLAND_DISPLAY" ]]; then
+if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
     DEFAULT_WALLPAPER="$WALLPAPER_DEST_DIR/cats.png"
     if [[ -f "$DEFAULT_WALLPAPER" ]]; then
         print_success "You can now run as user:"
