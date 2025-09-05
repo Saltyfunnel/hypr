@@ -45,14 +45,14 @@ c1 = clean(data['colors'].get('color1','FF0000'))
 c2 = clean(data['colors'].get('color2','00FF00'))
 c3 = clean(data['colors'].get('color3','888888'))
 
-# Hyprland colors
+# Hyprland colors using $variable syntax
 hypr_lines = [
-    f"col.background = rgba({bg}ff)",
-    f"col.foreground = rgba({fg}ff)",
-    f"col.active_border = rgba({c1}ff)",
-    f"col.inactive_border = rgba({c0}aa)",
-    f"col.group_border_active = rgba({c2}ff)",
-    f"col.group_border_inactive = rgba({c3}aa)"
+    f"$background = rgba({bg}ff)",
+    f"$foreground = rgba({fg}ff)",
+    f"$active_border = rgba({c1}ff)",
+    f"$inactive_border = rgba({c0}aa)",
+    f"$group_border_active = rgba({c2}ff)",
+    f"$group_border_inactive = rgba({c3}aa)"
 ]
 
 with open(hypr_file, "w") as f:
@@ -77,6 +77,7 @@ waybar_lines = f"""
 with open(waybar_file, "w") as f:
     f.write(waybar_lines)
 EOF
+
 
 # Step 5: Reload Hyprland + Waybar
 hyprctl reload || echo "⚠️ hyprctl reload failed"
