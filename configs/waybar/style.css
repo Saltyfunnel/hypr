@@ -1,7 +1,7 @@
 
 * {
-    font-family: JetBrainsMono, sans-serif;
-    font-size: 14px;
+    font-family: JetBrainsMono Nerd Font, sans-serif;
+    font-size: 14px; /* smaller font */
     background: rgba(0,0,0,0);
     color: #cdc7c5;
 }
@@ -15,56 +15,56 @@ window#waybar {
 .module {
     box-shadow: none;
     border: none;
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 4px;
+    padding: 1px 4px;
 }
 
 #hyprland\/workspaces {
     background: rgba(34,20,14,0.85);
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 10px;
+    padding: 0px 10px;
     color: #cdc7c5;
 }
 
 #network {
     background: rgba(124,54,108,0.85);
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 10px;
+    padding: 0px 10px;
     color: #cdc7c5;
 }
 
 #battery {
     background: rgba(111,88,82,0.85);
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 10px;
+    padding: 0px 10px;
     color: #cdc7c5;
 }
 
 #pulseaudio {
     background: rgba(149,97,101,0.85);
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 10px;
+    padding: 0px 10px;
     color: #cdc7c5;
 }
 
 #cpu {
     background: rgba(152,119,107,0.85);
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 10px;
+    padding: 0px 10px;
     color: #cdc7c5;
 }
 
 #memory {
     background: rgba(148,85,129,0.85);
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 10px;
+    padding: 0px 10px;
     color: #cdc7c5;
 }
 
 #clock {
     background: rgba(152,105,126,0.85);
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 10px;
+    padding: 0px 10px;
     color: #cdc7c5;
 }
 
