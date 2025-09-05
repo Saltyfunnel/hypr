@@ -1,6 +1,6 @@
 #!/bin/bash
 # setwallpaper.sh
-# Wallpaper + full Waybar theming for Hyprland with safe colors per module
+# Wallpaper + full Waybar theming for Hyprland with smaller modules and safe colors
 
 set -euo pipefail
 
@@ -83,16 +83,16 @@ for i, module in enumerate(modules):
     rgb = rgb_str(dark_colors[i % len(dark_colors)])
     css_modules.append(f"""#{module.replace('/', '\\/')} {{
     background: rgba({rgb},0.85);
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 10px;
+    padding: 0px 10px;
     color: {fg};
 }}""")
 css_modules_str = "\n\n".join(css_modules)
 
 css = f"""
 * {{
-    font-family: JetBrainsMono, sans-serif;
-    font-size: 14px;
+    font-family: JetBrainsMono Nerd Font, sans-serif;
+    font-size: 14px; /* smaller font */
     background: rgba(0,0,0,0);
     color: {fg};
 }}
@@ -106,8 +106,8 @@ window#waybar {{
 .module {{
     box-shadow: none;
     border: none;
-    border-radius: 6px;
-    padding: 2px 6px;
+    border-radius: 4px;
+    padding: 1px 4px;
 }}
 
 {css_modules_str}
