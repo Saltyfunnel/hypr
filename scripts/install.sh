@@ -8,7 +8,7 @@ set -euo pipefail
 print_header()    { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success()   { echo -e "\e[32m$1\e[0m"; }
 print_warning()   { echo -e "\e[33mWarning: $1\e[0m" >&2; }
-print_error()     { echo -e "\e[31mError: $1\e[0m"; exit 1; }
+print_error()     { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 
 run_command() {
     local cmd="$1"
