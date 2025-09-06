@@ -86,7 +86,7 @@ PACMAN_PACKAGES=(
     sddm polkit polkit-kde-agent
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
-    lite-xl firefox yazi fastfetch mpv
+    firefox yazi fastfetch mpv
     qt5-wayland qt6-wayland
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
