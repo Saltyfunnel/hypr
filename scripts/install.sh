@@ -1,30 +1,23 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Hyprland Setup Script for Arch Linux (Non-interactive)
 set -euo pipefail
 
 # =====================================
 # Helper Functions
 # =====================================
-print_header()    { printf "
---- %s ---
-" "$1"; }
-print_success()   { printf "%s
-" "$1"; }
-print_warning()   { printf "Warning: %s
-" "$1" >&2; }
-print_error()     { printf "Error: %s
-" "$1" >&2; exit 1; }
+print_header()    { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
+print_success()   { echo -e "\e[32m$1\e[0m"; }
+print_warning()   { echo -e "\e[33mWarning: $1\e[0m" >&2; }
+print_error()     { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 
 run_command() {
     local cmd="$1"
     local desc="$2"
-    printf "
-Running: %s
-" "$desc"
+    echo -e "\nRunning: $desc"
     if ! eval "$cmd"; then
         print_error "Failed: $desc"
     fi
-    print_success "Success: $desc"
+    print_success "✅ Success: $desc"
 }
 
 copy_configs() {
@@ -37,7 +30,7 @@ copy_configs() {
     fi
     sudo -u "$USER_NAME" mkdir -p "$dest"
     sudo -u "$USER_NAME" cp -rf "$src/." "$dest/"
-    print_success "$name config copied to $dest"
+    print_success "✅ $name config copied to $dest"
 }
 
 # =====================================
@@ -57,7 +50,7 @@ CONFIG_DIR="$USER_HOME/.config"
 command -v git &>/dev/null || print_error "git not installed. Install: sudo pacman -S git"
 command -v curl &>/dev/null || print_error "curl not installed. Install: sudo pacman -S curl"
 
-print_success "Environment checks passed"
+print_success "✅ Environment checks passed"
 
 # =====================================
 # Base System Update
@@ -138,8 +131,8 @@ print_header "Copying Scripts"
 SCRIPT_DEST="$USER_HOME/.local/bin"
 sudo -u "$USER_NAME" mkdir -p "$SCRIPT_DEST"
 sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/scripts/." "$SCRIPT_DEST"
-sudo -u "$USER_NAME" chmod +x "$SCRIPT_DEST"/*
-print_success "Scripts copied and made executable to $SCRIPT_DEST"
+sudo -u "$USER_NAME" chmod +x "$SCRIPT_DEST/"*
+print_success "✅ Scripts copied and made executable to $SCRIPT_DEST"
 
 # =====================================
 # Copy Wallpapers
@@ -149,21 +142,12 @@ WALLPAPER_SRC_DIR="$REPO_ROOT/assets/wallpapers"
 WALLPAPER_DEST_DIR="$USER_HOME/Pictures/Wallpapers"
 sudo -u "$USER_NAME" mkdir -p "$WALLPAPER_DEST_DIR"
 sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
-print_success "All wallpapers copied to $WALLPAPER_DEST_DIR"
+print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
 # Final Message
 # =====================================
 print_header "Setup Complete!"
-print_success "Reboot and log in via SDDM to start using Hyprland with your configs."
+print_success "🎉 Reboot and log in via SDDM to start using Hyprland with your configs."
 print_success "You can now generate colorschemes with Matugen by running:"
-printf "matugen image --file \"%s/cats.png\" --out-dir \"%s/matugen\"
-" "$WALLPAPER_DEST_DIR" "$CONFIG_DIR"
-
-
-I've removed all Pywal-related code and updated the script to focus on Matugen. You can now run:
-
-matugen image --file "~/Pictures/Wallpapers/cats.png" --out-dir "~/.config/matugen"
-
-This will generate a colorscheme based on your chosen wallpaper. Would you like me to help you integrate Matugen directly into your startup workflow?
-
+echo "matugen image --file \"$WALLPAPER_DEST_DIR/cats.png\" --out-dir \"$CONFIG_DIR/matugen\""
