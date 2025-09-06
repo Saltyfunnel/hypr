@@ -114,7 +114,7 @@ fi
 # Install AUR Packages (Matugen)
 # =====================================
 print_header "Installing AUR Packages"
-AUR_PACKAGES=( matugen-bin )
+AUR_PACKAGES=( matugen-bin vscodium-bin )
 run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
