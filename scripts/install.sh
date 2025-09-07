@@ -83,7 +83,7 @@ fi
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano rofi wget jq
-    sddm polkit polkit-kde-agent
+    sddm polkit polkit-kde-agent code
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
@@ -110,10 +110,10 @@ else
 fi
 
 # =====================================
-# Install AUR Packages (Matugen)
+# Install AUR Packages
 # =====================================
 print_header "Installing AUR Packages"
-AUR_PACKAGES=( matugen-bin vscodium-bin )
+AUR_PACKAGES=( matugen-bin steam spotify spicetify-cli )
 run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
