@@ -82,38 +82,22 @@ fi
 # =====================================
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
-    hyprland waybar swww dunst grim slurp kitty nano rofi wget jq
-    sddm polkit polkit-kde-agent
+    hyprland waybar swww dunst kitty nano rofi wget jq
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
     qt5-wayland qt6-wayland gtk3 gtk4 starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
+    sddm polkit polkit-kde-agent
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Core package installation"
 
 # =====================================
-# Enable essential services (safe)
+# Enable essential services
 # =====================================
-print_header "Enabling Essential Services"
-
-# Polkit
-if systemctl list-unit-files | grep -q '^polkit.service'; then
-    run_command "systemctl enable --now polkit.service" "Enable polkit"
-else
-    print_warning "polkit.service not found, skipping"
-fi
-
-# SDDM
-if pacman -Qi sddm &>/dev/null; then
-    if systemctl list-unit-files | grep -q '^sddm.service'; then
-        run_command "systemctl enable --now sddm.service" "Enable SDDM Display Manager"
-    else
-        print_warning "sddm.service not found even after install, skipping"
-    fi
-else
-    print_warning "SDDM not installed yet, skipping enable for now"
-fi
+print_header "Enabling essential services"
+run_command "systemctl enable --now polkit.service" "Enable polkit"
+run_command "systemctl enable --now sddm.service" "Enable and start SDDM"
 
 # =====================================
 # Install Yay (AUR Helper)
@@ -130,19 +114,19 @@ else
 fi
 
 # =====================================
-# Install AUR Packages (Matugen + VSCodium)
+# Install AUR Packages (Matugen)
 # =====================================
 print_header "Installing AUR Packages"
 AUR_PACKAGES=( matugen-bin vscodium-bin )
 run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
-# Copy Configuration Files
+# Copy Configuration Files (Hyprland, Waybar, Theme-Wallpaper)
 # =====================================
 print_header "Copying Configurations"
-copy_configs "$REPO_ROOT/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
-copy_configs "$REPO_ROOT/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
-copy_configs "$REPO_ROOT/configs/kitty"  "$CONFIG_DIR/kitty"  "Kitty"
+copy_configs "$REPO_ROOT/configs/hypr"           "$CONFIG_DIR/hypr"           "Hyprland"
+copy_configs "$REPO_ROOT/configs/waybar"        "$CONFIG_DIR/waybar"        "Waybar"
+copy_configs "$REPO_ROOT/configs/theme-wallpaper" "$CONFIG_DIR/theme-wallpaper" "Theme-Wallpaper"
 
 # =====================================
 # Copy Scripts and Make Executable
@@ -165,11 +149,11 @@ sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
-# Update .bashrc to include local bin
+# Update bashrc to include local bin
 # =====================================
-if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$USER_HOME/.bashrc"; then
+if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$USER_HOME/.bashrc"; then
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$USER_HOME/.bashrc"
-    print_success "✅ Updated .bashrc to include ~/.local/bin in PATH"
+    print_success "✅ Added ~/.local/bin to PATH in bashrc"
 fi
 
 # =====================================
@@ -178,4 +162,4 @@ fi
 print_header "Setup Complete!"
 print_success "🎉 Reboot and log in via SDDM to start using Hyprland with your configs."
 print_success "You can now generate colorschemes with Matugen by running:"
-echo "matugen image --file \"$WALLPAPER_DEST_DIR/cats.png\" --out-dir \"$CONFIG_DIR/matugen\""
+echo "matugen image --file \"$WALLPAPER_DEST_DIR/cats.png\" --out-dir \"$CONFIG_DIR/theme-wallpaper\""
