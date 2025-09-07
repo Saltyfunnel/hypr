@@ -5,25 +5,11 @@
   "exclusive": true,
   "passthrough": false,
   "gtk-layer-shell": true,
-  "height": 30,
+  "height": 20,
 
-  "modules-left": [
-    "clock",
-    "hyprland/workspaces"
-  ],
+  "modules-left": ["clock", "hyprland/workspaces"],
   "modules-center": ["hyprland/window"],
-  "modules-right": [
-    "custom/spotify",
-    "custom/updates",
-    "memory",
-    "cpu",
-    "network",
-    "battery",
-    "backlight",
-    "pulseaudio",
-    "pulseaudio#microphone",
-    "custom/power"
-      ],
+  "modules-right": ["custom/spotify", "memory", "cpu", "network", "battery", "backlight", "pulseaudio", "pulseaudio#microphone", "custom/power"],
 
   "custom/spotify": {
     "exec": "STATUS=$(playerctl status --player=spotify 2>/dev/null); if [ \"$STATUS\" = \"Playing\" ]; then ICON=''; elif [ \"$STATUS\" = \"Paused\" ]; then ICON=''; else echo ''; exit 0; fi; INFO=$(playerctl metadata --player=spotify --format '{{ artist }} - {{ title }}'); echo \"$ICON $INFO\"",
@@ -31,19 +17,6 @@
     "format": "{}",
     "on-click": "playerctl play-pause --player=spotify"
   },
-
-"custom/updates": {
-  "exec": "~/.config/waybar/scripts/checkupdates.sh",
-  "interval": 600,
-  "format": "",
-  "tooltip": true,
-  "tooltip-format": "{} updates available",
-  "on-click": "kitty -e yay -Syu"
-}
-
-
-
-,
 
   "hyprland/window": {
     "format": "󰣇 {}"
@@ -58,19 +31,7 @@
   "clock": {
     "format": "{:%A    %d-%B-%Y    %H:%M:%S}",
     "interval": 1,
-    "tooltip-format": "<tt>{calendar}</tt>",
-    "calendar": {
-      "mode": "month",
-      "mode-mon-col": 3,
-      "on-scroll": 1,
-      "on-click-right": "mode",
-      "format": {
-        "months": "<span color='#a6adc8'><b>{}</b></span>",
-        "weekdays": "<span color='#a6adc8'><b>{}</b></span>",
-        "today": "<span color='#a6adc8'><b>{}</b></span>",
-        "days": "<span color='#555869'><b>{}</b></span>"
-      }
-    }
+    "tooltip-format": "<tt>{calendar}</tt>"
   },
 
   "backlight": {
@@ -83,19 +44,12 @@
   },
 
   "battery": {
-    "states": {
-      "good": 95,
-      "warning": 30,
-      "critical": 20
-    },
+    "states": {"good":95,"warning":30,"critical":20},
     "format": "{icon} {capacity}%",
     "format-charging": " {capacity}%",
     "format-plugged": " {capacity}%",
     "format-alt": "{time} {icon}",
-    "format-icons": [
-      "󰂃", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿",
-      "󰂀", "󰂁", "󰂂", "󰁹"
-    ]
+    "format-icons": ["󰂃","󰁺","󰁻","󰁼","󰁽","󰁾","󰁿","󰂀","󰂁","󰂂","󰁹"]
   },
 
   "pulseaudio": {
@@ -105,16 +59,7 @@
     "on-click": "pamixer -t",
     "on-scroll-up": "pamixer -i 1",
     "on-scroll-down": "pamixer -d 1",
-    "scroll-step": 5,
-    "format-icons": {
-      "headphone": "",
-      "hands-free": "",
-      "headset": "",
-      "phone": "",
-      "portable": "",
-      "car": "",
-      "default": ["", "", "", ""]
-    }
+    "scroll-step": 5
   },
 
   "pulseaudio#microphone": {
@@ -128,17 +73,9 @@
   },
 
   "memory": {
-    "states": {
-      "c": 90,
-      "h": 60,
-      "m": 30
-    },
     "interval": 10,
     "format": "󰾆 {used}GB",
-    "format-m": "󰾅 {used}GB",
-    "format-h": "󰓅 {used}GB",
-    "format-c": " {used}GB",
-    "format-alt": "󰾆 {percentage}%",
+    "format-alt": "󰾅 {used}GB",
     "max-length": 10,
     "tooltip": true,
     "tooltip-format": "󰾆 {percentage}%\n {used:0.1f}GB/{total:0.1f}GB"
@@ -148,28 +85,23 @@
     "interval": 10,
     "format": "󰍛 {usage}%",
     "format-alt": "{icon0}{icon1}{icon2}{icon3}",
-    "format-icons": ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
+    "format-icons": ["▁","▂","▃","▄","▅","▆","▇","█"]
   },
 
   "network": {
     "tooltip": true,
     "format-wifi": "  {essid}",
     "format-ethernet": "󰈀 ",
-    "tooltip-format": "Network: <big><b>{essid}</b></big>\nSignal strength: <b>{signaldBm}dBm ({signalStrength}%)</b>\nFrequency: <b>{frequency}MHz</b>\nInterface: <b>{ifname}</b>\nIP: <b>{ipaddr}/{cidr}</b>\nGateway: <b>{gwaddr}</b>\nNetmask: <b>{netmask}</b>",
-    "format-linked": "󰈀 {ifname} (No IP)",
-    "format-disconnected": "󰖪 ",
-    "tooltip-format-disconnected": "Disconnected",
-    "format-alt": "<span foreground='#99ffdd'> {bandwidthDownBytes}</span> <span foreground='#ffcc66'> {bandwidthUpBytes}</span>",
     "interval": 2
   },
 
-"custom/power": {
-  "format": "⏻",
-  "tooltip": true,
-  "tooltip-format": "Left: Shutdown\nMiddle: Logout\nRight: Reboot",
-  "on-click": "systemctl poweroff",
-  "on-click-middle": "hyprctl dispatch exit",
-  "on-click-right": "systemctl reboot",
-  "interval": 3600
-}
+  "custom/power": {
+    "format": "⏻",
+    "tooltip": true,
+    "tooltip-format": "Left: Shutdown\nMiddle: Logout\nRight: Reboot",
+    "on-click": "systemctl poweroff",
+    "on-click-middle": "hyprctl dispatch exit",
+    "on-click-right": "systemctl reboot",
+    "interval": 3600
+  }
 }
