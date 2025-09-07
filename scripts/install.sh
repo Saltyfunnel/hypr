@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland Setup Script for Arch Linux (Non-interactive, no GTK)
+# Hyprland Setup Script for Arch Linux (Non-interactive)
 set -euo pipefail
 
 # =====================================
@@ -83,6 +83,7 @@ fi
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano rofi wget jq
+    sddm polkit polkit-kde-agent
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
@@ -91,9 +92,28 @@ PACMAN_PACKAGES=(
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Core package installation"
 
-# Enable essential services
-run_command "systemctl enable --now polkit.service" "Enable polkit"
-run_command "systemctl enable sddm.service" "Enable SDDM"
+# =====================================
+# Enable essential services (safe)
+# =====================================
+print_header "Enabling Essential Services"
+
+# Polkit
+if systemctl list-unit-files | grep -q '^polkit.service'; then
+    run_command "systemctl enable --now polkit.service" "Enable polkit"
+else
+    print_warning "polkit.service not found, skipping"
+fi
+
+# SDDM
+if pacman -Qi sddm &>/dev/null; then
+    if systemctl list-unit-files | grep -q '^sddm.service'; then
+        run_command "systemctl enable --now sddm.service" "Enable SDDM Display Manager"
+    else
+        print_warning "sddm.service not found even after install, skipping"
+    fi
+else
+    print_warning "SDDM not installed yet, skipping enable for now"
+fi
 
 # =====================================
 # Install Yay (AUR Helper)
@@ -110,7 +130,7 @@ else
 fi
 
 # =====================================
-# Install AUR Packages (Matugen)
+# Install AUR Packages (Matugen + VSCodium)
 # =====================================
 print_header "Installing AUR Packages"
 AUR_PACKAGES=( matugen-bin vscodium-bin )
@@ -122,7 +142,7 @@ run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags 
 print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
 copy_configs "$REPO_ROOT/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
-copy_configs "$REPO_ROOT/configs/theme-wallpaper" "$CONFIG_DIR/theme-wallpaper" "Theme Wallpaper"
+copy_configs "$REPO_ROOT/configs/kitty"  "$CONFIG_DIR/kitty"  "Kitty"
 
 # =====================================
 # Copy Scripts and Make Executable
@@ -145,18 +165,11 @@ sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
-# Update Bashrc for Matugen
+# Update .bashrc to include local bin
 # =====================================
-print_header "Updating Bashrc for Matugen"
-BASHRC="$USER_HOME/.bashrc"
-if ! grep -q "theme-wallpaper" "$BASHRC"; then
-    echo "" >> "$BASHRC"
-    echo "# Matugen Theme-Wallpaper Scripts" >> "$BASHRC"
-    echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$BASHRC"
-    echo "alias theme-wallpaper='~/.config/theme-wallpaper/theme-wallpaper.sh'" >> "$BASHRC"
-    print_success "✅ Added theme-wallpaper alias to $BASHRC"
-else
-    print_warning "theme-wallpaper alias already present in $BASHRC"
+if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$USER_HOME/.bashrc"; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$USER_HOME/.bashrc"
+    print_success "✅ Updated .bashrc to include ~/.local/bin in PATH"
 fi
 
 # =====================================
@@ -164,5 +177,5 @@ fi
 # =====================================
 print_header "Setup Complete!"
 print_success "🎉 Reboot and log in via SDDM to start using Hyprland with your configs."
-print_success "You can now run the theme scripts with:"
-echo "theme-wallpaper"
+print_success "You can now generate colorschemes with Matugen by running:"
+echo "matugen image --file \"$WALLPAPER_DEST_DIR/cats.png\" --out-dir \"$CONFIG_DIR/matugen\""
