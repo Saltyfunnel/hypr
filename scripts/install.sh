@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland Setup Script for Arch Linux (Non-interactive)
+# Hyprland Setup Script for Arch Linux (Non-interactive, GTK theming skipped)
 set -euo pipefail
 
 # =====================================
@@ -82,22 +82,26 @@ fi
 # =====================================
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
-    hyprland waybar swww dunst kitty nano rofi wget jq
+    hyprland waybar swww dunst grim slurp kitty nano rofi wget jq
+    sddm polkit polkit-kde-agent
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
     qt5-wayland qt6-wayland gtk3 gtk4 starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
-    sddm polkit polkit-kde-agent
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Core package installation"
 
 # =====================================
 # Enable essential services
 # =====================================
-print_header "Enabling essential services"
+print_header "Enabling Essential Services"
+if systemctl list-unit-files | grep -q '^sddm\.service'; then
+    run_command "systemctl enable sddm.service" "Enable SDDM display manager"
+else
+    print_warning "SDDM service not found; skipping enable"
+fi
 run_command "systemctl enable --now polkit.service" "Enable polkit"
-run_command "systemctl enable --now sddm.service" "Enable and start SDDM"
 
 # =====================================
 # Install Yay (AUR Helper)
@@ -114,22 +118,28 @@ else
 fi
 
 # =====================================
-# Install AUR Packages (Matugen)
+# Install AUR Packages (Matugen, VSCodium)
 # =====================================
 print_header "Installing AUR Packages"
 AUR_PACKAGES=( matugen-bin vscodium-bin )
 run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
-# Copy Configuration Files (Hyprland, Waybar, Theme-Wallpaper)
+# Copy Configuration Files
 # =====================================
 print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"           "$CONFIG_DIR/hypr"           "Hyprland"
-copy_configs "$REPO_ROOT/configs/waybar"        "$CONFIG_DIR/waybar"        "Waybar"
+copy_configs "$REPO_ROOT/configs/waybar"        "$CONFIG_DIR/waybar"         "Waybar"
 copy_configs "$REPO_ROOT/configs/theme-wallpaper" "$CONFIG_DIR/theme-wallpaper" "Theme-Wallpaper"
 
+# Ensure scripts inside theme-wallpaper are executable
+if [[ -d "$CONFIG_DIR/theme-wallpaper" ]]; then
+    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/theme-wallpaper/"*.sh
+    print_success "✅ Scripts inside theme-wallpaper made executable"
+fi
+
 # =====================================
-# Copy Scripts and Make Executable
+# Copy Scripts (general scripts folder)
 # =====================================
 print_header "Copying Scripts"
 SCRIPT_DEST="$USER_HOME/.local/bin"
@@ -149,11 +159,11 @@ sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
-# Update bashrc to include local bin
+# Update Bashrc to include local scripts
 # =====================================
-if ! grep -q 'PATH="$HOME/.local/bin:$PATH"' "$USER_HOME/.bashrc"; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$USER_HOME/.bashrc"
-    print_success "✅ Added ~/.local/bin to PATH in bashrc"
+if ! grep -q "$SCRIPT_DEST" "$USER_HOME/.bashrc"; then
+    echo -e "\n# Add local scripts to PATH\nexport PATH=\"\$PATH:$SCRIPT_DEST\"" >> "$USER_HOME/.bashrc"
+    print_success "✅ Updated .bashrc to include local scripts"
 fi
 
 # =====================================
