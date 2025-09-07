@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland Setup Script for Arch Linux (Non-interactive)
+# Hyprland Setup Script for Arch Linux (Non-interactive, no GTK)
 set -euo pipefail
 
 # =====================================
@@ -83,11 +83,10 @@ fi
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano rofi wget jq
-    sddm polkit polkit-kde-agent
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
-    qt5-wayland qt6-wayland gtk3 gtk4 fastfetch starship
+    qt5-wayland qt6-wayland gtk3 gtk4 starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Core package installation"
@@ -123,6 +122,7 @@ run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags 
 print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"   "$CONFIG_DIR/hypr"   "Hyprland"
 copy_configs "$REPO_ROOT/configs/waybar" "$CONFIG_DIR/waybar" "Waybar"
+copy_configs "$REPO_ROOT/configs/theme-wallpaper" "$CONFIG_DIR/theme-wallpaper" "Theme Wallpaper"
 
 # =====================================
 # Copy Scripts and Make Executable
@@ -145,9 +145,24 @@ sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
+# Update Bashrc for Matugen
+# =====================================
+print_header "Updating Bashrc for Matugen"
+BASHRC="$USER_HOME/.bashrc"
+if ! grep -q "theme-wallpaper" "$BASHRC"; then
+    echo "" >> "$BASHRC"
+    echo "# Matugen Theme-Wallpaper Scripts" >> "$BASHRC"
+    echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$BASHRC"
+    echo "alias theme-wallpaper='~/.config/theme-wallpaper/theme-wallpaper.sh'" >> "$BASHRC"
+    print_success "✅ Added theme-wallpaper alias to $BASHRC"
+else
+    print_warning "theme-wallpaper alias already present in $BASHRC"
+fi
+
+# =====================================
 # Final Message
 # =====================================
 print_header "Setup Complete!"
 print_success "🎉 Reboot and log in via SDDM to start using Hyprland with your configs."
-print_success "You can now generate colorschemes with Matugen by running:"
-echo "matugen image --file \"$WALLPAPER_DEST_DIR/cats.png\" --out-dir \"$CONFIG_DIR/matugen\""
+print_success "You can now run the theme scripts with:"
+echo "theme-wallpaper"
