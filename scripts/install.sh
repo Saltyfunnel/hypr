@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland Setup Script for Arch Linux (Non-interactive, GTK theming skipped)
+# Hyprland Setup Script for Arch Linux (Non-interactive)
 set -euo pipefail
 
 # =====================================
@@ -86,21 +86,13 @@ PACMAN_PACKAGES=(
     sddm polkit polkit-kde-agent
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
-    firefox yazi fastfetch mpv code
-    qt5-wayland qt6-wayland gtk3 gtk4 starship
+    firefox yazi fastfetch mpv
+    qt5-wayland qt6-wayland gtk3 gtk4 fastfetch starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Core package installation"
 
-# =====================================
 # Enable essential services
-# =====================================
-print_header "Enabling Essential Services"
-if systemctl list-unit-files | grep -q '^sddm\.service'; then
-    run_command "systemctl enable sddm.service" "Enable SDDM display manager"
-else
-    print_warning "SDDM service not found; skipping enable"
-fi
 run_command "systemctl enable --now polkit.service" "Enable polkit"
 
 # =====================================
@@ -118,28 +110,22 @@ else
 fi
 
 # =====================================
-# Install AUR Packages (Matugen,)
+# Install AUR Packages (Matugen)
 # =====================================
 print_header "Installing AUR Packages"
-AUR_PACKAGES=( matugen-bin )
+AUR_PACKAGES=( matugen-bin vscodium-bin )
 run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
 # Copy Configuration Files
 # =====================================
 print_header "Copying Configurations"
-copy_configs "$REPO_ROOT/configs/hypr"           "$CONFIG_DIR/hypr"           "Hyprland"
-copy_configs "$REPO_ROOT/configs/waybar"        "$CONFIG_DIR/waybar"         "Waybar"
-copy_configs "$REPO_ROOT/configs/theme-wallpaper" "$CONFIG_DIR/theme-wallpaper" "Theme-Wallpaper"
-
-# Ensure scripts inside theme-wallpaper are executable
-if [[ -d "$CONFIG_DIR/theme-wallpaper" ]]; then
-    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/theme-wallpaper/"*.sh
-    print_success "✅ Scripts inside theme-wallpaper made executable"
-fi
+copy_configs "$REPO_ROOT/configs/hypr"        "$CONFIG_DIR/hypr"        "Hyprland"
+copy_configs "$REPO_ROOT/configs/waybar"     "$CONFIG_DIR/waybar"     "Waybar"
+copy_configs "$REPO_ROOT/theme-wallpaper"    "$CONFIG_DIR/theme-wallpaper" "Theme-Wallpaper"
 
 # =====================================
-# Copy Scripts (general scripts folder)
+# Copy Scripts and Make Executable
 # =====================================
 print_header "Copying Scripts"
 SCRIPT_DEST="$USER_HOME/.local/bin"
@@ -159,17 +145,32 @@ sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
-# Update Bashrc to include local scripts
+# Configure Starship for Bash
 # =====================================
-if ! grep -q "$SCRIPT_DEST" "$USER_HOME/.bashrc"; then
-    echo -e "\n# Add local scripts to PATH\nexport PATH=\"\$PATH:$SCRIPT_DEST\"" >> "$USER_HOME/.bashrc"
-    print_success "✅ Updated .bashrc to include local scripts"
+print_header "Configuring Starship prompt"
+BASHRC_FILE="$USER_HOME/.bashrc"
+STARSHIP_INIT='eval "$(starship init bash)"'
+if ! grep -Fxq "$STARSHIP_INIT" "$BASHRC_FILE"; then
+    echo -e "\n# Initialize Starship prompt\n$STARSHIP_INIT" >> "$BASHRC_FILE"
+    print_success "✅ Starship initialization added to $BASHRC_FILE"
+else
+    print_success "✅ Starship already initialized in $BASHRC_FILE"
+fi
+
+# =====================================
+# Enable SDDM
+# =====================================
+print_header "Enabling SDDM"
+if systemctl list-unit-files | grep -q '^sddm.service'; then
+    run_command "systemctl enable --now sddm.service" "Enable SDDM login manager"
+else
+    print_warning "sddm.service not found, skipping SDDM enable"
 fi
 
 # =====================================
 # Final Message
 # =====================================
 print_header "Setup Complete!"
-print_success "🎉 Reboot and log in via SDDM to start using Hyprland with your configs."
+print_success "🎉 Reboot and log in via SDDM (if installed) to start using Hyprland with your configs."
 print_success "You can now generate colorschemes with Matugen by running:"
-echo "matugen image --file \"$WALLPAPER_DEST_DIR/cats.png\" --out-dir \"$CONFIG_DIR/theme-wallpaper\""
+echo "matugen image --file \"$WALLPAPER_DEST_DIR/cats.png\" --out-dir \"$CONFIG_DIR/matugen\""
