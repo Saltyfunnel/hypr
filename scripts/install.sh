@@ -86,7 +86,7 @@ PACMAN_PACKAGES=(
     sddm polkit polkit-kde-agent
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
-    firefox yazi fastfetch mpv
+    firefox yazi fastfetch mpv code
     qt5-wayland qt6-wayland gtk3 gtk4 starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
@@ -118,10 +118,10 @@ else
 fi
 
 # =====================================
-# Install AUR Packages (Matugen, VSCodium)
+# Install AUR Packages (Matugen,)
 # =====================================
 print_header "Installing AUR Packages"
-AUR_PACKAGES=( matugen-bin vscodium-bin )
+AUR_PACKAGES=( matugen-bin )
 run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
