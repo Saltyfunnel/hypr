@@ -83,7 +83,7 @@ fi
 # =====================================
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
-    hyprland waybar swww dunst grim slurp kitty nano rofi wget jq
+    hyprland waybar swww dunst grim slurp kitty nano wget jq
     sddm polkit polkit-kde-agent code
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
@@ -127,7 +127,6 @@ run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags 
 print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"        "$CONFIG_DIR/hypr"        "Hyprland"
 copy_configs "$REPO_ROOT/configs/waybar"      "$CONFIG_DIR/waybar"      "Waybar"
-copy_configs "$REPO_ROOT/theme-wallpaper"     "$CONFIG_DIR/theme-wallpaper" "Theme-Wallpaper"
 
 # =====================================
 # Copy Scripts and Make Executable
@@ -164,15 +163,32 @@ else
 fi
 
 # =====================================
-# Enable SDDM and switch to graphical target
+# Install and Enable SDDM (Re-run Safe)
 # =====================================
-print_header "Enabling SDDM"
+print_header "Installing and Enabling SDDM"
+
+# Ensure SDDM package is installed
+run_command "pacman -S --noconfirm --needed sddm" "Install SDDM display manager"
+
+# Check if the sddm.service file exists
 if systemctl list-unit-files | grep -q '^sddm.service'; then
-    run_command "systemctl enable --now sddm.service" "Enable SDDM login manager"
-    run_command "systemctl set-default graphical.target" "Set default target to graphical"
-    run_command "systemctl isolate graphical.target" "Switch to graphical target now"
+    # Check if SDDM is already enabled
+    if systemctl is-enabled sddm.service &>/dev/null; then
+        print_success "✅ SDDM is already enabled"
+    else
+        run_command "systemctl enable --now sddm.service" "Enable and start SDDM login manager"
+    fi
+
+    # Check if default target is already graphical
+    CURRENT_TARGET=$(systemctl get-default)
+    if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
+        run_command "systemctl set-default graphical.target" "Set default target to graphical"
+        print_success "✅ Default target set to graphical.target"
+    else
+        print_success "✅ Default target already set to graphical.target"
+    fi
 else
-    print_warning "sddm.service not found, skipping SDDM enable"
+    print_warning "SDDM service not found even after install, skipping enable step"
 fi
 
 # =====================================
