@@ -84,7 +84,7 @@ fi
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano wget jq
-    sddm polkit polkit-kde-agent code 
+    sddm polkit polkit-kde-agent code
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
@@ -119,14 +119,14 @@ fi
 # =====================================
 print_header "Installing AUR Packages"
 AUR_PACKAGES=(  )
-run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
+run_command "sudo -u "$USER_NAME" yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
 # Copy Configuration Files
 # =====================================
 print_header "Copying Configurations"
-copy_configs "$REPO_ROOT/configs/hypr"        "$CONFIG_DIR/hypr"        "Hyprland"
-copy_configs "$REPO_ROOT/configs/waybar"      "$CONFIG_DIR/waybar"      "Waybar"
+copy_configs "$REPO_ROOT/configs/hypr"          "$CONFIG_DIR/hypr"        "Hyprland"
+copy_configs "$REPO_ROOT/configs/waybar"        "$CONFIG_DIR/waybar"      "Waybar"
 
 # =====================================
 # Copy Scripts and Make Executable
@@ -170,20 +170,14 @@ print_header "Installing and Enabling SDDM"
 # Ensure SDDM package is installed
 run_command "pacman -S --noconfirm --needed sddm" "Install SDDM display manager"
 
-# Check if the sddm.service file exists
-if systemctl list-unit-files | grep -q '^sddm.service'; then
-    # Check if SDDM is already enabled
-    if systemctl is-enabled sddm.service &>/dev/null; then
-        print_success "✅ SDDM is already enabled"
-    else
-        run_command "systemctl enable sddm.service" "Enable SDDM login manager at boot"
-    fi
-
+# Check if the sddm.service file exists before trying to enable it
+if systemctl list-unit-files sddm.service &>/dev/null; then
+    run_command "systemctl enable sddm.service" "Enable SDDM login manager at boot"
+    
     # Make sure default target is graphical
     CURRENT_TARGET=$(systemctl get-default)
     if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
         run_command "systemctl set-default graphical.target" "Set default target to graphical"
-        print_success "✅ Default target set to graphical.target"
     else
         print_success "✅ Default target already set to graphical.target"
     fi
@@ -191,13 +185,13 @@ if systemctl list-unit-files | grep -q '^sddm.service'; then
     # Always start SDDM now so the login screen is visible immediately
     run_command "systemctl start sddm.service" "Start SDDM immediately"
 else
-    print_warning "SDDM service not found even after install, skipping enable step"
+    print_error "SDDM service file not found after installation. Cannot enable or start. Please check the pacman output."
 fi
 
 # =====================================
 # Final Message
 # =====================================
 print_header "Setup Complete!"
-print_success "🎉 Reboot and log in via SDDM (if installed) to start using Hyprland with your configs."
+print_success "🎉 Reboot and log in via SDDM to start using Hyprland with your configs."
 print_success "You can now generate colorschemes with Matugen by running:"
 echo "matugen image --file \"$WALLPAPER_DEST_DIR/cats.png\" --out-dir \"$CONFIG_DIR/matugen\""
