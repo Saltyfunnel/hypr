@@ -84,7 +84,7 @@ fi
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano wget jq
-    sddm polkit polkit-kde-agent code python-pywal
+    sddm polkit polkit-kde-agent code 
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
@@ -118,7 +118,7 @@ fi
 # Install AUR Packages
 # =====================================
 print_header "Installing AUR Packages"
-AUR_PACKAGES=( tofi )
+AUR_PACKAGES=(  )
 run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
@@ -127,9 +127,7 @@ run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags 
 print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"        "$CONFIG_DIR/hypr"        "Hyprland"
 copy_configs "$REPO_ROOT/configs/waybar"      "$CONFIG_DIR/waybar"      "Waybar"
-copy_configs "$REPO_ROOT/configs/kitty"       "$CONFIG_DIR/kitty"       "Kitty"
-copy_configs "$REPO_ROOT/configs/fastfetch"   "$CONFIG_DIR/fastfetch"   "Fastfetch"
-copy_configs "$REPO_ROOT/configs/dunst"       "$CONFIG_DIR/dunst"       "dunst"
+
 # =====================================
 # Copy Scripts and Make Executable
 # =====================================
