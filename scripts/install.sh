@@ -178,10 +178,10 @@ if systemctl list-unit-files | grep -q '^sddm.service'; then
     if systemctl is-enabled sddm.service &>/dev/null; then
         print_success "✅ SDDM is already enabled"
     else
-        run_command "systemctl enable --now sddm.service" "Enable and start SDDM login manager"
+        run_command "systemctl enable sddm.service" "Enable SDDM login manager at boot"
     fi
 
-    # Check if default target is already graphical
+    # Make sure default target is graphical
     CURRENT_TARGET=$(systemctl get-default)
     if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
         run_command "systemctl set-default graphical.target" "Set default target to graphical"
@@ -189,6 +189,9 @@ if systemctl list-unit-files | grep -q '^sddm.service'; then
     else
         print_success "✅ Default target already set to graphical.target"
     fi
+
+    # Always start SDDM now so the login screen is visible immediately
+    run_command "systemctl start sddm.service" "Start SDDM immediately"
 else
     print_warning "SDDM service not found even after install, skipping enable step"
 fi
