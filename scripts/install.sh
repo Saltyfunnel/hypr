@@ -163,7 +163,7 @@ else
 fi
 
 # =====================================
-# Install and Enable SDDM (Re-run Safe)
+# Install and Enable SDDM (Safe, Non-hanging)
 # =====================================
 print_header "Installing and Enabling SDDM"
 
@@ -173,7 +173,7 @@ run_command "pacman -S --noconfirm --needed sddm" "Install SDDM display manager"
 # Check if the sddm.service file exists before trying to enable it
 if systemctl list-unit-files sddm.service &>/dev/null; then
     run_command "systemctl enable sddm.service" "Enable SDDM login manager at boot"
-    
+
     # Make sure default target is graphical
     CURRENT_TARGET=$(systemctl get-default)
     if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
@@ -182,11 +182,11 @@ if systemctl list-unit-files sddm.service &>/dev/null; then
         print_success "✅ Default target already set to graphical.target"
     fi
 
-    # Always start SDDM now so the login screen is visible immediately
-    run_command "systemctl start sddm.service" "Start SDDM immediately"
+    print_success "✅ SDDM enabled. Please reboot to start the graphical login."
 else
-    print_error "SDDM service file not found after installation. Cannot enable or start. Please check the pacman output."
+    print_error "SDDM service file not found after installation. Cannot enable. Please check the pacman output."
 fi
+
 
 # =====================================
 # Final Message
