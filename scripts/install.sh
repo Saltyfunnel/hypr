@@ -127,7 +127,7 @@ run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags 
 print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"        "$CONFIG_DIR/hypr"        "Hyprland"
 copy_configs "$REPO_ROOT/configs/waybar"      "$CONFIG_DIR/waybar"      "Waybar"
-
+copy_configs "$REPO_ROOT/configs/kitty"       "$CONFIG_DIR/kitty"       "Kitty"
 # =====================================
 # Copy Scripts and Make Executable
 # =====================================
