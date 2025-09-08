@@ -29,6 +29,7 @@ copy_configs() {
         return
     fi
     sudo -u "$USER_NAME" mkdir -p "$dest"
+    # Force overwrite even if dest is not empty
     sudo -u "$USER_NAME" cp -rf "$src/." "$dest/"
     print_success "✅ $name config copied to $dest"
 }
@@ -103,6 +104,10 @@ if command -v yay &>/dev/null; then
     print_success "Yay already installed"
 else
     run_command "pacman -S --noconfirm --needed git base-devel" "Install git and base-devel"
+    
+    # Remove old yay dir to prevent conflicts
+    run_command "rm -rf /tmp/yay" "Clean up existing yay folder if present"
+    
     run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay repository"
     run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
     run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
@@ -121,8 +126,8 @@ run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags 
 # =====================================
 print_header "Copying Configurations"
 copy_configs "$REPO_ROOT/configs/hypr"        "$CONFIG_DIR/hypr"        "Hyprland"
-copy_configs "$REPO_ROOT/configs/waybar"     "$CONFIG_DIR/waybar"     "Waybar"
-copy_configs "$REPO_ROOT/theme-wallpaper"    "$CONFIG_DIR/theme-wallpaper" "Theme-Wallpaper"
+copy_configs "$REPO_ROOT/configs/waybar"      "$CONFIG_DIR/waybar"      "Waybar"
+copy_configs "$REPO_ROOT/theme-wallpaper"     "$CONFIG_DIR/theme-wallpaper" "Theme-Wallpaper"
 
 # =====================================
 # Copy Scripts and Make Executable
@@ -141,6 +146,7 @@ print_header "Copying Wallpapers"
 WALLPAPER_SRC_DIR="$REPO_ROOT/assets/wallpapers"
 WALLPAPER_DEST_DIR="$USER_HOME/Pictures/Wallpapers"
 sudo -u "$USER_NAME" mkdir -p "$WALLPAPER_DEST_DIR"
+# Force overwrite
 sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
