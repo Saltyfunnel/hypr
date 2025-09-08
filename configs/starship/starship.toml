@@ -1,0 +1,111 @@
+# Horizontal Pywal-themed Starship prompt
+format = "[]($WAL_COLOR1)$os$username[](bg:$WAL_COLOR2 fg:$WAL_COLOR1)$directory[](fg:$WAL_COLOR3 bg:$WAL_COLOR2)$git_branch$git_status[](fg:$WAL_COLOR3 bg:$WAL_COLOR4)$c$elixir$elm$golang$gradle$haskell$java$julia$nodejs$nim$rust$scala[](fg:$WAL_COLOR4 bg:$WAL_COLOR1)$docker_context[](fg:$WAL_COLOR1 bg:$WAL_COLOR2)$time[](fg:$WAL_COLOR2)"
+
+add_newline = false
+
+[username]
+show_always = true
+style_user = "bg:$WAL_COLOR1"
+style_root = "bg:$WAL_COLOR1"
+format = '[$user ]($style)'
+disabled = false
+
+[os]
+style = "bg:$WAL_COLOR1"
+disabled = true
+
+[directory]
+style = "bg:$WAL_COLOR2"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+
+[git_branch]
+symbol = ""
+style = "bg:$WAL_COLOR3"
+format = '[ $symbol $branch ]($style)'
+
+[git_status]
+style = "bg:$WAL_COLOR3"
+format = "[$all_status$ahead_behind]($style)"
+
+[docker_context]
+symbol = " "
+style = "bg:$WAL_COLOR1"
+format = '[ $symbol $context ]($style)'
+
+[c]
+symbol = " "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[cpp]
+symbol = " "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[elixir]
+symbol = " "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[elm]
+symbol = " "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[golang]
+symbol = " "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[gradle]
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[haskell]
+symbol = " "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[java]
+symbol = " "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[julia]
+symbol = " "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[nodejs]
+symbol = ""
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[nim]
+symbol = "󰆥 "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[rust]
+symbol = ""
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[scala]
+symbol = " "
+style = "bg:$WAL_COLOR4"
+format = '[ $symbol ($version) ]($style)'
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:$WAL_COLOR2"
+format = '[ ♥ $time ]($style)'
