@@ -29,7 +29,6 @@ copy_configs() {
         return
     fi
     sudo -u "$USER_NAME" mkdir -p "$dest"
-    # Force overwrite even if dest is not empty
     sudo -u "$USER_NAME" cp -rf "$src/." "$dest/"
     print_success "✅ $name config copied to $dest"
 }
@@ -42,6 +41,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
+BASHRC_FILE="$USER_HOME/.bashrc"
 
 # =====================================
 # Pre-run Checks
@@ -88,7 +88,7 @@ PACMAN_PACKAGES=(
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
-    qt5-wayland qt6-wayland gtk3 gtk4 fastfetch starship
+    qt5-wayland qt6-wayland gtk3 gtk4 starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Core package installation"
@@ -104,10 +104,7 @@ if command -v yay &>/dev/null; then
     print_success "Yay already installed"
 else
     run_command "pacman -S --noconfirm --needed git base-devel" "Install git and base-devel"
-    
-    # Remove old yay dir to prevent conflicts
     run_command "rm -rf /tmp/yay" "Clean up existing yay folder if present"
-    
     run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay repository"
     run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
     run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
@@ -115,10 +112,10 @@ else
 fi
 
 # =====================================
-# Install AUR Packages
+# Install AUR Packages (if any)
 # =====================================
 print_header "Installing AUR Packages"
-AUR_PACKAGES=(  )
+AUR_PACKAGES=( )
 run_command "sudo -u "$USER_NAME" yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
@@ -145,15 +142,14 @@ print_header "Copying Wallpapers"
 WALLPAPER_SRC_DIR="$REPO_ROOT/assets/wallpapers"
 WALLPAPER_DEST_DIR="$USER_HOME/Pictures/Wallpapers"
 sudo -u "$USER_NAME" mkdir -p "$WALLPAPER_DEST_DIR"
-# Force overwrite
 sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
-# Configure Starship for Bash
+# Configure Starship + Fastfetch in Bash
 # =====================================
-print_header "Configuring Starship prompt"
-BASHRC_FILE="$USER_HOME/.bashrc"
+print_header "Configuring Starship prompt and Fastfetch"
+# Starship init
 STARSHIP_INIT='eval "$(starship init bash)"'
 if ! grep -Fxq "$STARSHIP_INIT" "$BASHRC_FILE"; then
     echo -e "\n# Initialize Starship prompt\n$STARSHIP_INIT" >> "$BASHRC_FILE"
@@ -162,31 +158,33 @@ else
     print_success "✅ Starship already initialized in $BASHRC_FILE"
 fi
 
+# Fastfetch auto-run
+FASTFETCH_CMD='fastfetch -c "$HOME/.config/fastfetch/config.jsonc"'
+if ! grep -Fxq "$FASTFETCH_CMD" "$BASHRC_FILE"; then
+    echo -e "\n# Auto-run Fastfetch\n$FASTFETCH_CMD" >> "$BASHRC_FILE"
+    print_success "✅ Fastfetch auto-run added to $BASHRC_FILE"
+else
+    print_success "✅ Fastfetch already configured in $BASHRC_FILE"
+fi
+
 # =====================================
-# Install and Enable SDDM (Safe, Non-hanging)
+# Install and Enable SDDM
 # =====================================
 print_header "Installing and Enabling SDDM"
-
-# Ensure SDDM package is installed
 run_command "pacman -S --noconfirm --needed sddm" "Install SDDM display manager"
 
-# Check if the sddm.service file exists before trying to enable it
 if systemctl list-unit-files sddm.service &>/dev/null; then
     run_command "systemctl enable sddm.service" "Enable SDDM login manager at boot"
-
-    # Make sure default target is graphical
     CURRENT_TARGET=$(systemctl get-default)
     if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
         run_command "systemctl set-default graphical.target" "Set default target to graphical"
     else
         print_success "✅ Default target already set to graphical.target"
     fi
-
     print_success "✅ SDDM enabled. Please reboot to start the graphical login."
 else
     print_error "SDDM service file not found after installation. Cannot enable. Please check the pacman output."
 fi
-
 
 # =====================================
 # Final Message
