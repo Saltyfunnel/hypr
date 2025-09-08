@@ -113,7 +113,7 @@ fi
 # Install AUR Packages
 # =====================================
 print_header "Installing AUR Packages"
-AUR_PACKAGES=( matugen-bin steam spotify spicetify-cli )
+AUR_PACKAGES=( tofi )
 run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
