@@ -158,11 +158,13 @@ else
 fi
 
 # =====================================
-# Enable SDDM
+# Enable SDDM and switch to graphical target
 # =====================================
 print_header "Enabling SDDM"
 if systemctl list-unit-files | grep -q '^sddm.service'; then
     run_command "systemctl enable --now sddm.service" "Enable SDDM login manager"
+    run_command "systemctl set-default graphical.target" "Set default target to graphical"
+    run_command "systemctl isolate graphical.target" "Switch to graphical target now"
 else
     print_warning "sddm.service not found, skipping SDDM enable"
 fi
