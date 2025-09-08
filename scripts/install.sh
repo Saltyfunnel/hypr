@@ -29,6 +29,7 @@ copy_configs() {
         return
     fi
     sudo -u "$USER_NAME" mkdir -p "$dest"
+    # Force overwrite even if dest is not empty
     sudo -u "$USER_NAME" cp -rf "$src/." "$dest/"
     print_success "✅ $name config copied to $dest"
 }
@@ -41,7 +42,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
-BASHRC_FILE="$USER_HOME/.bashrc"
 
 # =====================================
 # Pre-run Checks
@@ -88,7 +88,7 @@ PACMAN_PACKAGES=(
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
-    qt5-wayland qt6-wayland gtk3 gtk4 starship
+    qt5-wayland qt6-wayland gtk3 gtk4 fastfetch starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Core package installation"
@@ -112,18 +112,43 @@ else
 fi
 
 # =====================================
-# Install AUR Packages (if any)
+# Install AUR Packages
 # =====================================
 print_header "Installing AUR Packages"
-AUR_PACKAGES=( )
+AUR_PACKAGES=(  )
 run_command "sudo -u "$USER_NAME" yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
 # Copy Configuration Files
 # =====================================
 print_header "Copying Configurations"
-copy_configs "$REPO_ROOT/configs/hypr"          "$CONFIG_DIR/hypr"        "Hyprland"
-copy_configs "$REPO_ROOT/configs/waybar"        "$CONFIG_DIR/waybar"      "Waybar"
+
+CONFIGS_TO_COPY=(
+    "hypr"
+    "kitty"
+    "starship"
+    "theme-manager"
+    "waybar"
+    "fastfetch"
+)
+
+for cfg in "${CONFIGS_TO_COPY[@]}"; do
+    SRC="$REPO_ROOT/configs/$cfg"
+    DEST="$CONFIG_DIR/$cfg"
+
+    if [[ "$cfg" == "starship" ]]; then
+        SRC_FILE="$SRC/starship.toml"
+        DEST_FILE="$CONFIG_DIR/starship.toml"
+        if [[ -f "$SRC_FILE" ]]; then
+            sudo -u "$USER_NAME" cp "$SRC_FILE" "$DEST_FILE"
+            print_success "✅ $cfg/starship.toml copied to $DEST_FILE"
+        else
+            print_warning "Missing $SRC_FILE, skipping..."
+        fi
+    else
+        copy_configs "$SRC" "$DEST" "$cfg"
+    fi
+done
 
 # =====================================
 # Copy Scripts and Make Executable
@@ -146,10 +171,10 @@ sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
-# Configure Starship + Fastfetch in Bash
+# Configure Starship for Bash
 # =====================================
-print_header "Configuring Starship prompt and Fastfetch"
-# Starship init
+print_header "Configuring Starship prompt"
+BASHRC_FILE="$USER_HOME/.bashrc"
 STARSHIP_INIT='eval "$(starship init bash)"'
 if ! grep -Fxq "$STARSHIP_INIT" "$BASHRC_FILE"; then
     echo -e "\n# Initialize Starship prompt\n$STARSHIP_INIT" >> "$BASHRC_FILE"
@@ -158,13 +183,13 @@ else
     print_success "✅ Starship already initialized in $BASHRC_FILE"
 fi
 
-# Fastfetch auto-run
-FASTFETCH_CMD='fastfetch -c "$HOME/.config/fastfetch/config.jsonc"'
-if ! grep -Fxq "$FASTFETCH_CMD" "$BASHRC_FILE"; then
-    echo -e "\n# Auto-run Fastfetch\n$FASTFETCH_CMD" >> "$BASHRC_FILE"
-    print_success "✅ Fastfetch auto-run added to $BASHRC_FILE"
+# Add fastfetch to bashrc if not present
+FASTFETCH_INIT='fastfetch'
+if ! grep -Fxq "$FASTFETCH_INIT" "$BASHRC_FILE"; then
+    echo -e "\n# Display system info via Fastfetch\n$FASTFETCH_INIT" >> "$BASHRC_FILE"
+    print_success "✅ Fastfetch added to $BASHRC_FILE"
 else
-    print_success "✅ Fastfetch already configured in $BASHRC_FILE"
+    print_success "✅ Fastfetch already in $BASHRC_FILE"
 fi
 
 # =====================================
@@ -183,7 +208,7 @@ if systemctl list-unit-files sddm.service &>/dev/null; then
     fi
     print_success "✅ SDDM enabled. Please reboot to start the graphical login."
 else
-    print_error "SDDM service file not found after installation. Cannot enable. Please check the pacman output."
+    print_error "SDDM service file not found after installation."
 fi
 
 # =====================================
