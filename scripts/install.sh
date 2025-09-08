@@ -84,7 +84,7 @@ fi
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano wget jq
-    sddm polkit polkit-kde-agent code
+    sddm polkit polkit-kde-agent code python-pywal
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
