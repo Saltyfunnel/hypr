@@ -1,6 +1,19 @@
-:root {
---primary: #8dcff2;
---secondary: #b5cad7;
---background: #0f1417;
---foreground: #dfe3e7;
-}
+@define-color foreground #f1bee7;
+@define-color background #392218;
+@define-color color0 #392218;
+@define-color color1 #D05BB5;
+@define-color color2 #B9938A;
+@define-color color3 #F9A2A9;
+@define-color color4 #FEC7B3;
+@define-color color5 #F88FD8;
+@define-color color6 #FEB0D3;
+@define-color color7 #f1bee7;
+@define-color color8 #a885a1;
+@define-color color9 #D05BB5;
+@define-color color10 #B9938A;
+@define-color color11 #F9A2A9;
+@define-color color12 #FEC7B3;
+@define-color color13 #F88FD8;
+@define-color color14 #FEB0D3;
+@define-color color15 #f1bee7;
+@define-color primary #D05BB5;
