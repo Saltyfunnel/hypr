@@ -1,6 +1,6 @@
 #!/bin/bash
 # ~/.config/theme-manager/applytheme.sh
-# Apply wallpaper, Pywal colors, Starship, Kitty, GTK themes, and Fastfetch
+# Apply wallpaper, Pywal colors, Starship, Kitty, GTK themes, Fastfetch, and Waybar
 
 source ~/.config/theme-manager/config.sh
 
@@ -15,7 +15,7 @@ source ~/.config/theme-manager/config.sh
 ~/.config/theme-manager/setcolors.sh
 
 # -------------------------------
-# Step 3: Export Pywal colors
+# Step 3: Export Pywal colors for shell scripts
 # -------------------------------
 export WAL_COLOR1=$(jq -r '.colors[0]' ~/.cache/wal/colors.json)
 export WAL_COLOR2=$(jq -r '.colors[1]' ~/.cache/wal/colors.json)
@@ -23,7 +23,7 @@ export WAL_COLOR3=$(jq -r '.colors[2]' ~/.cache/wal/colors.json)
 export WAL_COLOR4=$(jq -r '.colors[3]' ~/.cache/wal/colors.json)
 
 # -------------------------------
-# Step 4: Reload Starship
+# Step 4: Reload Starship prompt
 # -------------------------------
 eval "$(starship init bash)"
 
@@ -54,8 +54,20 @@ if [ -f "$FASTFETCH_CONFIG" ]; then
        '.colors.ascii=$c1 | .colors.os=$c0 | .colors.host=$c2 | .colors.cpu=$c3' \
        "$FASTFETCH_CONFIG" > "$FASTFETCH_CONFIG.tmp" && mv "$FASTFETCH_CONFIG.tmp" "$FASTFETCH_CONFIG"
 
-    # Optional: display Fastfetch output immediately
     fastfetch -c "$FASTFETCH_CONFIG"
 fi
 
-echo "Full theme applied!"
+# -------------------------------
+# Step 8: Generate Waybar-compatible CSS
+# -------------------------------
+wal -R -o 'cp ~/.cache/wal/colors-waybar.css ~/.config/waybar/colors.css'
+
+# -------------------------------
+# Step 9: Start Waybar (if not already running)
+# -------------------------------
+# Kill any existing instance first
+pkill waybar 2>/dev/null
+# Start Waybar in the background
+waybar &
+
+echo "Full theme applied, Waybar started!"
