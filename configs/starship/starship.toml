@@ -1,111 +1,97 @@
-# Horizontal Pywal-themed Starship prompt
-format = "[]($WAL_COLOR1)$os$username[](bg:$WAL_COLOR2 fg:$WAL_COLOR1)$directory[](fg:$WAL_COLOR3 bg:$WAL_COLOR2)$git_branch$git_status[](fg:$WAL_COLOR3 bg:$WAL_COLOR4)$c$elixir$elm$golang$gradle$haskell$java$julia$nodejs$nim$rust$scala[](fg:$WAL_COLOR4 bg:$WAL_COLOR1)$docker_context[](fg:$WAL_COLOR1 bg:$WAL_COLOR2)$time[](fg:$WAL_COLOR2)"
+# Get editor completions based on the config schema
+"$schema" = 'https://starship.rs/config-schema.json'
 
-add_newline = false
+# Inserts a blank line between shell prompts
+add_newline = true
 
-[username]
-show_always = true
-style_user = "bg:$WAL_COLOR1"
-style_root = "bg:$WAL_COLOR1"
-format = '[$user ]($style)'
-disabled = false
+# Replace the '❯' symbol in the prompt with '➜'
+[character] # The name of the module we are configuring is 'character'
+success_symbol = '[➜](bold green)' # The 'success_symbol' segment is being set to '➜' with the color 'bold green'
+error_symbol = "[✖](bold red) "
 
-[os]
-style = "bg:$WAL_COLOR1"
+# Disable the package module, hiding it from the prompt completely
+[package]
 disabled = true
+# ~/.config/starship.toml
+
+[battery]
+full_symbol = "🔋"
+charging_symbol = "🔌"
+discharging_symbol = "⚡"
+
+[[battery.display]]
+threshold = 30
+style = "bold red"
+
+[cmd_duration]
+min_time = 10_000  # Show command duration over 10,000 milliseconds (=10 sec)
+format = " took [$duration]($style)"
 
 [directory]
-style = "bg:$WAL_COLOR2"
-format = "[ $path ]($style)"
-truncation_length = 3
-truncation_symbol = "…/"
-
-[directory.substitutions]
-"Documents" = "󰈙 "
-"Downloads" = " "
-"Music" = " "
-"Pictures" = " "
+truncation_length = 5
+format = "[$path]($style)[$lock_symbol]($lock_style) "
 
 [git_branch]
-symbol = ""
-style = "bg:$WAL_COLOR3"
-format = '[ $symbol $branch ]($style)'
+format = " [$symbol$branch]($style) "
+symbol = "🍣 "
+style = "bold yellow"
+
+[git_commit]
+commit_hash_length = 8
+style = "bold white"
+
+[git_state]
+format = '[\($state( $progress_current of $progress_total)\)]($style) '
 
 [git_status]
-style = "bg:$WAL_COLOR3"
-format = "[$all_status$ahead_behind]($style)"
+conflicted = "⚔️ "
+ahead = "🏎️ 💨 ×${count}"
+behind = "🐢 ×${count}"
+diverged = "🔱 🏎️ 💨 ×${ahead_count} 🐢 ×${behind_count}"
+untracked = "🛤️  ×${count}"
+stashed = "📦 "
+modified = "📝 ×${count}"
+staged = "🗃️  ×${count}"
+renamed = "📛 ×${count}"
+deleted = "🗑️  ×${count}"
+style = "bright-white"
+format = "$all_status$ahead_behind"
 
-[docker_context]
-symbol = " "
-style = "bg:$WAL_COLOR1"
-format = '[ $symbol $context ]($style)'
-
-[c]
-symbol = " "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
-
-[cpp]
-symbol = " "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
-
-[elixir]
-symbol = " "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
-
-[elm]
-symbol = " "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
-
-[golang]
-symbol = " "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
-
-[gradle]
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
-
-[haskell]
-symbol = " "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
-
-[java]
-symbol = " "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
+[hostname]
+ssh_only = false
+format = "<[$hostname]($style)>"
+trim_at = "-"
+style = "bold dimmed white"
+disabled = true
 
 [julia]
-symbol = " "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
+format = "[$symbol$version]($style) "
+symbol = "ஃ "
+style = "bold green"
 
-[nodejs]
-symbol = ""
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
+[memory_usage]
+format = "$symbol[${ram}( | ${swap})]($style) "
+threshold = 70
+style = "bold dimmed white"
+disabled = false
 
-[nim]
-symbol = "󰆥 "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
+[python]
+format = "[$symbol$version]($style) "
+style = "bold green"
 
 [rust]
-symbol = ""
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
-
-[scala]
-symbol = " "
-style = "bg:$WAL_COLOR4"
-format = '[ $symbol ($version) ]($style)'
+format = "[$symbol$version]($style) "
+style = "bold green"
 
 [time]
+time_format = "%T"
+format = "🕙 $time($style) "
+style = "bright-white"
 disabled = false
-time_format = "%R"
-style = "bg:$WAL_COLOR2"
-format = '[ ♥ $time ]($style)'
+
+[username]
+style_user = "bold dimmed blue"
+show_always = false
+
+[nodejs]
+format = "via [🤖 $version](bold green) "
