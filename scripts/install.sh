@@ -116,7 +116,7 @@ fi
 # =====================================
 print_header "Installing AUR Packages"
 AUR_PACKAGES=(  )
-run_command "sudo -u "$USER_NAME" yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
+run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
 # Copy Configuration Files
@@ -149,6 +149,15 @@ for cfg in "${CONFIGS_TO_COPY[@]}"; do
         copy_configs "$SRC" "$DEST" "$cfg"
     fi
 done
+
+# =====================================
+# Make theme-manager scripts executable
+# =====================================
+if [[ -d "$CONFIG_DIR/theme-manager" ]]; then
+    run_command "chmod +x $CONFIG_DIR/theme-manager/*.sh" "Make theme-manager scripts executable"
+else
+    print_warning "theme-manager directory not found, skipping chmod."
+fi
 
 # =====================================
 # Copy Scripts and Make Executable
