@@ -170,7 +170,7 @@ sudo -u "$USER_NAME" chmod +x "$SCRIPT_DEST/"*
 print_success "✅ Scripts copied and made executable to $SCRIPT_DEST"
 
 # =====================================
-# Copy Wallpapers
+# Copy Wallpapers & Initialize Pywal
 # =====================================
 print_header "Copying Wallpapers"
 WALLPAPER_SRC_DIR="$REPO_ROOT/assets/wallpapers"
@@ -178,6 +178,15 @@ WALLPAPER_DEST_DIR="$USER_HOME/Pictures/Wallpapers"
 sudo -u "$USER_NAME" mkdir -p "$WALLPAPER_DEST_DIR"
 sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
 print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
+
+# Automatically pick the first wallpaper and initialize Pywal
+FIRST_WALLPAPER=$(find "$WALLPAPER_DEST_DIR" -type f | head -n 1)
+if [[ -n "$FIRST_WALLPAPER" ]]; then
+    run_command "sudo -u $USER_NAME wal -i \"$FIRST_WALLPAPER\"" "Initialize Pywal with first wallpaper"
+else
+    print_warning "No wallpapers found to initialize Pywal."
+fi
+
 
 # =====================================
 # Configure Starship for Bash
