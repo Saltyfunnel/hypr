@@ -1,5 +1,5 @@
 #!/bin/bash
-# Minimal Hyprland Installer with user Hyprland config
+# Minimal Hyprland Installer with user configs
 set -euo pipefail
 
 # ----------------------------
@@ -26,8 +26,9 @@ run_command() {
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
-HYPR_CONFIG_SRC="$(pwd)/configs/hypr/hyprland.conf" # Adjust path if needed
-HYPR_CONFIG_DEST="$CONFIG_DIR/hypr/hyprland.conf"
+
+HYPR_CONFIG_SRC="$(pwd)/configs/hypr/hyprland.conf"      # Adjust path if needed
+WAYBAR_CONFIG_SRC="$(pwd)/configs/waybar"                # Folder containing config + style.css
 
 # ----------------------------
 # Checks
@@ -99,10 +100,22 @@ fi
 print_header "Copying Hyprland config"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/hypr"
 if [[ -f "$HYPR_CONFIG_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$HYPR_CONFIG_SRC" "$HYPR_CONFIG_DEST"
-    print_success "✅ Copied hyprland.conf to $HYPR_CONFIG_DEST"
+    sudo -u "$USER_NAME" cp "$HYPR_CONFIG_SRC" "$CONFIG_DIR/hypr/hyprland.conf"
+    print_success "✅ Copied hyprland.conf to $CONFIG_DIR/hypr/"
 else
     print_warning "Hyprland config not found at $HYPR_CONFIG_SRC, skipping"
+fi
+
+# ----------------------------
+# Copy Waybar config + style
+# ----------------------------
+print_header "Copying Waybar config"
+if [[ -d "$WAYBAR_CONFIG_SRC" ]]; then
+    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/waybar"
+    sudo -u "$USER_NAME" cp -rf "$WAYBAR_CONFIG_SRC/." "$CONFIG_DIR/waybar/"
+    print_success "✅ Waybar config and style copied to $CONFIG_DIR/waybar/"
+else
+    print_warning "Waybar config folder not found at $WAYBAR_CONFIG_SRC, skipping"
 fi
 
 # ----------------------------
@@ -120,4 +133,5 @@ fi
 # ----------------------------
 print_header "Setup Complete!"
 print_success "🎉 Reboot your system and log in via SDDM to start Hyprland."
-print_success "✅ Your Hyprland config has been applied."
+print_success "✅ Hyprland and Waybar configs applied."
+print_success "✅ Yay is installed and ready for AUR packages."
