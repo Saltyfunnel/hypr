@@ -175,18 +175,25 @@ print_success "✅ Scripts copied and made executable to $SCRIPT_DEST"
 print_header "Copying Wallpapers"
 WALLPAPER_SRC_DIR="$REPO_ROOT/assets/wallpapers"
 WALLPAPER_DEST_DIR="$USER_HOME/Pictures/Wallpapers"
+
 sudo -u "$USER_NAME" mkdir -p "$WALLPAPER_DEST_DIR"
-sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
-print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
+if sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"; then
+    print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
+else
+    print_warning "Failed to copy wallpapers. Skipping Pywal initialization."
+fi
 
 # Automatically pick the first wallpaper and initialize Pywal
 FIRST_WALLPAPER=$(find "$WALLPAPER_DEST_DIR" -type f | head -n 1)
 if [[ -n "$FIRST_WALLPAPER" ]]; then
-    run_command "sudo -u $USER_NAME wal -i \"$FIRST_WALLPAPER\"" "Initialize Pywal with first wallpaper"
+    if sudo -u "$USER_NAME" wal -i "$FIRST_WALLPAPER"; then
+        print_success "✅ Pywal initialized with first wallpaper"
+    else
+        print_warning "Pywal failed to initialize. Make sure 'wal' is installed and dependencies are met."
+    fi
 else
     print_warning "No wallpapers found to initialize Pywal."
 fi
-
 
 # =====================================
 # Configure Starship for Bash
@@ -194,9 +201,11 @@ fi
 print_header "Configuring Starship prompt"
 BASHRC_FILE="$USER_HOME/.bashrc"
 STARSHIP_INIT='eval "$(starship init bash)"'
+
 if ! grep -Fxq "$STARSHIP_INIT" "$BASHRC_FILE"; then
-    echo -e "\n# Initialize Starship prompt\n$STARSHIP_INIT" >> "$BASHRC_FILE"
-    print_success "✅ Starship initialization added to $BASHRC_FILE"
+    echo -e "\n# Initialize Starship prompt\n$STARSHIP_INIT" | sudo -u "$USER_NAME" tee -a "$BASHRC_FILE" >/dev/null \
+        && print_success "✅ Starship initialization added to $BASHRC_FILE" \
+        || print_warning "Failed to append Starship init to $BASHRC_FILE"
 else
     print_success "✅ Starship already initialized in $BASHRC_FILE"
 fi
@@ -204,8 +213,9 @@ fi
 # Add fastfetch to bashrc if not present
 FASTFETCH_INIT='fastfetch'
 if ! grep -Fxq "$FASTFETCH_INIT" "$BASHRC_FILE"; then
-    echo -e "\n# Display system info via Fastfetch\n$FASTFETCH_INIT" >> "$BASHRC_FILE"
-    print_success "✅ Fastfetch added to $BASHRC_FILE"
+    echo -e "\n# Display system info via Fastfetch\n$FASTFETCH_INIT" | sudo -u "$USER_NAME" tee -a "$BASHRC_FILE" >/dev/null \
+        && print_success "✅ Fastfetch added to $BASHRC_FILE" \
+        || print_warning "Failed to append Fastfetch to $BASHRC_FILE"
 else
     print_success "✅ Fastfetch already in $BASHRC_FILE"
 fi
@@ -214,19 +224,21 @@ fi
 # Install and Enable SDDM
 # =====================================
 print_header "Installing and Enabling SDDM"
-run_command "pacman -S --noconfirm --needed sddm" "Install SDDM display manager"
-
-if systemctl list-unit-files sddm.service &>/dev/null; then
-    run_command "systemctl enable sddm.service" "Enable SDDM login manager at boot"
-    CURRENT_TARGET=$(systemctl get-default)
-    if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
-        run_command "systemctl set-default graphical.target" "Set default target to graphical"
+if run_command "pacman -S --noconfirm --needed sddm" "Install SDDM"; then
+    if systemctl list-unit-files sddm.service &>/dev/null; then
+        run_command "systemctl enable sddm.service" "Enable SDDM login manager at boot"
+        CURRENT_TARGET=$(systemctl get-default)
+        if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
+            run_command "systemctl set-default graphical.target" "Set default target to graphical"
+        else
+            print_success "✅ Default target already set to graphical.target"
+        fi
+        print_success "✅ SDDM enabled. Please reboot to start the graphical login."
     else
-        print_success "✅ Default target already set to graphical.target"
+        print_warning "SDDM service file not found after installation. Skipping enable step."
     fi
-    print_success "✅ SDDM enabled. Please reboot to start the graphical login."
 else
-    print_error "SDDM service file not found after installation."
+    print_warning "SDDM installation failed. Skipping enable step."
 fi
 
 # =====================================
