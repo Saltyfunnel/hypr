@@ -1,5 +1,5 @@
 #!/bin/bash
-# Minimal Hyprland Installer with user configs
+# Minimal Hyprland Installer with user configs (fixed paths)
 set -euo pipefail
 
 # ----------------------------
@@ -27,8 +27,10 @@ USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
 
-HYPR_CONFIG_SRC="$(pwd)/configs/hypr/hyprland.conf"      # Adjust path if needed
-WAYBAR_CONFIG_SRC="$(pwd)/configs/waybar"                # Folder containing config + style.css
+# repo root is the parent folder of the script
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+HYPR_CONFIG_SRC="$REPO_ROOT/configs/hypr/hyprland.conf"
+WAYBAR_CONFIG_SRC="$REPO_ROOT/configs/waybar"
 
 # ----------------------------
 # Checks
