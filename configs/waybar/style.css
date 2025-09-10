@@ -1,31 +1,29 @@
-@import url("file:///home/gerard/.cache/wal/colors.css");
-
 * {
     background: transparent;
 }
 
-/* Default module styling */
+/* Default module */
 .module {
     background: rgba(0,0,0,0.7);
     border-radius: 10px;
     padding: 2px 10px;
-    margin: 4px 6px;
-    color: @foreground;
+    margin: 4px 6px;   /* top/bottom, left/right */
+    color: #c8c4dc;
 }
 
 /* Active module text */
 .module.active {
-    color: @primary;
+    color: #c5c0ff;
 }
 
-/* Window modules — match default module */
-.module#hyprland-window {
-    background: rgba(0,0,0,0.7);
-    border-radius: 10px;
-    padding: 2px 10px;
+/* Workspace/window modules */
+.module#hyprland-window,
+.module#hyprland-workspaces {
+    background: rgba(0,0,0,0.5);
+    border-radius: 6px;
+    padding: 2px 8px;
     margin: 4px 6px;
-    color: @foreground;
-    font-weight: normal;
+    color: #e5e1e9;
 }
 
 /* Custom modules */
@@ -35,10 +33,10 @@
     border-radius: 6px;
     padding: 2px 8px;
     margin: 4px 6px;
-    color: @foreground;
+    color: #c8c4dc;
 }
 
 .module#custom-spotify.active,
 .module#custom-power.active {
-    color: @primary;
+    color: #c5c0ff;
 }

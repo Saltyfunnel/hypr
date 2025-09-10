@@ -7,7 +7,7 @@
   "gtk-layer-shell": true,
   "height": 20,
 
-  "modules-left": ["clock"],
+  "modules-left": ["clock", "hyprland/workspaces"],
   "modules-center": ["hyprland/window"],
   "modules-right": ["custom/spotify", "memory", "cpu", "network", "battery", "backlight", "pulseaudio", "pulseaudio#microphone", "custom/power"],
 
@@ -20,6 +20,12 @@
 
   "hyprland/window": {
     "format": "󰣇 {}"
+  },
+
+  "hyprland/workspaces": {
+    "disable-scroll": true,
+    "all-outputs": true,
+    "on-click": "activate"
   },
 
   "clock": {

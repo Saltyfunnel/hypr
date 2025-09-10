@@ -84,7 +84,7 @@ fi
 print_header "Installing Core Packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano wget jq
-    sddm polkit polkit-kde-agent code python-pywal
+    sddm polkit polkit-kde-agent code
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv
@@ -104,7 +104,10 @@ if command -v yay &>/dev/null; then
     print_success "Yay already installed"
 else
     run_command "pacman -S --noconfirm --needed git base-devel" "Install git and base-devel"
+    
+    # Remove old yay dir to prevent conflicts
     run_command "rm -rf /tmp/yay" "Clean up existing yay folder if present"
+    
     run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay repository"
     run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
     run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
@@ -116,48 +119,14 @@ fi
 # =====================================
 print_header "Installing AUR Packages"
 AUR_PACKAGES=(  )
-run_command "sudo -u $USER_NAME yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
+run_command "sudo -u "$USER_NAME" yay -S --noconfirm --needed --sudoloop --mflags '--noconfirm --skippgpcheck' ${AUR_PACKAGES[*]}" "AUR package installation"
 
 # =====================================
 # Copy Configuration Files
 # =====================================
 print_header "Copying Configurations"
-
-CONFIGS_TO_COPY=(
-    "hypr"
-    "kitty"
-    "starship"
-    "theme-manager"
-    "waybar"
-    "fastfetch"
-)
-
-for cfg in "${CONFIGS_TO_COPY[@]}"; do
-    SRC="$REPO_ROOT/configs/$cfg"
-    DEST="$CONFIG_DIR/$cfg"
-
-    if [[ "$cfg" == "starship" ]]; then
-        SRC_FILE="$SRC/starship.toml"
-        DEST_FILE="$CONFIG_DIR/starship.toml"
-        if [[ -f "$SRC_FILE" ]]; then
-            sudo -u "$USER_NAME" cp "$SRC_FILE" "$DEST_FILE"
-            print_success "✅ $cfg/starship.toml copied to $DEST_FILE"
-        else
-            print_warning "Missing $SRC_FILE, skipping..."
-        fi
-    else
-        copy_configs "$SRC" "$DEST" "$cfg"
-    fi
-done
-
-# =====================================
-# Make theme-manager scripts executable
-# =====================================
-if [[ -d "$CONFIG_DIR/theme-manager" ]]; then
-    run_command "chmod +x $CONFIG_DIR/theme-manager/*.sh" "Make theme-manager scripts executable"
-else
-    print_warning "theme-manager directory not found, skipping chmod."
-fi
+copy_configs "$REPO_ROOT/configs/hypr"          "$CONFIG_DIR/hypr"        "Hyprland"
+copy_configs "$REPO_ROOT/configs/waybar"        "$CONFIG_DIR/waybar"      "Waybar"
 
 # =====================================
 # Copy Scripts and Make Executable
@@ -170,30 +139,15 @@ sudo -u "$USER_NAME" chmod +x "$SCRIPT_DEST/"*
 print_success "✅ Scripts copied and made executable to $SCRIPT_DEST"
 
 # =====================================
-# Copy Wallpapers & Initialize Pywal
+# Copy Wallpapers
 # =====================================
 print_header "Copying Wallpapers"
 WALLPAPER_SRC_DIR="$REPO_ROOT/assets/wallpapers"
 WALLPAPER_DEST_DIR="$USER_HOME/Pictures/Wallpapers"
-
 sudo -u "$USER_NAME" mkdir -p "$WALLPAPER_DEST_DIR"
-if sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"; then
-    print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
-else
-    print_warning "Failed to copy wallpapers. Skipping Pywal initialization."
-fi
-
-# Automatically pick the first wallpaper and initialize Pywal
-FIRST_WALLPAPER=$(find "$WALLPAPER_DEST_DIR" -type f | head -n 1)
-if [[ -n "$FIRST_WALLPAPER" ]]; then
-    if sudo -u "$USER_NAME" wal -i "$FIRST_WALLPAPER"; then
-        print_success "✅ Pywal initialized with first wallpaper"
-    else
-        print_warning "Pywal failed to initialize. Make sure 'wal' is installed and dependencies are met."
-    fi
-else
-    print_warning "No wallpapers found to initialize Pywal."
-fi
+# Force overwrite
+sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC_DIR/." "$WALLPAPER_DEST_DIR"
+print_success "✅ All wallpapers copied to $WALLPAPER_DEST_DIR"
 
 # =====================================
 # Configure Starship for Bash
@@ -201,45 +155,38 @@ fi
 print_header "Configuring Starship prompt"
 BASHRC_FILE="$USER_HOME/.bashrc"
 STARSHIP_INIT='eval "$(starship init bash)"'
-
 if ! grep -Fxq "$STARSHIP_INIT" "$BASHRC_FILE"; then
-    echo -e "\n# Initialize Starship prompt\n$STARSHIP_INIT" | sudo -u "$USER_NAME" tee -a "$BASHRC_FILE" >/dev/null \
-        && print_success "✅ Starship initialization added to $BASHRC_FILE" \
-        || print_warning "Failed to append Starship init to $BASHRC_FILE"
+    echo -e "\n# Initialize Starship prompt\n$STARSHIP_INIT" >> "$BASHRC_FILE"
+    print_success "✅ Starship initialization added to $BASHRC_FILE"
 else
     print_success "✅ Starship already initialized in $BASHRC_FILE"
 fi
 
-# Add fastfetch to bashrc if not present
-FASTFETCH_INIT='fastfetch'
-if ! grep -Fxq "$FASTFETCH_INIT" "$BASHRC_FILE"; then
-    echo -e "\n# Display system info via Fastfetch\n$FASTFETCH_INIT" | sudo -u "$USER_NAME" tee -a "$BASHRC_FILE" >/dev/null \
-        && print_success "✅ Fastfetch added to $BASHRC_FILE" \
-        || print_warning "Failed to append Fastfetch to $BASHRC_FILE"
-else
-    print_success "✅ Fastfetch already in $BASHRC_FILE"
-fi
-
 # =====================================
-# Install and Enable SDDM
+# Install and Enable SDDM (Safe, Non-hanging)
 # =====================================
 print_header "Installing and Enabling SDDM"
-if run_command "pacman -S --noconfirm --needed sddm" "Install SDDM"; then
-    if systemctl list-unit-files sddm.service &>/dev/null; then
-        run_command "systemctl enable sddm.service" "Enable SDDM login manager at boot"
-        CURRENT_TARGET=$(systemctl get-default)
-        if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
-            run_command "systemctl set-default graphical.target" "Set default target to graphical"
-        else
-            print_success "✅ Default target already set to graphical.target"
-        fi
-        print_success "✅ SDDM enabled. Please reboot to start the graphical login."
+
+# Ensure SDDM package is installed
+run_command "pacman -S --noconfirm --needed sddm" "Install SDDM display manager"
+
+# Check if the sddm.service file exists before trying to enable it
+if systemctl list-unit-files sddm.service &>/dev/null; then
+    run_command "systemctl enable sddm.service" "Enable SDDM login manager at boot"
+
+    # Make sure default target is graphical
+    CURRENT_TARGET=$(systemctl get-default)
+    if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
+        run_command "systemctl set-default graphical.target" "Set default target to graphical"
     else
-        print_warning "SDDM service file not found after installation. Skipping enable step."
+        print_success "✅ Default target already set to graphical.target"
     fi
+
+    print_success "✅ SDDM enabled. Please reboot to start the graphical login."
 else
-    print_warning "SDDM installation failed. Skipping enable step."
+    print_error "SDDM service file not found after installation. Cannot enable. Please check the pacman output."
 fi
+
 
 # =====================================
 # Final Message

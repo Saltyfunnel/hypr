@@ -1,27 +1,26 @@
 #!/bin/bash
 # ~/.config/theme-manager/setwallpaper.sh
-# Select a wallpaper with Yazi and set it via swww
-
-source ~/.config/theme-manager/config.sh
+# Launch Kitty with Yazi to select a wallpaper, then set it using swww
 
 TERMINAL="kitty"
 FILE_MANAGER="yazi"
+WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 
+# Create a temporary file to capture Yazi's selected file
 TMP_FILE=$(mktemp)
 
-# Launch Yazi in your wallpaper directory
+# Launch Yazi starting in the wallpaper directory
 $TERMINAL -e bash -c "$FILE_MANAGER --chooser-file $TMP_FILE $WALLPAPER_DIR"
 
+# Read the file Yazi selected
 SELECTED_FILE=$(cat "$TMP_FILE")
+
+# Clean up
 rm "$TMP_FILE"
 
+# Check if a valid file was selected
 if [ -f "$SELECTED_FILE" ]; then
-    swww img "$SELECTED_FILE" --transition-type "$SWWW_TRANSITION" --transition-duration "$SWWW_DURATION"
-
-    # Save chosen wallpaper path for other scripts
-    echo "$SELECTED_FILE" > "$PYWAL_CACHE/current_wallpaper"
-
-    echo "Wallpaper set to $SELECTED_FILE"
+    swww img "$SELECTED_FILE" --transition-type fade --transition-duration 2
 else
-    echo "No valid file selected."
+    echo "No valid file selected or cancelled."
 fi
