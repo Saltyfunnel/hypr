@@ -1,42 +1,67 @@
+/* Waybar colors extracted from Pywal (replace with your actual palette) */
+@define-color background #2e3440;
+@define-color foreground #d8dee9;
+@define-color accent #88c0d0;
+@define-color green #a3be8c;
+@define-color cyan #8fbcbb;
+@define-color orange #d08770;
+@define-color pink #b48ead;
+@define-color comment #4c566a;
+@define-color purple #5e81ac;
+@define-color current_line #434c5e;
+
+/* General Waybar styles */
 * {
-    background: transparent;
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 13px;
+    min-height: 0;
 }
 
-/* Default module */
-.module {
-    background: rgba(0,0,0,0.7);
+window#waybar {
+    background-color: rgba(0, 0, 0, 0); /* fully transparent bar */
+    color: @foreground;
+    transition-property: background-color;
+    transition-duration: 0.5s;
+}
+
+/* Module containers with semi-transparent backgrounds (numeric RGB directly) */
+.modules-left,
+.modules-center,
+.modules-right {
+    background-color: rgba(46,52,64,0.25); /* background RGB + 25% opacity */
+    margin: 4px;
+    padding: 0 8px;
+    border-radius: 12px;
+}
+
+/* Workspaces module */
+#workspaces button {
+    background-color: rgba(46,52,64,0.15);
+    color: @foreground;
     border-radius: 10px;
-    padding: 2px 10px;
-    margin: 4px 6px;   /* top/bottom, left/right */
-    color: #c8c4dc;
+    padding: 0 5px;
 }
 
-/* Active module text */
-.module.active {
-    color: #c5c0ff;
+#workspaces button:hover {
+    background-color: rgba(136,192,208,0.35); /* accent RGB + 35% opacity */
 }
 
-/* Workspace/window modules */
-.module#hyprland-window,
-.module#hyprland-workspaces {
-    background: rgba(0,0,0,0.5);
-    border-radius: 6px;
-    padding: 2px 8px;
-    margin: 4px 6px;
-    color: #e5e1e9;
+#workspaces button.active {
+    background-color: @accent;
+    color: @foreground;
 }
 
-/* Custom modules */
-.module#custom-spotify,
-.module#custom-power {
-    background: rgba(0,0,0,0.7);
-    border-radius: 6px;
-    padding: 2px 8px;
-    margin: 4px 6px;
-    color: #c8c4dc;
+/* Window title */
+#window {
+    font-weight: bold;
 }
 
-.module#custom-spotify.active,
-.module#custom-power.active {
-    color: #c5c0ff;
-}
+/* Module-specific colors */
+#clock { color: @green; }
+#cpu { color: @cyan; }
+#memory { color: @orange; }
+#pulseaudio { color: @pink; }
+#pulseaudio.muted { color: @comment; }
+#tray { color: @foreground; }
