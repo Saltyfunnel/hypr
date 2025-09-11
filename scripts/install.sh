@@ -31,6 +31,7 @@ CONFIG_DIR="$USER_HOME/.config"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HYPR_CONFIG_SRC="$REPO_ROOT/configs/hypr/hyprland.conf"
 WAYBAR_CONFIG_SRC="$REPO_ROOT/configs/waybar"
+SCRIPTS_SRC="$REPO_ROOT/scripts"
 
 # ----------------------------
 # Checks
@@ -121,6 +122,19 @@ else
 fi
 
 # ----------------------------
+# Copy user scripts (setwallpaper etc.)
+# ----------------------------
+print_header "Copying user scripts"
+if [[ -d "$SCRIPTS_SRC" ]]; then
+    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/scripts"
+    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC/." "$CONFIG_DIR/scripts/"
+    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*.sh
+    print_success "✅ User scripts copied to $CONFIG_DIR/scripts/"
+else
+    print_warning "Scripts folder not found at $SCRIPTS_SRC, skipping"
+fi
+
+# ----------------------------
 # Enable SDDM
 # ----------------------------
 print_header "Setting up SDDM"
@@ -137,3 +151,4 @@ print_header "Setup Complete!"
 print_success "🎉 Reboot your system and log in via SDDM to start Hyprland."
 print_success "✅ Hyprland and Waybar configs applied."
 print_success "✅ Yay is installed and ready for AUR packages."
+print_success "✅ User scripts are available in $CONFIG_DIR/scripts/"
