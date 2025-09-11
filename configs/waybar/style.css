@@ -1,67 +1,34 @@
-/* Waybar colors extracted from Pywal (replace with your actual palette) */
-@define-color background #2e3440;
-@define-color foreground #d8dee9;
-@define-color accent #88c0d0;
-@define-color green #a3be8c;
-@define-color cyan #8fbcbb;
-@define-color orange #d08770;
-@define-color pink #b48ead;
-@define-color comment #4c566a;
-@define-color purple #5e81ac;
-@define-color current_line #434c5e;
+@import url("/home/gerard/.config/waybar/colors.css");
 
 /* General Waybar styles */
 * {
-    border: none;
-    border-radius: 0;
     font-family: "JetBrainsMono Nerd Font";
     font-size: 13px;
     min-height: 0;
 }
 
 window#waybar {
-    background-color: rgba(0, 0, 0, 0); /* fully transparent bar */
-    color: @foreground;
-    transition-property: background-color;
-    transition-duration: 0.5s;
+    background-color: transparent;
+    color: inherit;
+    transition: background-color 0.5s;
 }
 
-/* Module containers with semi-transparent backgrounds (numeric RGB directly) */
+/* Module containers */
 .modules-left,
 .modules-center,
 .modules-right {
-    background-color: rgba(46,52,64,0.25); /* background RGB + 25% opacity */
     margin: 4px;
     padding: 0 8px;
     border-radius: 12px;
 }
 
-/* Workspaces module */
+/* Workspace buttons */
 #workspaces button {
-    background-color: rgba(46,52,64,0.15);
-    color: @foreground;
+    background-color: transparent;
     border-radius: 10px;
     padding: 0 5px;
 }
 
 #workspaces button:hover {
-    background-color: rgba(136,192,208,0.35); /* accent RGB + 35% opacity */
+    opacity: 0.8;
 }
-
-#workspaces button.active {
-    background-color: @accent;
-    color: @foreground;
-}
-
-/* Window title */
-#window {
-    font-weight: bold;
-}
-
-/* Module-specific colors */
-#clock { color: @green; }
-#cpu { color: @cyan; }
-#memory { color: @orange; }
-#pulseaudio { color: @pink; }
-#pulseaudio.muted { color: @comment; }
-#tray { color: @foreground; }

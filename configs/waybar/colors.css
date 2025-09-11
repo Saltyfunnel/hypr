@@ -1,11 +1,16 @@
-/* Extracted Pywal variables in numeric RGB format */
-@define-color background-rgb 46,52,64;
-@define-color foreground #d8dee9;
-@define-color accent #88c0d0;
-@define-color green #a3be8c;
-@define-color cyan #8fbcbb;
-@define-color orange #d08770;
-@define-color pink #b48ead;
-@define-color comment #4c566a;
-@define-color purple #5e81ac;
-@define-color current_line #434c5e;
+/* Auto-generated Waybar colors from Pywal */
+.modules-left, .modules-center, .modules-right {
+    background-color: #0a0410;
+    color: #ede1e3;
+}
+
+#workspaces button.active {
+    background-color: #AC526B;
+    color: #0a0410;
+}
+
+#clock { color: #677785; }
+#cpu { color: #DBA477; }
+#memory { color: #C64485; }
+#pulseaudio { color: #DBA477; }
+#pulseaudio.muted { color: #0a0410; }
