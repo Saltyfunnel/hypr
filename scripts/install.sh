@@ -73,7 +73,7 @@ PACMAN_PACKAGES=(
     sddm polkit polkit-kde-agent code curl python-pywal
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
-    firefox yazi fastfetch mpv
+    firefox yazi fastfetch mpv gnome-disk-utility
     qt5-wayland qt6-wayland gtk3 gtk4 starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
