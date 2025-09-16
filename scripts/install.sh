@@ -135,6 +135,28 @@ else
 fi
 
 # ----------------------------
+# Papirus Icon Setup
+# ----------------------------
+print_header "Setting up Papirus Icons and Folder Colors"
+
+# Install Papirus icons
+run_command "pacman -S --noconfirm papirus-icon-theme" "Install Papirus Icon Theme"
+
+# Install papirus-folders if missing
+if ! command -v papirus-folders &>/dev/null; then
+    run_command "yay -S --noconfirm papirus-folders" "Install papirus-folders utility"
+fi
+
+# Set Papirus-Dark as default icon theme
+sudo -u "$USER_NAME" dbus-launch gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
+
+# Set initial folder color (neutral to start with)
+sudo -u "$USER_NAME" dbus-launch papirus-folders -C grey --theme Papirus-Dark
+
+print_success "✅ Papirus-Dark set as default with grey folder icons"
+
+
+# ----------------------------
 # Enable SDDM
 # ----------------------------
 print_header "Setting up SDDM"
