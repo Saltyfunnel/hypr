@@ -135,6 +135,21 @@ else
 fi
 
 # ----------------------------
+# Copy Wallpapers to ~/Pictures
+# ----------------------------
+print_header "Copying Wallpapers"
+WALLPAPER_SRC="$REPO_ROOT/Pictures/Wallpapers"
+PICTURES_DEST="$USER_HOME/Pictures"
+
+if [[ -d "$WALLPAPER_SRC" ]]; then
+    sudo -u "$USER_NAME" mkdir -p "$PICTURES_DEST"
+    sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC" "$PICTURES_DEST/"
+    print_success "✅ Wallpapers copied to $PICTURES_DEST/Wallpapers/"
+else
+    print_warning "Wallpapers folder not found at $WALLPAPER_SRC, skipping"
+fi
+
+# ----------------------------
 # Enable SDDM
 # ----------------------------
 print_header "Setting up SDDM"
@@ -152,3 +167,4 @@ print_success "🎉 Reboot your system and log in via SDDM to start Hyprland."
 print_success "✅ Hyprland and Waybar configs applied."
 print_success "✅ Yay is installed and ready for AUR packages."
 print_success "✅ User scripts are available in $CONFIG_DIR/scripts/"
+print_success "✅ Wallpapers are in $PICTURES_DEST/Wallpapers/"
