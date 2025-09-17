@@ -76,7 +76,6 @@ PACMAN_PACKAGES=(
     firefox yazi fastfetch mpv gnome-disk-utility
     qt5-wayland qt6-wayland gtk3 gtk4 starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
-    papirus-icon-theme
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
 
@@ -96,16 +95,6 @@ else
     run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
     run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
     run_command "rm -rf /tmp/yay" "Clean up temporary yay files"
-fi
-
-# ----------------------------
-# Install Papirus-Folders
-# ----------------------------
-print_header "Installing Papirus-Folders"
-if ! command -v papirus-folders &>/dev/null; then
-    run_command "sudo -u $USER_NAME yay -S --noconfirm papirus-folders" "Install papirus-folders utility"
-else
-    print_success "papirus-folders is already installed"
 fi
 
 # ----------------------------
@@ -162,5 +151,4 @@ print_header "Setup Complete!"
 print_success "🎉 Reboot your system and log in via SDDM to start Hyprland."
 print_success "✅ Hyprland and Waybar configs applied."
 print_success "✅ Yay is installed and ready for AUR packages."
-print_success "✅ Papirus icons and papirus-folders are installed."
 print_success "✅ User scripts are available in $CONFIG_DIR/scripts/"

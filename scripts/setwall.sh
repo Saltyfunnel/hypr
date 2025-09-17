@@ -1,5 +1,5 @@
 #!/bin/bash
-# setwall.sh - Random wallpaper setter + Pywal + Waybar + Thunar theming
+# setwall.sh - Random wallpaper setter + Pywal + Waybar theming
 set -euo pipefail
 
 # ----------------------------
@@ -7,7 +7,7 @@ set -euo pipefail
 # ----------------------------
 WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 WAYBAR_CSS="$HOME/.config/waybar/colors.css"
-PYWAL_CACHE="$HOME/.cache/wal/colors.sh"
+PYWAL_CACHE="$HOME/.cache/wal/colors.css"
 
 # ----------------------------
 # Start swww-daemon if needed
@@ -35,18 +35,15 @@ swww img "$WALLPAPER" --transition-type any --transition-step 90 --transition-fp
 # ----------------------------
 wal -n -q -i "$WALLPAPER"
 
-# Load Pywal's color variables
-source "$PYWAL_CACHE"
-
 # ----------------------------
-# Extract colors for Waybar
+# Extract colors from Pywal
 # ----------------------------
-BG="$color0"
-FG="$color7"
-COLOR1="$color1"
-COLOR2="$color2"
-COLOR3="$color3"
-COLOR4="$color4"
+BG=$(grep color0 "$PYWAL_CACHE" | grep -o '#[0-9A-Fa-f]\{6\}' | head -n1)
+FG=$(grep color7 "$PYWAL_CACHE" | grep -o '#[0-9A-Fa-f]\{6\}' | head -n1)
+COLOR1=$(grep color1 "$PYWAL_CACHE" | grep -o '#[0-9A-Fa-f]\{6\}' | head -n1)
+COLOR2=$(grep color2 "$PYWAL_CACHE" | grep -o '#[0-9A-Fa-f]\{6\}' | head -n1)
+COLOR3=$(grep color3 "$PYWAL_CACHE" | grep -o '#[0-9A-Fa-f]\{6\}' | head -n1)
+COLOR4=$(grep color4 "$PYWAL_CACHE" | grep -o '#[0-9A-Fa-f]\{6\}' | head -n1)
 
 # ----------------------------
 # Write Waybar-compatible CSS
@@ -75,29 +72,6 @@ EOF
 echo "Waybar colors updated at $WAYBAR_CSS"
 
 # ----------------------------
-# Update Thunar folder icons
-# ----------------------------
-if command -v papirus-folders &>/dev/null; then
-    # Strip the '#' from the color for papirus-folders
-    FOLDER_COLOR="${COLOR1#'#'}"
-
-    echo "Updating Papirus folder color to: $FOLDER_COLOR"
-    papirus-folders -C "$FOLDER_COLOR" --theme Papirus-Dark
-
-    # Refresh GTK icon cache (optional, prevents stale icons)
-    if [[ -d "$HOME/.icons/Papirus-Dark" ]]; then
-        gtk-update-icon-cache -f "$HOME/.icons/Papirus-Dark" 2>/dev/null || true
-    fi
-
-    # Restart Thunar to apply changes
-    echo "Restarting Thunar..."
-    thunar --quit 2>/dev/null || true
-    thunar & disown
-else
-    echo "papirus-folders not installed. Skipping Thunar icon update."
-fi
-
-# ----------------------------
 # Reload Waybar
 # ----------------------------
 if pgrep -x "waybar" >/dev/null; then
@@ -108,4 +82,4 @@ else
     waybar &
 fi
 
-echo "Done! Wallpaper, Waybar, and Thunar theme updated."
+echo "Done! Wallpaper and Waybar theme updated."
