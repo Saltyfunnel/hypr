@@ -126,12 +126,21 @@ fi
 # ----------------------------
 print_header "Copying Yazi config"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/yazi"
-if [[ -f "$REPO_ROOT/configs/yazi/yazi.toml" ]]; then
-    sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/yazi/yazi.toml" "$CONFIG_DIR/yazi/yazi.toml"
-    print_success "✅ Yazi config copied to $CONFIG_DIR/yazi/"
-else
-    print_warning "Yazi config not found at $REPO_ROOT/configs/yazi/yazi.toml, skipping"
-fi
+
+YAZI_FILES=("yazi.toml" "keybind.toml" "theme.toml")
+
+for file in "${YAZI_FILES[@]}"; do
+    SRC="$REPO_ROOT/configs/yazi/$file"
+    DEST="$CONFIG_DIR/yazi/$file"
+
+    if [[ -f "$SRC" ]]; then
+        sudo -u "$USER_NAME" cp "$SRC" "$DEST"
+        print_success "✅ $file copied to $CONFIG_DIR/yazi/"
+    else
+        print_warning "$file not found at $SRC, skipping"
+    fi
+done
+
 
 # ----------------------------
 # Copy user scripts (setwallpaper etc.)
