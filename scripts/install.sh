@@ -27,11 +27,12 @@ USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
 
-# repo root is the parent folder of the script
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HYPR_CONFIG_SRC="$REPO_ROOT/configs/hypr/hyprland.conf"
+COLOR_FILE_SRC="$REPO_ROOT/configs/hypr/colors-hyprland.conf"
 WAYBAR_CONFIG_SRC="$REPO_ROOT/configs/waybar"
 SCRIPTS_SRC="$REPO_ROOT/scripts"
+FASTFETCH_SRC="$REPO_ROOT/configs/fastfetch/config.jsonc"
 
 # ----------------------------
 # Checks
@@ -39,7 +40,6 @@ SCRIPTS_SRC="$REPO_ROOT/scripts"
 [[ "$EUID" -eq 0 ]] || print_error "Run as root (sudo $0)"
 command -v pacman &>/dev/null || print_error "pacman not found"
 command -v systemctl &>/dev/null || print_error "systemctl not found"
-
 print_success "✅ Environment checks passed"
 
 # ----------------------------
@@ -101,13 +101,10 @@ fi
 # Install AUR Packages
 # ----------------------------
 print_header "Installing AUR packages"
-
-# List of AUR packages to install
 AUR_PACKAGES=(
     python-pywal16
     # Add additional AUR packages here
 )
-
 for pkg in "${AUR_PACKAGES[@]}"; do
     if yay -Qs "^$pkg$" &>/dev/null; then
         print_success "✅ $pkg is already installed"
@@ -117,38 +114,21 @@ for pkg in "${AUR_PACKAGES[@]}"; do
 done
 
 # ----------------------------
-# Copy Hyprland main config
+# Copy Hyprland configs
 # ----------------------------
+print_header "Copying Hyprland configs"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/hypr"
-if [[ -f "$HYPR_CONFIG_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$HYPR_CONFIG_SRC" "$CONFIG_DIR/hypr/hyprland.conf"
-    print_success "✅ Copied hyprland.conf to $CONFIG_DIR/hypr/"
-else
-    print_warning "Hyprland config not found at $HYPR_CONFIG_SRC, skipping"
-fi
+[[ -f "$HYPR_CONFIG_SRC" ]] && sudo -u "$USER_NAME" cp "$HYPR_CONFIG_SRC" "$CONFIG_DIR/hypr/hyprland.conf" && print_success "Copied hyprland.conf"
+[[ -f "$COLOR_FILE_SRC" ]] && sudo -u "$USER_NAME" cp "$COLOR_FILE_SRC" "$CONFIG_DIR/hypr/colors-hyprland.conf" && print_success "Copied colors-hyprland.conf"
 
 # ----------------------------
-# Copy Hyprland colors-hyprland.conf
-# ----------------------------
-COLOR_FILE_SRC="$REPO_ROOT/configs/hypr/colors-hyprland.conf"
-if [[ -f "$COLOR_FILE_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$COLOR_FILE_SRC" "$CONFIG_DIR/hypr/colors-hyprland.conf"
-    print_success "✅ Copied colors-hyprland.conf to $CONFIG_DIR/hypr/"
-else
-    print_warning "colors-hyprland.conf not found at $COLOR_FILE_SRC, skipping"
-fi
-
-
-# ----------------------------
-# Copy Waybar config + style
+# Copy Waybar config
 # ----------------------------
 print_header "Copying Waybar config"
 if [[ -d "$WAYBAR_CONFIG_SRC" ]]; then
     sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/waybar"
     sudo -u "$USER_NAME" cp -rf "$WAYBAR_CONFIG_SRC/." "$CONFIG_DIR/waybar/"
-    print_success "✅ Waybar config and style copied to $CONFIG_DIR/waybar/"
-else
-    print_warning "Waybar config folder not found at $WAYBAR_CONFIG_SRC, skipping"
+    print_success "Waybar config copied"
 fi
 
 # ----------------------------
@@ -156,32 +136,22 @@ fi
 # ----------------------------
 print_header "Copying Yazi config"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/yazi"
-
 YAZI_FILES=("yazi.toml" "keybind.toml" "theme.toml")
-
 for file in "${YAZI_FILES[@]}"; do
     SRC="$REPO_ROOT/configs/yazi/$file"
     DEST="$CONFIG_DIR/yazi/$file"
-
-    if [[ -f "$SRC" ]]; then
-        sudo -u "$USER_NAME" cp "$SRC" "$DEST"
-        print_success "✅ $file copied to $CONFIG_DIR/yazi/"
-    else
-        print_warning "$file not found at $SRC, skipping"
-    fi
+    [[ -f "$SRC" ]] && sudo -u "$USER_NAME" cp "$SRC" "$DEST" && print_success "Copied $file"
 done
 
 # ----------------------------
-# Copy user scripts (setwallpaper etc.)
+# Copy user scripts
 # ----------------------------
 print_header "Copying user scripts"
 if [[ -d "$SCRIPTS_SRC" ]]; then
     sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/scripts"
     sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC/." "$CONFIG_DIR/scripts/"
     sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*.sh
-    print_success "✅ User scripts copied to $CONFIG_DIR/scripts/"
-else
-    print_warning "Scripts folder not found at $SCRIPTS_SRC, skipping"
+    print_success "User scripts copied"
 fi
 
 # ----------------------------
@@ -189,45 +159,34 @@ fi
 # ----------------------------
 print_header "Copying Fastfetch config"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/fastfetch"
-
-FASTFETCH_SRC="$REPO_ROOT/configs/fastfetch/config.jsonc"
-FASTFETCH_DEST="$CONFIG_DIR/fastfetch/config.jsonc"
-
-if [[ -f "$FASTFETCH_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$FASTFETCH_SRC" "$FASTFETCH_DEST"
-    print_success "✅ Fastfetch config.jsonc copied to $CONFIG_DIR/fastfetch/"
-else
-    print_warning "Fastfetch config.jsonc not found at $FASTFETCH_SRC, skipping"
-fi
+[[ -f "$FASTFETCH_SRC" ]] && sudo -u "$USER_NAME" cp "$FASTFETCH_SRC" "$CONFIG_DIR/fastfetch/config.jsonc" && print_success "Fastfetch config copied"
 
 # ----------------------------
 # Copy .bashrc
 # ----------------------------
 print_header "Copying .bashrc"
-if [[ -f "$REPO_ROOT/configs/.bashrc" ]]; then
-    sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/.bashrc" "$USER_HOME/.bashrc"
-    print_success "✅ .bashrc copied to $USER_HOME/"
-else
-    print_warning ".bashrc not found in $REPO_ROOT/configs/, skipping"
-fi
+[[ -f "$REPO_ROOT/configs/.bashrc" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/.bashrc" "$USER_HOME/.bashrc" && print_success ".bashrc copied"
 
 # ----------------------------
-# Copy Wallpapers to ~/Pictures
+# Copy Wallpapers
 # ----------------------------
 print_header "Copying Wallpapers"
 WALLPAPER_SRC="$REPO_ROOT/Pictures/Wallpapers"
 PICTURES_DEST="$USER_HOME/Pictures"
-
 if [[ -d "$WALLPAPER_SRC" ]]; then
     sudo -u "$USER_NAME" mkdir -p "$PICTURES_DEST"
     sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC" "$PICTURES_DEST/"
-    print_success "✅ Wallpapers copied to $PICTURES_DEST/Wallpapers/"
-else
-    print_warning "Wallpapers folder not found at $WALLPAPER_SRC, skipping"
+    print_success "Wallpapers copied"
 fi
 
 # ----------------------------
 # Enable SDDM
 # ----------------------------
 print_header "Setting up SDDM"
-run_command "systemctl enable s
+run_command "systemctl enable sddm.service" "Enable SDDM login manager"
+
+# ----------------------------
+# Final message
+# ----------------------------
+print_success "✅ Installation complete!"
+echo -e "\nYou can now log out and select Hyprland session in SDDM."
