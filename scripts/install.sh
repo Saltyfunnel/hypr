@@ -147,6 +147,17 @@ else
 fi
 
 # ----------------------------
+# Copy .bashrc
+# ----------------------------
+print_header "Copying .bashrc"
+if [[ -f "$REPO_ROOT/configs/.bashrc" ]]; then
+    sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/.bashrc" "$USER_HOME/.bashrc"
+    print_success "✅ .bashrc copied to $USER_HOME/"
+else
+    print_warning ".bashrc not found in $REPO_ROOT/configs/, skipping"
+fi
+
+# ----------------------------
 # Copy Wallpapers to ~/Pictures
 # ----------------------------
 print_header "Copying Wallpapers"
