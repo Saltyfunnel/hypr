@@ -1,0 +1,12 @@
+[bindings]
+quit = "q"
+toggle_preview = "p"
+next_entry = "j"
+prev_entry = "k"
+select_entry = "enter"
+open_in_terminal = "t"
+open_in_editor = "e"
+
+# Example: cycle previews
+cycle_preview_next = "right"
+cycle_preview_prev = "left"
