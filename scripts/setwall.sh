@@ -75,6 +75,7 @@ echo "Waybar colors updated at $WAYBAR_CSS"
 # ----------------------------
 # Update Yazi Theme
 # ----------------------------
+YAZI_THEME="$HOME/.config/yazi/theme.toml"
 mkdir -p "$(dirname "$YAZI_THEME")"
 
 cat > "$YAZI_THEME" <<EOF
