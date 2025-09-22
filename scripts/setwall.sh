@@ -1,5 +1,5 @@
 #!/bin/bash
-# setwall.sh - Random wallpaper setter + Pywal + Waybar theming
+# setwall.sh - Random wallpaper setter + Pywal + Waybar + Yazi theming
 set -euo pipefail
 
 # ----------------------------
@@ -8,6 +8,7 @@ set -euo pipefail
 WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 WAYBAR_CSS="$HOME/.config/waybar/colors.css"
 PYWAL_CACHE="$HOME/.cache/wal/colors.css"
+YAZI_THEME="$HOME/.config/yazi/theme.toml"
 
 # ----------------------------
 # Start swww-daemon if needed
@@ -72,6 +73,29 @@ EOF
 echo "Waybar colors updated at $WAYBAR_CSS"
 
 # ----------------------------
+# Update Yazi Theme
+# ----------------------------
+mkdir -p "$(dirname "$YAZI_THEME")"
+
+cat > "$YAZI_THEME" <<EOF
+[mgr]
+fg = "$FG"
+bg = "$BG"
+border = "$COLOR2"
+highlight = "$COLOR4"
+
+[statusbar]
+fg = "$FG"
+bg = "$BG"
+
+[preview]
+fg = "$FG"
+bg = "$BG"
+EOF
+
+echo "Yazi theme updated at $YAZI_THEME"
+
+# ----------------------------
 # Reload Waybar
 # ----------------------------
 if pgrep -x "waybar" >/dev/null; then
@@ -82,4 +106,4 @@ else
     waybar &
 fi
 
-echo "Done! Wallpaper and Waybar theme updated."
+echo "Done! Wallpaper, Waybar, and Yazi theme updated."
