@@ -1,0 +1,13 @@
+[mgr]
+fg = "#84d9db"
+bg = "#0A0C1B"
+border = "#36871E"
+highlight = "#E33882"
+
+[statusbar]
+fg = "#84d9db"
+bg = "#0A0C1B"
+
+[preview]
+fg = "#84d9db"
+bg = "#0A0C1B"
