@@ -154,6 +154,21 @@ if [[ -d "$SCRIPTS_SRC" ]]; then
 else
     print_warning "Scripts folder not found at $SCRIPTS_SRC, skipping"
 fi
+# ----------------------------
+# Copy Fastfetch config
+# ----------------------------
+print_header "Copying Fastfetch config"
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/fastfetch"
+
+FASTFETCH_SRC="$REPO_ROOT/configs/fastfetch/config.jsonc"
+FASTFETCH_DEST="$CONFIG_DIR/fastfetch/config.jsonc"
+
+if [[ -f "$FASTFETCH_SRC" ]]; then
+    sudo -u "$USER_NAME" cp "$FASTFETCH_SRC" "$FASTFETCH_DEST"
+    print_success "✅ Fastfetch config.jsonc copied to $CONFIG_DIR/fastfetch/"
+else
+    print_warning "Fastfetch config.jsonc not found at $FASTFETCH_SRC, skipping"
+fi
 
 # ----------------------------
 # Copy .bashrc
