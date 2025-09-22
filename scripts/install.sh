@@ -117,9 +117,8 @@ for pkg in "${AUR_PACKAGES[@]}"; do
 done
 
 # ----------------------------
-# Copy Hyprland config
+# Copy Hyprland main config
 # ----------------------------
-print_header "Copying Hyprland config"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/hypr"
 if [[ -f "$HYPR_CONFIG_SRC" ]]; then
     sudo -u "$USER_NAME" cp "$HYPR_CONFIG_SRC" "$CONFIG_DIR/hypr/hyprland.conf"
@@ -127,6 +126,18 @@ if [[ -f "$HYPR_CONFIG_SRC" ]]; then
 else
     print_warning "Hyprland config not found at $HYPR_CONFIG_SRC, skipping"
 fi
+
+# ----------------------------
+# Copy Hyprland colors-hyprland.conf
+# ----------------------------
+COLOR_FILE_SRC="$REPO_ROOT/configs/hypr/colors-hyprland.conf"
+if [[ -f "$COLOR_FILE_SRC" ]]; then
+    sudo -u "$USER_NAME" cp "$COLOR_FILE_SRC" "$CONFIG_DIR/hypr/colors-hyprland.conf"
+    print_success "✅ Copied colors-hyprland.conf to $CONFIG_DIR/hypr/"
+else
+    print_warning "colors-hyprland.conf not found at $COLOR_FILE_SRC, skipping"
+fi
+
 
 # ----------------------------
 # Copy Waybar config + style
