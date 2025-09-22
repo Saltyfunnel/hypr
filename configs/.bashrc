@@ -1,6 +1,10 @@
 #
 # ~/.bashrc
 #
+# Restore last Pywal theme if it exists
+if [ -f "$HOME/.cache/wal/sequences" ]; then
+    cat "$HOME/.cache/wal/sequences"
+fi
 
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
