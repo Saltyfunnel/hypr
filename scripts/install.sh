@@ -70,7 +70,7 @@ fi
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano wget jq
-    sddm polkit polkit-kde-agent code curl python-pywal
+    sddm polkit polkit-kde-agent code curl
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv gnome-disk-utility
@@ -96,6 +96,25 @@ else
     run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
     run_command "rm -rf /tmp/yay" "Clean up temporary yay files"
 fi
+
+# ----------------------------
+# Install AUR Packages
+# ----------------------------
+print_header "Installing AUR packages"
+
+# List of AUR packages to install
+AUR_PACKAGES=(
+    python-pywal16
+    # Add additional AUR packages here
+)
+
+for pkg in "${AUR_PACKAGES[@]}"; do
+    if yay -Qs "^$pkg$" &>/dev/null; then
+        print_success "✅ $pkg is already installed"
+    else
+        run_command "sudo -u $USER_NAME yay -S --noconfirm $pkg" "Install $pkg from AUR"
+    fi
+done
 
 # ----------------------------
 # Copy Hyprland config
@@ -141,7 +160,6 @@ for file in "${YAZI_FILES[@]}"; do
     fi
 done
 
-
 # ----------------------------
 # Copy user scripts (setwallpaper etc.)
 # ----------------------------
@@ -154,6 +172,7 @@ if [[ -d "$SCRIPTS_SRC" ]]; then
 else
     print_warning "Scripts folder not found at $SCRIPTS_SRC, skipping"
 fi
+
 # ----------------------------
 # Copy Fastfetch config
 # ----------------------------
@@ -200,18 +219,4 @@ fi
 # Enable SDDM
 # ----------------------------
 print_header "Setting up SDDM"
-run_command "systemctl enable sddm.service" "Enable SDDM login manager"
-CURRENT_TARGET=$(systemctl get-default)
-if [[ "$CURRENT_TARGET" != "graphical.target" ]]; then
-    run_command "systemctl set-default graphical.target" "Set default target to graphical"
-fi
-
-# ----------------------------
-# Final Message
-# ----------------------------
-print_header "Setup Complete!"
-print_success "🎉 Reboot your system and log in via SDDM to start Hyprland."
-print_success "✅ Hyprland and Waybar configs applied."
-print_success "✅ Yay is installed and ready for AUR packages."
-print_success "✅ User scripts are available in $CONFIG_DIR/scripts/"
-print_success "✅ Wallpapers are in $PICTURES_DEST/Wallpapers/"
+run_command "systemctl enable s
