@@ -1,3 +1,27 @@
-
 [theme]
 use = "/home/gerard/.config/yazi/theme.toml"
+
+[mgr]
+fg = "#dabfc6"
+bg = "#0f161a"
+border = "#5D6D94"
+highlight = "#7C81A6"
+
+[statusbar]
+fg = "#dabfc6"
+bg = "#0f161a"
+
+[preview]
+fg = "#dabfc6"
+bg = "#0f161a"
+
+# Keybinds file
+keybinds = "/home/gerard/.config/yazi/keybind.toml"
+
+# Extra fancy UI tweaks
+[mgr.ui]
+show_preview = true
+preview_width = 50
+highlight_style = "bold"
+border_style = "rounded"
+statusbar_position = "bottom"
