@@ -1,8 +1,9 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 30,
-    "spacing": 4,
+    "mod": "dock",
+    "exclusive": true,
+    "passthrough": false,
     "modules-left": [
         "hyprland/workspaces",
         "hyprland/window"
@@ -14,177 +15,75 @@
         "cpu",
         "memory",
         "pulseaudio",
-        "tray"
+        "custom/power",
+        "tray",
+        "custom/spotify"
     ],
 
-    // Modules
-    "hyprland/workspaces": {
-        "format": " {name} ",
-        "format-icons": {
-            "1": "",
-            "2": "",
-            "3": "",
-            "4": "",
-            "5": "",
-            "6": "",
-            "7": "",
-            "8": "",
-            "9": "",
-            "10": ""
-        },
-        "on-click": "activate"
+    "custom/spotify": {
+        "format": " {}",
+        "exec": "python /home/gerard/.config/waybar/scripts/get-spotify-status.py",
+        "on-click": "playerctl --player=spotify play-pause",
+        "return-type": "json",
+        "on-update": "false",
+        "max-length": 40
     },
-    
-    "hyprland/window": {
-        "format": "{title}"
-    },
-    
-    "clock": {
-        "tooltip-format": "{:%Y-%m-%d %H:%M}",
-        "format": " {:%H:%M}",
-        "format-alt": " {:%d-%m-%Y}"
-    },
-    
+
     "cpu": {
         "format": " {usage}%",
-        "tooltip": true,
-        "on-click": "alacritty -e htop"
+        "tooltip": false,
+        "interval": 1
     },
-    
+
     "memory": {
-        "format": " {}%",
-        "tooltip": true,
-        "on-click": "alacritty -e htop"
+        "format": " {}%",
+        "tooltip": false
     },
     
     "pulseaudio": {
         "format": "{icon} {volume}%",
-        "format-bluetooth": "{icon}  {volume}%",
-        "format-muted": " Muted",
-        "format-icons": {
-            "default": ["", "", ""]
+        "format-muted": "",
+        "tooltip": false,
+        "on-click": "pactl set-sink-mute @DEFAULT_SINK@ toggle",
+        "on-scroll-up": "pactl set-sink-volume @DEFAULT_SINK@ +5%",
+        "on-scroll-down": "pactl set-sink-volume @DEFAULT_SINK@ -5%"
+    },
+
+    "clock": {
+        "format": "{:%I:%M %p}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>",
+        "calendar": {
+            "mode": "month",
+            "mode-icons": {
+              "month": ""
+            },
+            "weeks-pos": "right",
+            "on-scroll": 1,
+            "format": {
+              "months": "<span color='#ffead3'><b>{}</b></span>",
+              "weekdays": "<span color='#ffcc66'><b>{}</b></span>",
+              "today": "<span color='#ff6699'><b>{}</b></span>"
+            }
         },
-        "on-click": "pavucontrol"
+        "interval": 1
+    },
+    
+    "custom/power": {
+        "format": "",
+        "on-click": "sh -c 'tofi-power --tofi-config ~/.cache/wal/tofi'"
+    },
+
+    "hyprland/workspaces": {
+        "on-click": "activate"
+    },
+    
+    "hyprland/window": {
+      "format": "{}",
+      "max-length": 40
     },
     
     "tray": {
-        "icon-size": 18,
-        "spacing": 5
+        "icon-size": 14,
+        "spacing": 10
     }
 }
-
-~/.config/waybar/style.css
-
-This CSS file uses the official Dracula color palette, providing a clean and consistent look. The styling is minimalist, with subtle rounded corners and spacing to make each module stand out without being cluttered.
-CSS
-
-/* Dracula Color Palette */
-@define-color background #282a36;
-@define-color foreground #f8f8f2;
-@define-color current_line #44475a;
-@define-color comment #6272a4;
-@define-color cyan #8be9fd;
-@define-color green #50fa7b;
-@define-color orange #ffb86c;
-@define-color pink #ff79c6;
-@define-color purple #bd93f9;
-@define-color red #ff5555;
-@define-color yellow #f1fa8c;
-
-/* General Waybar styles */
-* {
-    border: none;
-    border-radius: 0;
-    font-family: "JetBrainsMono Nerd Font"; /* Use a Nerd Font for icons */
-    font-size: 13px;
-    min-height: 0;
-}
-
-window#waybar {
-    background-color: @background;
-    color: @foreground;
-    transition-property: background-color;
-    transition-duration: .5s;
-}
-
-/* Module styles */
-.modules-left,
-.modules-center,
-.modules-right {
-    background-color: @current_line;
-    margin: 4px;
-    padding: 0 8px;
-    border-radius: 12px;
-}
-
-#workspaces button {
-    background-color: transparent;
-    color: @foreground;
-    border-radius: 10px;
-    padding: 0 5px;
-}
-
-#workspaces button:hover {
-    background-color: @comment;
-}
-
-#workspaces button.active {
-    background-color: @purple;
-    color: @background;
-}
-
-#window {
-    font-weight: bold;
-}
-
-#clock {
-    color: @green;
-}
-
-#cpu {
-    color: @cyan;
-}
-
-#memory {
-    color: @orange;
-}
-
-#pulseaudio {
-    color: @pink;
-}
-
-#pulseaudio.muted {
-    color: @comment;
-}
-
-#tray {
-    color: @foreground;
-}
-
-How to use this configuration:
-
-    Create the directories: If you don't already have them, create the waybar config directory:
-    mkdir -p ~/.config/waybar/
-
-    Save the files:
-
-        Save the JSON content into ~/.config/waybar/config.
-
-        Save the CSS content into ~/.config/waybar/style.css.
-
-    Install dependencies:
-
-        waybar itself.
-
-        A Nerd Font like ttf-jetbrains-mono-nerd (replace "JetBrainsMono Nerd Font" in the CSS with your font's name).
-
-        Optional: htop for the CPU/Memory on-click action.
-
-        Optional: pavucontrol for the audio on-click action.
-
-    Reload Waybar: You can add waybar & to your Hyprland config (~/.config/hypr/hyprland.conf) to start it automatically. To reload it after making changes, you can simply run pkill waybar and then waybar & in your terminal.
-
-Generate code to prototype this with Canvas
-
-
-Gemini can make mistakes, including about people, so double-check it. Your privacy and GeminiOpens in a new window
