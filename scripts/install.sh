@@ -132,6 +132,20 @@ if [[ -d "$WAYBAR_CONFIG_SRC" ]]; then
 fi
 
 # ----------------------------
+# Copy Tofi config
+# ----------------------------
+print_header "Copying Tofi config"
+TOFI_CONFIG_SRC="$REPO_ROOT/configs/tofi"
+
+if [[ -d "$TOFI_CONFIG_SRC" ]]; then
+    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/tofi"
+    sudo -u "$USER_NAME" cp -rf "$TOFI_CONFIG_SRC/." "$CONFIG_DIR/tofi/"
+    print_success "Tofi config copied"
+else
+    print_warning "Tofi config folder not found at $TOFI_CONFIG_SRC"
+fi
+
+# ----------------------------
 # Copy Yazi config
 # ----------------------------
 print_header "Copying Yazi config"
