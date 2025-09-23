@@ -103,6 +103,7 @@ fi
 print_header "Installing AUR packages"
 AUR_PACKAGES=(
     python-pywal16
+    tofi
     # Add additional AUR packages here
 )
 for pkg in "${AUR_PACKAGES[@]}"; do
