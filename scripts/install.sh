@@ -81,15 +81,7 @@ run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core
 
 # Enable essential services
 run_command "systemctl enable --now polkit.service" "Enable polkit"
-
-# ----------------------------
-# Enable Bluetooth & PipeWire (user-level) services
-# ----------------------------
-print_header "Enabling Bluetooth and PipeWire audio"
-
 run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth service"
-sudo -u "$USER_NAME" systemctl --user enable --now pipewire pipewire-pulse wireplumber
-
 
 # ----------------------------
 # Install Yay (AUR Helper)
