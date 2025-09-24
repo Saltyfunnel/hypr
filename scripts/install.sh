@@ -70,10 +70,10 @@ fi
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww dunst grim slurp kitty nano wget jq
-    sddm polkit polkit-kde-agent code curl
+    sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
-    firefox yazi fastfetch mpv gnome-disk-utility
+    firefox yazi fastfetch mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 starship
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
