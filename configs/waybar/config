@@ -6,8 +6,7 @@
   "passthrough": false,
 
   "modules-left": [
-    "hyprland/workspaces",
-    "hyprland/window"
+  "hyprland/window"
   ],
 
   "modules-center": [
@@ -152,14 +151,6 @@
     "on-click-right": "systemctl reboot",
     "interval": 3600
   },
-
- "hyprland/workspaces": {
-    "format": "●",
-    "format-active": "●",
-    "format-padding": 2,
-    "on-click": "activate"
-}
-,
 
   "hyprland/window": {
     "format": "  {}",
