@@ -95,17 +95,6 @@ window#waybar {
 }
 
 /* Workspace Dots */
-#hyprland-workspaces button {
-    background-color: ${BG};
-    color: ${COLOR7};
-    margin: 2px;
-    padding: 2px 5px;
-    border-radius: 50%;
-}
-
-#hyprland-workspaces button.active {
-    color: ${COLOR1};
-}
 
 #window,
 #clock,
