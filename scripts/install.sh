@@ -83,6 +83,16 @@ run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core
 run_command "systemctl enable --now polkit.service" "Enable polkit"
 
 # ----------------------------
+# Enable Bluetooth & PipeWire services
+# ----------------------------
+print_header "Enabling Bluetooth and audio services"
+
+run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth service"
+run_command "systemctl enable --now pipewire.service" "Enable PipeWire audio service"
+run_command "systemctl enable --now pipewire-pulse.service" "Enable PipeWire PulseAudio compatibility"
+
+
+# ----------------------------
 # Install Yay (AUR Helper)
 # ----------------------------
 print_header "Installing Yay"
