@@ -22,9 +22,8 @@
     "pulseaudio",
     "pulseaudio#microphone",
     "network",
-    "custom/power",
-    "tray"
-  ],
+    "custom/power"
+    ],
 
   "custom/spotify": {
     "exec": "STATUS=$(playerctl status --player=spotify 2>/dev/null); if [ \"$STATUS\" = \"Playing\" ]; then ICON=''; elif [ \"$STATUS\" = \"Paused\" ]; then ICON=''; else echo ''; exit 0; fi; INFO=$(playerctl metadata --player=spotify --format '{{ artist }} - {{ title }}'); echo \"$ICON $INFO\"",
@@ -157,8 +156,8 @@
     "max-length": 40
   },
 
-  "tray": {
-    "icon-size": 14,
-    "spacing": 10
-  }
+ "tray": {
+   "icon-size": 14,
+   "spacing": 10
+}
 }
