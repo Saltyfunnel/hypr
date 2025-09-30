@@ -74,7 +74,7 @@ PACMAN_PACKAGES=(
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv gnome-disk-utility pavucontrol
-    qt5-wayland qt6-wayland gtk3 gtk4 starship
+    qt5-wayland qt6-wayland gtk3 gtk4 
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
@@ -114,6 +114,77 @@ for pkg in "${AUR_PACKAGES[@]}"; do
         run_command "sudo -u $USER_NAME yay -S --noconfirm $pkg" "Install $pkg from AUR"
     fi
 done
+
+# ----------------------------
+# Shell Setup (Bash or Zsh)
+# ----------------------------
+print_header "Shell Setup"
+
+echo "Choose your default shell:"
+echo "1) Bash"
+echo "2) Zsh (with Powerlevel10k)"
+read -rp "Enter choice [1-2]: " SHELL_CHOICE
+
+case "$SHELL_CHOICE" in
+    1)
+        print_success "You chose Bash"
+        run_command "chsh -s $(command -v bash) $USER_NAME" "Set Bash as default shell"
+        ;;
+    2)
+        print_success "You chose Zsh with Powerlevel10k"
+
+        # Install zsh via pacman
+        run_command "pacman -S --noconfirm --needed zsh" "Install Zsh"
+
+        # Install Powerlevel10k
+        run_command "pacman -S --noconfirm --needed zsh-theme-powerlevel10k" "Install Powerlevel10k"
+
+        # Set Zsh as default shell
+        run_command "chsh -s $(command -v zsh) $USER_NAME" "Set Zsh as default shell"
+
+        # Copy Powerlevel10k config if present in repo
+        P10K_CONFIG_SRC="$REPO_ROOT/configs/.p10k.zsh"
+        if [[ -f "$P10K_CONFIG_SRC" ]]; then
+            sudo -u "$USER_NAME" cp "$P10K_CONFIG_SRC" "$USER_HOME/.p10k.zsh"
+            print_success "Powerlevel10k config copied"
+        else
+            print_warning "No .p10k.zsh config found in $REPO_ROOT/configs"
+        fi
+
+        # Handle .zshrc
+        ZSHRC_DEST="$USER_HOME/.zshrc"
+        ZSHRC_SRC="$REPO_ROOT/configs/.zshrc"
+
+        if [[ -f "$ZSHRC_DEST" ]]; then
+            print_warning ".zshrc already exists in home, leaving it untouched"
+        elif [[ -f "$ZSHRC_SRC" ]]; then
+            sudo -u "$USER_NAME" cp "$ZSHRC_SRC" "$ZSHRC_DEST"
+            print_success ".zshrc copied from repo"
+        else
+            print_warning "No .zshrc found in repo, creating a minimal one"
+            cat <<'EOF' | sudo -u "$USER_NAME" tee "$ZSHRC_DEST" >/dev/null
+# Enable Powerlevel10k if installed
+if [ -f /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme ]; then
+  source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+fi
+
+# Load user-specific Powerlevel10k config if present
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# Restore Pywal colors and clear terminal
+wal -r && clear
+
+# Run fastfetch after login
+fastfetch
+EOF
+            print_success "Minimal .zshrc created with wal + fastfetch"
+        fi
+        ;;
+    *)
+        print_warning "Invalid choice. Defaulting to Bash."
+        run_command "chsh -s $(command -v bash) $USER_NAME" "Set Bash as default shell"
+        ;;
+esac
 
 # ----------------------------
 # Copy Hyprland configs
