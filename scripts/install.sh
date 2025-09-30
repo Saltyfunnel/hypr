@@ -136,8 +136,8 @@ case "$SHELL_CHOICE" in
         # Install zsh via pacman
         run_command "pacman -S --noconfirm --needed zsh" "Install Zsh"
 
-        # Install Powerlevel10k
-        run_command "pacman -S --noconfirm --needed zsh-theme-powerlevel10k" "Install Powerlevel10k"
+        # Install Powerlevel10k via AUR
+        run_command "sudo -u $USER_NAME yay -S --noconfirm zsh-theme-powerlevel10k" "Install Powerlevel10k"
 
         # Set Zsh as default shell
         run_command "chsh -s $(command -v zsh) $USER_NAME" "Set Zsh as default shell"
