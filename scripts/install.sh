@@ -151,18 +151,16 @@ case "$SHELL_CHOICE" in
             print_warning "No .p10k.zsh config found in $REPO_ROOT/configs"
         fi
 
-        # Handle .zshrc
-        ZSHRC_DEST="$USER_HOME/.zshrc"
-        ZSHRC_SRC="$REPO_ROOT/configs/.zshrc"
+    # Handle .zshrc
+ZSHRC_DEST="$USER_HOME/.zshrc"
+ZSHRC_SRC="$REPO_ROOT/configs/.zshrc"
 
-        if [[ -f "$ZSHRC_DEST" ]]; then
-            print_warning ".zshrc already exists in home, leaving it untouched"
-        elif [[ -f "$ZSHRC_SRC" ]]; then
-            sudo -u "$USER_NAME" cp "$ZSHRC_SRC" "$ZSHRC_DEST"
-            print_success ".zshrc copied from repo"
-        else
-            print_warning "No .zshrc found in repo, creating a minimal one"
-            cat <<'EOF' | sudo -u "$USER_NAME" tee "$ZSHRC_DEST" >/dev/null
+if [[ -f "$ZSHRC_SRC" ]]; then
+    sudo -u "$USER_NAME" cp "$ZSHRC_SRC" "$ZSHRC_DEST"
+    print_success ".zshrc copied from repo"
+else
+    print_warning "No .zshrc found in repo, creating a minimal one"
+    cat <<'EOF' | sudo -u "$USER_NAME" tee "$ZSHRC_DEST" >/dev/null
 # Enable Powerlevel10k if installed
 if [ -f /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme ]; then
   source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
@@ -177,8 +175,9 @@ wal -r && clear
 # Run fastfetch after login
 fastfetch
 EOF
-            print_success "Minimal .zshrc created with wal + fastfetch"
-        fi
+    print_success "Minimal .zshrc created with wal + fastfetch"
+fi
+
         ;;
     *)
         print_warning "Invalid choice. Defaulting to Bash."
