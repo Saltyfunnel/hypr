@@ -74,7 +74,7 @@ PACMAN_PACKAGES=(
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch mpv gnome-disk-utility pavucontrol
-    qt5-wayland qt6-wayland gtk3 gtk4 
+    qt5-wayland qt6-wayland gtk3 gtk4 libgit2
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
