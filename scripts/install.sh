@@ -1,5 +1,5 @@
 #!/bin/bash
-# Minimal Hyprland Installer with user configs (fixed paths)
+# Minimal Hyprland Installer with user configs (Bash only)
 set -euo pipefail
 
 # ----------------------------
@@ -105,7 +105,6 @@ print_header "Installing AUR packages"
 AUR_PACKAGES=(
     python-pywal16
     tofi
-    # Add additional AUR packages here
 )
 for pkg in "${AUR_PACKAGES[@]}"; do
     if yay -Qs "^$pkg$" &>/dev/null; then
@@ -116,74 +115,28 @@ for pkg in "${AUR_PACKAGES[@]}"; do
 done
 
 # ----------------------------
-# Shell Setup (Bash or Zsh)
+# Shell Setup (Bash only)
 # ----------------------------
 print_header "Shell Setup"
+run_command "chsh -s $(command -v bash) $USER_NAME" "Set Bash as default shell"
 
-echo "Choose your default shell:"
-echo "1) Bash"
-echo "2) Zsh (with Powerlevel10k)"
-read -rp "Enter choice [1-2]: " SHELL_CHOICE
+BASHRC_SRC="$REPO_ROOT/configs/.bashrc"
+BASHRC_DEST="$USER_HOME/.bashrc"
 
-case "$SHELL_CHOICE" in
-    1)
-        print_success "You chose Bash"
-        run_command "chsh -s $(command -v bash) $USER_NAME" "Set Bash as default shell"
-        ;;
-    2)
-        print_success "You chose Zsh with Powerlevel10k"
-
-        # Install zsh via pacman
-        run_command "pacman -S --noconfirm --needed zsh" "Install Zsh"
-
-        # Install Powerlevel10k via AUR
-        run_command "sudo -u $USER_NAME yay -S --noconfirm zsh-theme-powerlevel10k" "Install Powerlevel10k"
-
-        # Set Zsh as default shell
-        run_command "chsh -s $(command -v zsh) $USER_NAME" "Set Zsh as default shell"
-
-        # Copy Powerlevel10k config if present in repo
-        P10K_CONFIG_SRC="$REPO_ROOT/configs/.p10k.zsh"
-        if [[ -f "$P10K_CONFIG_SRC" ]]; then
-            sudo -u "$USER_NAME" cp "$P10K_CONFIG_SRC" "$USER_HOME/.p10k.zsh"
-            print_success "Powerlevel10k config copied"
-        else
-            print_warning "No .p10k.zsh config found in $REPO_ROOT/configs"
-        fi
-
-    # Handle .zshrc
-ZSHRC_DEST="$USER_HOME/.zshrc"
-ZSHRC_SRC="$REPO_ROOT/configs/.zshrc"
-
-if [[ -f "$ZSHRC_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$ZSHRC_SRC" "$ZSHRC_DEST"
-    print_success ".zshrc copied from repo"
+if [[ -f "$BASHRC_SRC" ]]; then
+    sudo -u "$USER_NAME" cp "$BASHRC_SRC" "$BASHRC_DEST"
+    print_success ".bashrc copied from repo"
 else
-    print_warning "No .zshrc found in repo, creating a minimal one"
-    cat <<'EOF' | sudo -u "$USER_NAME" tee "$ZSHRC_DEST" >/dev/null
-# Enable Powerlevel10k if installed
-if [ -f /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme ]; then
-  source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
-fi
-
-# Load user-specific Powerlevel10k config if present
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
-
+    print_warning "No .bashrc found in repo, creating a minimal one"
+    cat <<'EOF' | sudo -u "$USER_NAME" tee "$BASHRC_DEST" >/dev/null
 # Restore Pywal colors and clear terminal
 wal -r && clear
 
 # Run fastfetch after login
 fastfetch
 EOF
-    print_success "Minimal .zshrc created with wal + fastfetch"
+    print_success "Minimal .bashrc created with wal + fastfetch"
 fi
-
-        ;;
-    *)
-        print_warning "Invalid choice. Defaulting to Bash."
-        run_command "chsh -s $(command -v bash) $USER_NAME" "Set Bash as default shell"
-        ;;
-esac
 
 # ----------------------------
 # Copy Hyprland configs
@@ -246,12 +199,6 @@ fi
 print_header "Copying Fastfetch config"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/fastfetch"
 [[ -f "$FASTFETCH_SRC" ]] && sudo -u "$USER_NAME" cp "$FASTFETCH_SRC" "$CONFIG_DIR/fastfetch/config.jsonc" && print_success "Fastfetch config copied"
-
-# ----------------------------
-# Copy .bashrc
-# ----------------------------
-print_header "Copying .bashrc"
-[[ -f "$REPO_ROOT/configs/.bashrc" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/.bashrc" "$USER_HOME/.bashrc" && print_success ".bashrc copied"
 
 # ----------------------------
 # Copy Wallpapers
