@@ -10,3 +10,7 @@ open_in_editor = "e"
 # Example: cycle previews
 cycle_preview_next = "right"
 cycle_preview_prev = "left"
+
+# Copy/paste
+copy = "ctrl+c"
+paste = "ctrl+v"
