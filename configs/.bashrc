@@ -1,16 +1,25 @@
-#
-# ~/.bashrc
-#
-# Restore last Pywal theme if it exists
+# ====================================================================
+# PYWAL FIX: Load ANSI Color Variables for Starship
+# ====================================================================
+if [ -f "$HOME/.cache/wal/colors.sh" ]; then
+    . "$HOME/.cache/wal/colors.sh"
+fi
+
+# Optional: restore terminal background
 if [ -f "$HOME/.cache/wal/sequences" ]; then
     cat "$HOME/.cache/wal/sequences"
 fi
 
-# If not running interactively, don't do anything
+# Only do the rest for interactive shells
 [[ $- != *i* ]] && return
 
+# Aliases
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
-PS1='[\u@\h \W]\$ '
-wal -r && clear
+
+# Initialize Starship prompt (after colors.sh)
+eval "$(starship init bash)"
+
+# Optional: clear screen and show system info once
+clear
 fastfetch
