@@ -69,12 +69,17 @@ fi
 # ----------------------------
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
+    # Core system + Hyprland essentials
     hyprland waybar swww dunst grim slurp kitty nano wget jq
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
-    firefox yazi fastfetch mpv gnome-disk-utility pavucontrol
-    qt5-wayland qt6-wayland gtk3 gtk4 libgit2
+    firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
+
+    # GUI and Qt deps for SDDM + Slice
+    qt5-wayland qt6-wayland gtk3 gtk4 libgit2 qt5-graphicaleffects qt5-quickcontrols2 qt5-svg
+
+    # Fonts
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
@@ -132,10 +137,13 @@ else
 # Restore Pywal colors and clear terminal
 wal -r && clear
 
+# Initialize Starship prompt
+eval "$(starship init bash)"
+
 # Run fastfetch after login
 fastfetch
 EOF
-    print_success "Minimal .bashrc created with wal + fastfetch"
+    print_success "Minimal .bashrc created with wal + fastfetch + starship"
 fi
 
 # ----------------------------
@@ -201,6 +209,20 @@ sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/fastfetch"
 [[ -f "$FASTFETCH_SRC" ]] && sudo -u "$USER_NAME" cp "$FASTFETCH_SRC" "$CONFIG_DIR/fastfetch/config.jsonc" && print_success "Fastfetch config copied"
 
 # ----------------------------
+# Copy Starship config
+# ----------------------------
+print_header "Copying Starship config"
+STARSHIP_SRC="$REPO_ROOT/configs/starship/starship.toml"
+STARSHIP_DEST="$CONFIG_DIR/starship.toml"
+
+if [[ -f "$STARSHIP_SRC" ]]; then
+    sudo -u "$USER_NAME" cp "$STARSHIP_SRC" "$STARSHIP_DEST"
+    print_success "Starship config copied to $STARSHIP_DEST"
+else
+    print_warning "Starship config not found at $STARSHIP_SRC"
+fi
+
+# ----------------------------
 # Copy Wallpapers
 # ----------------------------
 print_header "Copying Wallpapers"
@@ -217,6 +239,39 @@ fi
 # ----------------------------
 print_header "Setting up SDDM"
 run_command "systemctl enable sddm.service" "Enable SDDM login manager"
+
+# ----------------------------
+# Install and Set Up SDDM Slice Theme
+# ----------------------------
+print_header "Installing SDDM Slice Theme"
+
+SLICE_DIR="/usr/share/sddm/themes/sddm-slice"
+
+if [[ -d "$SLICE_DIR" ]]; then
+    print_success "SDDM Slice theme already installed"
+else
+    run_command "git clone https://github.com/EricKotato/sddm-slice.git $SLICE_DIR" "Clone SDDM Slice theme"
+    print_success "✅ SDDM Slice installed to $SLICE_DIR"
+fi
+
+# Ensure permissions
+run_command "chmod -R 755 $SLICE_DIR" "Fix permissions for SDDM Slice"
+
+# Set Slice as the default SDDM theme
+SDDM_CONF="/etc/sddm.conf"
+if [[ -f "$SDDM_CONF" ]]; then
+    if grep -q '^\[Theme\]' "$SDDM_CONF"; then
+        sudo sed -i '/^\[Theme\]/,/^\[/ s/^Current=.*/Current=sddm-slice/' "$SDDM_CONF"
+    else
+        echo -e "\n[Theme]\nCurrent=sddm-slice" | sudo tee -a "$SDDM_CONF" >/dev/null
+    fi
+else
+    cat <<EOF | sudo tee "$SDDM_CONF" >/dev/null
+[Theme]
+Current=sddm-slice
+EOF
+fi
+print_success "✅ SDDM configured to use 'sddm-slice' theme"
 
 # ----------------------------
 # Final message
