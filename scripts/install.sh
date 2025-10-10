@@ -76,10 +76,8 @@ PACMAN_PACKAGES=(
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
 
-    # GUI and Qt deps for SDDM + Slice
-    qt5-wayland qt6-wayland gtk3 gtk4 libgit2 qt5-graphicaleffects qt5-quickcontrols2 qt5-svg
-
-    # Fonts
+    # GUI / Wayland / Fonts
+    qt5-wayland qt6-wayland gtk3 gtk4 libgit2
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
@@ -239,39 +237,6 @@ fi
 # ----------------------------
 print_header "Setting up SDDM"
 run_command "systemctl enable sddm.service" "Enable SDDM login manager"
-
-# ----------------------------
-# Install and Set Up SDDM Slice Theme
-# ----------------------------
-print_header "Installing SDDM Slice Theme"
-
-SLICE_DIR="/usr/share/sddm/themes/sddm-slice"
-
-if [[ -d "$SLICE_DIR" ]]; then
-    print_success "SDDM Slice theme already installed"
-else
-    run_command "git clone https://github.com/EricKotato/sddm-slice.git $SLICE_DIR" "Clone SDDM Slice theme"
-    print_success "✅ SDDM Slice installed to $SLICE_DIR"
-fi
-
-# Ensure permissions
-run_command "chmod -R 755 $SLICE_DIR" "Fix permissions for SDDM Slice"
-
-# Set Slice as the default SDDM theme
-SDDM_CONF="/etc/sddm.conf"
-if [[ -f "$SDDM_CONF" ]]; then
-    if grep -q '^\[Theme\]' "$SDDM_CONF"; then
-        sudo sed -i '/^\[Theme\]/,/^\[/ s/^Current=.*/Current=sddm-slice/' "$SDDM_CONF"
-    else
-        echo -e "\n[Theme]\nCurrent=sddm-slice" | sudo tee -a "$SDDM_CONF" >/dev/null
-    fi
-else
-    cat <<EOF | sudo tee "$SDDM_CONF" >/dev/null
-[Theme]
-Current=sddm-slice
-EOF
-fi
-print_success "✅ SDDM configured to use 'sddm-slice' theme"
 
 # ----------------------------
 # Final message
