@@ -1,13 +1,13 @@
-width = 50%
+width = 15%
 height = 40%
-border-width = 0
+border-width = 2
 outline-width = 0
 padding-left = 1%
 padding-top = 1%
 result-spacing = 25
 num-results = 10
 
-font = JetBrainsMono Nerd Font
+font = CaskaydiaCove Nerd Font
 font-size = 12
 
 text-color = #f0f0f0
@@ -17,3 +17,4 @@ prompt-text = " : "
 background-color = #1a1a1acc
 selection-color = #7d7c7cff
 selection-text-color = #000000
+border-color = {color4}ff
