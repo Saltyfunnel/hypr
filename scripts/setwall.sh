@@ -74,7 +74,7 @@ cat > "$WAYBAR_CSS" <<EOF
 @define-color color15 ${COLOR15};
 
 * {
-    font-family: "JetBrainsMono Nerd Font";
+    font-family: "CaskaydiaCove Nerd Font";
     font-size: 13px;
     min-height: 0;
 }
