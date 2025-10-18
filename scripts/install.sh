@@ -163,6 +163,22 @@ if [[ -d "$WAYBAR_CONFIG_SRC" ]]; then
 fi
 
 # ----------------------------
+# Copy Kitty config
+# ----------------------------
+print_header "Copying Kitty config"
+KITTY_CONFIG_SRC="$REPO_ROOT/configs/kitty/kitty.conf"
+KITTY_CONFIG_DEST="$CONFIG_DIR/kitty/kitty.conf"
+
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/kitty"
+if [[ -f "$KITTY_CONFIG_SRC" ]]; then
+    sudo -u "$USER_NAME" cp "$KITTY_CONFIG_SRC" "$KITTY_CONFIG_DEST"
+    print_success "Kitty config copied to $KITTY_CONFIG_DEST"
+else
+    print_warning "Kitty config not found at $KITTY_CONFIG_SRC"
+fi
+
+
+# ----------------------------
 # Copy Tofi config
 # ----------------------------
 print_header "Copying Tofi config"
