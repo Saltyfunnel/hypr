@@ -34,6 +34,10 @@ WAYBAR_CONFIG_SRC="$REPO_ROOT/configs/waybar"
 SCRIPTS_SRC="$REPO_ROOT/scripts"
 FASTFETCH_SRC="$REPO_ROOT/configs/fastfetch/config.jsonc"
 
+# SDDM Theme
+SDDM_THEME_SRC="$USER_HOME/where-is-my-sddm-theme/where_is_my_sddm_theme_qt5"
+SDDM_THEME_DEST="/usr/share/sddm/themes/where_is_my_sddm_theme"
+
 # ----------------------------
 # Checks
 # ----------------------------
@@ -76,8 +80,9 @@ PACMAN_PACKAGES=(
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
 
-    # GUI / Wayland / Fonts
-    qt5-wayland qt6-wayland gtk3 gtk4 libgit2 qt5-graphicaleffects qt5-x11extras qt5-imageformats
+    # GUI / Wayland / Fonts / Qt dependencies
+    qt5-base qt5-declarative qt5-quickcontrols2 qt5-svg qt5-graphicaleffects qt5-x11extras qt5-imageformats
+    qt5-wayland qt6-wayland gtk3 gtk4 libgit2
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
@@ -116,6 +121,23 @@ for pkg in "${AUR_PACKAGES[@]}"; do
         run_command "sudo -u $USER_NAME yay -S --noconfirm $pkg" "Install $pkg from AUR"
     fi
 done
+
+# ----------------------------
+# Install SDDM Theme
+# ----------------------------
+print_header "Installing SDDM theme"
+sudo mkdir -p "$SDDM_THEME_DEST"
+sudo cp -r "$SDDM_THEME_SRC/"* "$SDDM_THEME_DEST/"
+sudo chown -R root:root "$SDDM_THEME_DEST"
+sudo chmod -R 755 "$SDDM_THEME_DEST"
+print_success "SDDM theme files copied to $SDDM_THEME_DEST"
+
+if ! grep -q "Current=" /etc/sddm.conf 2>/dev/null; then
+    sudo bash -c "echo -e '[Theme]\nCurrent=where_is_my_sddm_theme' >> /etc/sddm.conf"
+else
+    sudo sed -i 's/^Current=.*/Current=where_is_my_sddm_theme/' /etc/sddm.conf
+fi
+print_success "SDDM theme set to where_is_my_sddm_theme"
 
 # ----------------------------
 # Shell Setup (Bash only)
@@ -176,7 +198,6 @@ if [[ -f "$KITTY_CONFIG_SRC" ]]; then
 else
     print_warning "Kitty config not found at $KITTY_CONFIG_SRC"
 fi
-
 
 # ----------------------------
 # Copy Tofi config
@@ -252,7 +273,7 @@ fi
 # Enable SDDM
 # ----------------------------
 print_header "Setting up SDDM"
-run_command "systemctl enable sddm.service" "Enable SDDM login manager"
+run_command "systemctl enable --now sddm.service" "Enable SDDM login manager"
 
 # ----------------------------
 # Final message
