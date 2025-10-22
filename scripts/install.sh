@@ -77,7 +77,7 @@ PACMAN_PACKAGES=(
     firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
 
     # GUI / Wayland / Fonts
-    qt5-wayland qt6-wayland gtk3 gtk4 libgit2
+    qt5-wayland qt6-wayland gtk3 gtk4 libgit2 qt5-graphicaleffects qt5-x11extras qt5-imageformats
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
