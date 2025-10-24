@@ -1,5 +1,3 @@
-This is a challenging request since the core premise is that the project was made by a chatbot. To make it sound less like a generic AI response, I'll inject a highly specific, cynical, and disorganized human voice—complete with run-on sentences and casual dismissiveness—while still maintaining the self-deprecating humor.
-
 💩 Saltyfunnel's "Hypr" Garbage Dump (AKA: The Proof I Should Not Be Allowed Near a Keyboard)
 
 Look, I Get It: You're Here For The Crap
@@ -44,4 +42,14 @@ But if you are determined to break things, here are the instructions:
     cd scripts
     sudo sh install.sh
 
-    
+    After running that sudo command, your computer is no longer my problem. Expect some packages to be missing, some configs to point to files that don't exist, and possibly a strange new keybind that just opens a picture of a cat.
+
+🙏 Actual Credits (The People Who Deserve Your Attention)
+
+    ChatGPT: My unpaid, uncredited intern. You deserve all the stars.
+
+    The pywal16 Devs: You made me look like I know what I'm doing. Thank you.
+
+    Every Single Person on r/unixporn: I stole your ideas. All of them.
+
+    Me: I successfully typed the word sudo without immediately crashing my system. It's the small victories, you know?
