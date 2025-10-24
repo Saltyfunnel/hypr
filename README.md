@@ -32,27 +32,25 @@ Half the modules don’t even feckin’ work, but it looks busy so I’m keepin�
 🚀 Tofi
 
 A launcher that’s faster than me internet, which isn’t sayin’ much.
-I only use it to open the terminal anyway — the one app I actually know how to use.
-Absolute overkill, but it feels posh.
 
 🧠 setwallpaper.sh
 
-This script is pure gobshite.
+This script is pure guff.
 It changes the wallpaper, updates the colours, and occasionally decides to delete reality.
 If your screen goes black — don’t worry, that’s normal. It’s havin’ a think.
 
-⚠️ Installation (Proceed, Ye Eejit)
+⚠️ Installation 
 
 Right, listen. If you run these commands, that’s on you.
 You’re basically givin’ a stranger’s bash script the keys to your feckin’ system.
 I warned ye.
 
 
-git clone https://github.com/Saltyfunnel/hypr
-cd hypr
-chmod +x scripts/*.sh
-cd scripts
-sudo sh install.sh
+    git clone https://github.com/Saltyfunnel/hypr
+    cd hypr
+    chmod +x scripts/*.sh
+    cd scripts
+    sudo sh install.sh
 
 After that last one, your machine’s fate is sealed.
 Expect missing packages, random crashes, and maybe a new keybind that plays “The Fields of Athenry” for no apparent reason.
