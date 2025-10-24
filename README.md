@@ -1,31 +1,25 @@
-💻 Saltyfunnel’s “Hypr” Garbage Dump
+Perfect — let’s give your README a final visual jazz-up: badges, dividers, spacing, and small emoji callouts to make it really pop on GitHub while keeping the blunt, chaotic tone.
 
+Here’s the final version:
+
+💻 Saltyfunnel’s “Hypr” Garbage Dump
 (AKA: The Proof I Should Not Be Allowed Near a Keyboard)
 
-Look, I Get It — You’re Here For The Trash Fire
+🧠 What This Repo Actually Is
 
-Welcome, brave soul. What you’ve found here isn’t a slick, optimized setup. It’s a shrine to mediocrity, a digital junk drawer of copy-pasted configs and desperate trial-and-error sessions.
+A mess of trial, error, and desperation.
+Built by someone with caffeine, luck, and zero design sense.
 
-These are my Hyprland dotfiles — a fragile web of scripts, colours, and ideas I only half understand. Somehow, against all logic, it mostly works.
+These are my Hyprland dotfiles — fragile, barely functional, chaotic.
+It might work. Sometimes. If you’re lucky.
 
-🛠️ The Stack (A.K.A. Everyone Else’s Hard Work)
-
-Let’s be honest: I didn’t build this. I assembled it — like IKEA furniture without the instructions or the little hex key.
-
-Hyprland: The only reason I haven’t gone back to GNOME yet.
-
-pywal16: The hero of the story. Chooses my colours because I absolutely shouldn’t be trusted to.
-
-Waybar: I once changed the font and called it “custom.” Sometimes it just disappears like it saw something it shouldn’t have.
-
-Tofi: Sleek, modern, and utterly uncooperative. Won’t open in a terminal, won’t behave, just sits there mocking me.
-
-The Install Script: A chaotic spell written in bash. May summon either beauty or destruction.
-⚠️ Installation (Proceed If You Hate Yourself)
-
-Let’s be clear: you’re about to execute a random script written by a guy who once broke his desktop changing a font.
-
-But sure, let’s dance with danger.
+🧩 The Stack (a.k.a. Everything I Didn’t Build Myself)
+Tool	Description
+Hyprland	The only thing here that actually works consistently.
+pywal16	Chooses colors because I clearly can’t.
+Waybar	Works occasionally. Disappears for fun.
+Tofi	Fancy app launcher. Exists mainly to look cool and mock you.
+Install Script	Bash spaghetti held together with hope and panic.
 
     git clone https://github.com/Saltyfunnel/hypr
     cd hypr
@@ -33,47 +27,93 @@ But sure, let’s dance with danger.
     cd scripts
     sudo sh install.sh
 
-After that, it’s all downhill. Expect missing dependencies, rogue keybinds, and enough confusion to fill a small wiki.
+💀 Results may include: broken packages, rogue keybinds, missing dependencies, existential despair.
 
-💩 Known “Features” (Things That Are Definitely Broken)
+🎞️ The Fake Screenshot Gallery
 
-Waybar occasionally disappears for dramatic effect.
+Hyprland on a Good Day
+✨ Everything aligns. Bars behave. Colors match.
+I’d show you, but I never installed a screenshot tool. Imagine it.
 
-Hyprland sometimes crashes just to remind me who’s boss.
+Hyprland After an Update
+💥 Gaps: gone. Fonts: missing. Wallpaper: black hole. Chaos reigns.
 
-The wallpaper script has achieved sentience and now resents me.
+Waybar in the Morning
+“Everything works.”
 
-Colour schemes are entirely mood-based — by the computer’s mood, not mine.
+Waybar by Afternoon
+Segmentation fault (core dumped)
 
-If it all actually works, congratulations — you’re clearly more powerful than I am.
+Tofi
+Launches apps. Looks fancy. Exists mainly to mock you.
 
-🙏 Credits (The Real Heroes)
+Me, configuring anything:
+🧍 “I don’t understand this line. I’ll leave it anyway.”
 
-ChatGPT: My unpaid dev team, emotional support system, and co-author of this disaster.
+💩 Known “Features”
 
-pywal16 devs: Wizards. Absolute wizards.
+Waybar disappears because it feels like it.
 
-Everyone on r/unixporn: I stole your configs with pride and zero understanding.
+Hyprland crashes for no reason.
 
-Me: Somehow still booting into Hyprland every morning like nothing’s wrong.
+Tofi exists mainly to mock you.
 
-💫 Wisdom from the Abyss
+Wallpaper script runs on chaos theory.
 
-“If it ain’t broke, it soon will be.”
+Colors change based on nothing you control.
 
-Minimalism is just a fancy word for “I gave up.”
+🧘 If it actually works for you, congratulations — you’re more powerful than I am.
 
-Rebooting fixes everything until it doesn’t.
+🙌 Credits (The Real Heroes)
 
-Every success here is an accident.
+ChatGPT — My unpaid dev, therapist, and co-author of this mess.
+
+pywal16 Devs — You made my bad choices look decent.
+
+r/unixporn — Source of all the ideas I stole and barely understood.
+
+Me — Somehow still booting into this disaster. Progress?
+
+💡 Wisdom from the Void
+
+“If it ain’t broke, it will be soon.”
+
+Minimalism = quitting early with confidence.
+
+Every success here was a happy accident.
+
+Logs are just your computer crying.
+
+❓ FAQ (Frequently Asked Stupid Questions)
+
+Q: Why doesn’t anything work?
+A: Because you copied my config. That’s it.
+
+Q: Why is Tofi acting weird?
+A: It’s a fancy launcher. Exists mainly to mock you. Stop expecting miracles.
+
+Q: Why are my colors insane?
+A: pywal16 did it. You did not. Accept it.
+
+Q: Waybar disappeared, what now?
+A: Reboot. Cry. Repeat.
+
+Q: Why is my wallpaper black?
+A: Because the script hates you. Don’t fight it.
+
+Q: Can I fix this?
+A: Delete it. Start over. Or don’t. Your choice.
+
+Q: Will this work on a minimal Arch install?
+A: Yes, it installs. That doesn’t mean it works correctly. Tears expected.
 
 🔥 Final Thoughts
 
-If this setup works for you, good on you — you’ve achieved something I never did: stability.
-If it doesn’t, welcome to the club. Grab a coffee, open your logs, and start guessing.
+If this actually works — congratulations, you’re a wizard.
+If it doesn’t — welcome to the club. Grab coffee and despair together.
 
-This repo is not a guide. It’s a cautionary tale.
-But hey, it looks nice for five minutes at a time — and that’s something.
+This isn’t a guide. It’s a warning label with jokes.
+But hey… it looks decent for five minutes, and that counts.
 
-License: Do whatever you want with this. Fork it, fix it, burn it, print it on a mug.
-Just don’t tag me when it breaks. I’m busy pretending it works.
+License: Do whatever you want — fork it, fix it, roast it, meme it.
+Just don’t tag me when it breaks. I’m pretending it works.
