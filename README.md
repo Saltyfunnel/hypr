@@ -4,26 +4,23 @@
 
 Look, I Get It — You’re Here For The Trash Fire
 
-Welcome, brave soul. What you’ve stumbled across isn’t a polished setup — it’s a chaotic shrine to trial and error, built by someone who thought “configuring a window manager” meant “copying random snippets from Reddit and praying.”
+Welcome, brave soul. What you’ve found here isn’t a slick, optimized setup. It’s a shrine to mediocrity, a digital junk drawer of copy-pasted configs and desperate trial-and-error sessions.
 
-These are my Hyprland dotfiles — a collection of half-baked ideas, broken scripts, and settings I barely understand. This repo is living proof that with enough caffeine and stubbornness, you too can produce something that almost works.
-
-If you came looking for elegance or logic, stop now. This is duct tape, desperation, and misplaced confidence all the way down.
+These are my Hyprland dotfiles — a fragile web of scripts, colours, and ideas I only half understand. Somehow, against all logic, it mostly works.
 
 🛠️ The Stack (A.K.A. Everyone Else’s Hard Work)
 
-I didn’t build this setup so much as I assembled it, like a raccoon rummaging through /r/unixporn.
+Let’s be honest: I didn’t build this. I assembled it — like IKEA furniture without the instructions or the little hex key.
 
-Hyprland: The crown jewel. Too beautiful for the mess I’ve made around it.
+Hyprland: The only reason I haven’t gone back to GNOME yet.
 
-pywal16: Automatically picks colours based on my wallpaper, which is great because I have the design taste of a potato.
+pywal16: The hero of the story. Chooses my colours because I absolutely shouldn’t be trusted to.
 
-Waybar: I moved the clock once, felt accomplished, and never touched it again. Sometimes it vanishes out of spite.
+Waybar: I once changed the font and called it “custom.” Sometimes it just disappears like it saw something it shouldn’t have.
 
-Tofi: Supposed to be a slick app launcher. Doesn’t even open in a terminal. Useless but pretty — just like me.
+Tofi: Sleek, modern, and utterly uncooperative. Won’t open in a terminal, won’t behave, just sits there mocking me.
 
-The Install Script: A Frankenstein’s monster of shell commands that somehow works. Occasionally.
-
+The Install Script: A chaotic spell written in bash. May summon either beauty or destruction.
 ⚠️ Installation (Proceed If You Hate Yourself)
 
 Let’s be clear: you’re about to execute a random script written by a guy who once broke his desktop changing a font.
@@ -36,47 +33,47 @@ But sure, let’s dance with danger.
     cd scripts
     sudo sh install.sh
 
-After that, your computer’s fate is entirely your own. Expect missing packages, misconfigured paths, and keybinds that launch mysterious apps you’ve never seen before.
+After that, it’s all downhill. Expect missing dependencies, rogue keybinds, and enough confusion to fill a small wiki.
 
 💩 Known “Features” (Things That Are Definitely Broken)
 
-Waybar disappears whenever it feels like it.
+Waybar occasionally disappears for dramatic effect.
 
-Hyprland crashes for fun.
+Hyprland sometimes crashes just to remind me who’s boss.
 
-Tofi refuses to open in a terminal out of sheer defiance.
+The wallpaper script has achieved sentience and now resents me.
 
-Wallpaper script runs on dark magic and bad intentions.
+Colour schemes are entirely mood-based — by the computer’s mood, not mine.
 
-The colors change depending on whether the moon’s in retrograde.
-
-If it all actually works, congratulations — you’ve summoned the Linux gods.
+If it all actually works, congratulations — you’re clearly more powerful than I am.
 
 🙏 Credits (The Real Heroes)
 
-ChatGPT: My unpaid intern, moral support, and the only reason any of this exists.
+ChatGPT: My unpaid dev team, emotional support system, and co-author of this disaster.
 
-pywal16 devs: You made this mess look vaguely aesthetic. I owe you several beers.
+pywal16 devs: Wizards. Absolute wizards.
 
-Everyone on r/unixporn: I stole your ideas shamelessly.
+Everyone on r/unixporn: I stole your configs with pride and zero understanding.
 
-Me: Somehow didn’t nuke my install. Barely.
+Me: Somehow still booting into Hyprland every morning like nothing’s wrong.
 
 💫 Wisdom from the Abyss
 
-Don’t copy this expecting stability. This is a warning, not a tutorial.
+“If it ain’t broke, it soon will be.”
 
-If it breaks, reboot. If it still breaks, reinstall.
+Minimalism is just a fancy word for “I gave up.”
 
-Minimalist ≠ functional.
+Rebooting fixes everything until it doesn’t.
 
-The moment you think “it’s finally working,” something will explode.
+Every success here is an accident.
 
 🔥 Final Thoughts
 
-If this repo runs perfectly for you, congrats — you’re either a genius or a liar.
-If it doesn’t, welcome to the experience. Hyprland isn’t a window manager, it’s a personality test.
+If this setup works for you, good on you — you’ve achieved something I never did: stability.
+If it doesn’t, welcome to the club. Grab a coffee, open your logs, and start guessing.
 
-This is my digital junk drawer, my monument to stubbornness, and somehow... I’m proud of it.
+This repo is not a guide. It’s a cautionary tale.
+But hey, it looks nice for five minutes at a time — and that’s something.
 
-License: Do whatever you want. Fork it, fix it, mock it, print it on a T-shirt. Just don’t tag me when it breaks. I’ve suffered enough.
+License: Do whatever you want with this. Fork it, fix it, burn it, print it on a mug.
+Just don’t tag me when it breaks. I’m busy pretending it works.
