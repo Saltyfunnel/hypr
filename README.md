@@ -10,10 +10,12 @@
 ## 🧠 What This Repo Actually Is
 
 A **mess of trial, error, and desperation**.  
-Built by someone with caffeine, luck, and zero design sense.
+Built by someone with caffeine, luck, and zero design sense.  
 
 These are my **Hyprland dotfiles** — fragile, barely functional, chaotic.  
 It *might work*. Sometimes. If you’re lucky.
+
+> ⚠️ Note: In your `hyprland.conf`, the first line is commented out with a `#`. To make wallpaper changes work, you need to bind `w` to change wallpaper **and** remove the `#` from that first line.
 
 ---
 
@@ -31,7 +33,7 @@ It *might work*. Sometimes. If you’re lucky.
 
 ### ⚠️ Installation (Proceed If You Hate Yourself)
 
-You’re about to run a script written by someone who once broke their system installing a cursor theme.
+You’re about to run a script written by someone who once broke their system installing a cursor theme.  
 
 ```bash
 git clone https://github.com/Saltyfunnel/hypr
@@ -41,7 +43,7 @@ cd scripts
 sudo sh install.sh
 ```
 
-💀 **Results may include:** broken packages, rogue keybinds, missing dependencies, existential despair.
+💀 **Results may include:** broken packages, rogue keybinds, missing dependencies, existential despair.  
 
 ---
 
@@ -89,34 +91,16 @@ sudo sh install.sh
 
 ---
 
-### 💡 Wisdom from the Void
-
-- “If it ain’t broke, it will be soon.”  
-- Minimalism = quitting early with confidence.  
-- Every success here was a happy accident.  
-- Logs are just your computer crying.
-
----
-
 ### ❓ FAQ (Frequently Asked Stupid Questions)
 
 **Q: Why doesn’t anything work?**  
 A: Because you copied my config. That’s it.
-
-**Q: Why is Tofi acting weird?**  
-A: It’s a fancy launcher. Exists mainly to mock you. Stop expecting miracles.
 
 **Q: Why are my colors insane?**  
 A: pywal16 did it. You did not. Accept it.
 
 **Q: Waybar disappeared, what now?**  
 A: Reboot. Cry. Repeat.
-
-**Q: Why is my wallpaper black?**  
-A: Because the script hates you. Don’t fight it.
-
-**Q: Can I fix this?**  
-A: Delete it. Start over. Or don’t. Your choice.
 
 **Q: Will this work on a minimal Arch install?**  
 A: Yes, it installs. That doesn’t mean it works correctly. Tears expected.
