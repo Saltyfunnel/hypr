@@ -1,119 +1,137 @@
-Perfect — let’s give your README a final visual jazz-up: badges, dividers, spacing, and small emoji callouts to make it really pop on GitHub while keeping the blunt, chaotic tone.
+# 💻 Saltyfunnel’s “Hypr” Garbage Dump  
+### *(AKA: The Proof I Should Not Be Allowed Near a Keyboard)*  
 
-Here’s the final version:
+---
 
-💻 Saltyfunnel’s “Hypr” Garbage Dump
-(AKA: The Proof I Should Not Be Allowed Near a Keyboard)
+![💥 Chaos Guaranteed](https://img.shields.io/badge/Chaos-Guaranteed-red?style=for-the-badge) ![🧠 Configured by Panic](https://img.shields.io/badge/Config-Panic-yellow?style=for-the-badge) ![🔥 Breaks Frequently](https://img.shields.io/badge/Breaks-Frequently-orange?style=for-the-badge)
 
-🧠 What This Repo Actually Is
+---
 
-A mess of trial, error, and desperation.
+## 🧠 What This Repo Actually Is
+
+A **mess of trial, error, and desperation**.  
 Built by someone with caffeine, luck, and zero design sense.
 
-These are my Hyprland dotfiles — fragile, barely functional, chaotic.
-It might work. Sometimes. If you’re lucky.
+These are my **Hyprland dotfiles** — fragile, barely functional, chaotic.  
+It *might work*. Sometimes. If you’re lucky.
 
-🧩 The Stack (a.k.a. Everything I Didn’t Build Myself)
-Tool	Description
-Hyprland	The only thing here that actually works consistently.
-pywal16	Chooses colors because I clearly can’t.
-Waybar	Works occasionally. Disappears for fun.
-Tofi	Fancy app launcher. Exists mainly to look cool and mock you.
-Install Script	Bash spaghetti held together with hope and panic.
+---
 
-    git clone https://github.com/Saltyfunnel/hypr
-    cd hypr
-    chmod +x scripts/*.sh
-    cd scripts
-    sudo sh install.sh
+### 🧩 The Stack (a.k.a. Everything I Didn’t Build Myself)
 
-💀 Results may include: broken packages, rogue keybinds, missing dependencies, existential despair.
+| Tool | Description |
+|------|--------------|
+| **Hyprland** | The only thing here that actually works consistently. |
+| **pywal16** | Chooses colors because I clearly can’t. |
+| **Waybar** | Works occasionally. Disappears for fun. |
+| **Tofi** | Fancy app launcher. Exists mainly to look cool and mock you. |
+| **Install Script** | Bash spaghetti held together with hope and panic. |
 
-🎞️ The Fake Screenshot Gallery
+---
 
-Hyprland on a Good Day
-✨ Everything aligns. Bars behave. Colors match.
-I’d show you, but I never installed a screenshot tool. Imagine it.
+### ⚠️ Installation (Proceed If You Hate Yourself)
 
-Hyprland After an Update
-💥 Gaps: gone. Fonts: missing. Wallpaper: black hole. Chaos reigns.
+You’re about to run a script written by someone who once broke their system installing a cursor theme.
 
-Waybar in the Morning
-“Everything works.”
+```bash
+git clone https://github.com/Saltyfunnel/hypr
+cd hypr
+chmod +x scripts/*.sh
+cd scripts
+sudo sh install.sh
+```
 
-Waybar by Afternoon
-Segmentation fault (core dumped)
+💀 **Results may include:** broken packages, rogue keybinds, missing dependencies, existential despair.
 
-Tofi
-Launches apps. Looks fancy. Exists mainly to mock you.
+---
 
-Me, configuring anything:
-🧍 “I don’t understand this line. I’ll leave it anyway.”
+### 🎞️ The Fake Screenshot Gallery
 
-💩 Known “Features”
+> **Hyprland on a Good Day**  
+> ✨ Everything aligns. Bars behave. Colors match.  
+> I’d show you, but I never installed a screenshot tool. Imagine it.
 
-Waybar disappears because it feels like it.
+> **Hyprland After an Update**  
+> 💥 Gaps: gone. Fonts: missing. Wallpaper: black hole. Chaos reigns.
 
-Hyprland crashes for no reason.
+> **Waybar in the Morning**  
+> “Everything works.”
 
-Tofi exists mainly to mock you.
+> **Waybar by Afternoon**  
+> *Segmentation fault (core dumped)*
 
-Wallpaper script runs on chaos theory.
+> **Tofi**  
+> Launches apps. Looks fancy. Exists mainly to mock you.
 
-Colors change based on nothing you control.
+> **Me, configuring anything:**  
+> 🧍 “I don’t understand this line. I’ll leave it anyway.”
 
-🧘 If it actually works for you, congratulations — you’re more powerful than I am.
+---
 
-🙌 Credits (The Real Heroes)
+### 💩 Known “Features”  
 
-ChatGPT — My unpaid dev, therapist, and co-author of this mess.
+- Waybar disappears because it feels like it.  
+- Hyprland crashes for no reason.  
+- Tofi exists mainly to mock you.  
+- Wallpaper script runs on chaos theory.  
+- Colors change based on nothing you control.
 
-pywal16 Devs — You made my bad choices look decent.
+> 🧘 *If it actually works for you, congratulations — you’re more powerful than I am.*
 
-r/unixporn — Source of all the ideas I stole and barely understood.
+---
 
-Me — Somehow still booting into this disaster. Progress?
+### 🙌 Credits (The Real Heroes)
 
-💡 Wisdom from the Void
+- **ChatGPT** — My unpaid dev, therapist, and co-author of this mess.  
+- **pywal16 Devs** — You made my bad choices look decent.  
+- **r/unixporn** — Source of all the ideas I stole and barely understood.  
+- **Me** — Somehow still booting into this disaster. Progress?
 
-“If it ain’t broke, it will be soon.”
+---
 
-Minimalism = quitting early with confidence.
+### 💡 Wisdom from the Void
 
-Every success here was a happy accident.
+- “If it ain’t broke, it will be soon.”  
+- Minimalism = quitting early with confidence.  
+- Every success here was a happy accident.  
+- Logs are just your computer crying.
 
-Logs are just your computer crying.
+---
 
-❓ FAQ (Frequently Asked Stupid Questions)
+### ❓ FAQ (Frequently Asked Stupid Questions)
 
-Q: Why doesn’t anything work?
+**Q: Why doesn’t anything work?**  
 A: Because you copied my config. That’s it.
 
-Q: Why is Tofi acting weird?
+**Q: Why is Tofi acting weird?**  
 A: It’s a fancy launcher. Exists mainly to mock you. Stop expecting miracles.
 
-Q: Why are my colors insane?
+**Q: Why are my colors insane?**  
 A: pywal16 did it. You did not. Accept it.
 
-Q: Waybar disappeared, what now?
+**Q: Waybar disappeared, what now?**  
 A: Reboot. Cry. Repeat.
 
-Q: Why is my wallpaper black?
+**Q: Why is my wallpaper black?**  
 A: Because the script hates you. Don’t fight it.
 
-Q: Can I fix this?
+**Q: Can I fix this?**  
 A: Delete it. Start over. Or don’t. Your choice.
 
-Q: Will this work on a minimal Arch install?
+**Q: Will this work on a minimal Arch install?**  
 A: Yes, it installs. That doesn’t mean it works correctly. Tears expected.
 
-🔥 Final Thoughts
+---
 
-If this actually works — congratulations, you’re a wizard.
+### 🔥 Final Thoughts
+
+If this actually works — congratulations, you’re a wizard.  
 If it doesn’t — welcome to the club. Grab coffee and despair together.
 
-This isn’t a guide. It’s a warning label with jokes.
+This isn’t a *guide.* It’s a *warning label with jokes.*  
 But hey… it looks decent for five minutes, and that counts.
 
-License: Do whatever you want — fork it, fix it, roast it, meme it.
+---
+
+**License:** Do whatever you want — fork it, fix it, roast it, meme it.  
 Just don’t tag me when it breaks. I’m pretending it works.
