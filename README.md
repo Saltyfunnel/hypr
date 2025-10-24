@@ -7,9 +7,6 @@ The Proof I Shouldn’t Be Trusted Within Fifty Feet of a Keyboard
 Welcome to me Hyprland config — or as I like to call it, “a feckin’ disgrace with animations.”
 If you’ve come lookin’ for best practices, you’ve taken a wrong turn down the arse end of GitHub.
 
-This repo is a shrine to chaos, procrastination, and sheer stubborn willpower.
-Every line of code here is a cry for help wrapped in CSS and false confidence.
-
 It works, mostly, which is the most upsetting part.
 
 🧱 The “Tech Stack” (Built on Other People’s Backs)
