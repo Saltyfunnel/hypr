@@ -15,7 +15,7 @@ Built by someone with caffeine, luck, and zero design sense.
 These are my **Hyprland dotfiles** — fragile, barely functional, chaotic.  
 It *might work*. Sometimes. If you’re lucky.
 
-> ⚠️ Note: In your `hyprland.conf`, the first line is commented out with a `#`. To make wallpaper changes work, you need to bind `w` to change wallpaper **and** remove the `#` from that first line.
+> ⚠️ Note: In your `hyprland.conf`, the first line is commented out with a `#`. To make wallpaper changes work, you need to Super + `w` to change wallpaper **and** remove the `#` from that first line.
 
 ---
 
