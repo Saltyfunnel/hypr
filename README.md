@@ -12,15 +12,15 @@ If you’re looking for best practices, turn around. This repo is a fragile hous
 
 The only thing I actually built here was the file structure. Everything else is the heavy lifting of people smarter than me.
 
-    Hyprland: The window manager itself. It’s too good for me, honestly.
+Hyprland: The window manager itself. It’s too good for me, honestly.
 
-    pywal16: The real MVP. This thing looks at my wallpaper and tells all my apps what colors to use. I didn't choose the color scheme; my wallpaper's dominant shades chose it for me. This is how I avoid making any actual decisions about aesthetics.
+pywal16: The real MVP. This thing looks at my wallpaper and tells all my apps what colors to use. I didn't choose the color scheme; my wallpaper's dominant shades chose it for me. This is how I avoid making any actual decisions about aesthetics.
 
-    Waybar: Custom, I guess? I spent 45 minutes moving the clock from the left to the right and called it a day. It probably has a memory leak.
+Waybar: Custom, I guess? I spent 45 minutes moving the clock from the left to the right and called it a day. It probably has a memory leak.
 
-    Tofi: A lightning-fast, highly efficient app launcher that I use, without fail, to open my terminal, which is the only app I ever use anyway. Complete overkill, but hey, it looks different.
+Tofi: A lightning-fast, highly efficient app launcher that I use, without fail, to open my terminal, which is the only app I ever use anyway. Complete overkill, but hey, it looks different.
 
-    The Install Script: Oh, yeah. That.
+The Install Script: Oh, yeah. That.
 
 ⚠️ The "Installation" (No Seriously, Don't)
 
@@ -42,14 +42,14 @@ But if you are determined to break things, here are the instructions:
     cd scripts
     sudo sh install.sh
 
-    After running that sudo command, your computer is no longer my problem. Expect some packages to be missing, some configs to point to files that don't exist, and possibly a strange new keybind that just opens a picture of a cat.
+After running that sudo command, your computer is no longer my problem. Expect some packages to be missing, some configs to point to files that don't exist, and possibly a strange new keybind that just opens a picture of a cat.
 
 🙏 Actual Credits (The People Who Deserve Your Attention)
 
-    ChatGPT: My unpaid, uncredited intern. You deserve all the stars.
+ChatGPT: My unpaid, uncredited intern. You deserve all the stars.
 
-    The pywal16 Devs: You made me look like I know what I'm doing. Thank you.
+The pywal16 Devs: You made me look like I know what I'm doing. Thank you.
 
-    Every Single Person on r/unixporn: I stole your ideas. All of them.
+Every Single Person on r/unixporn: I stole your ideas. All of them.
 
-    Me: I successfully typed the word sudo without immediately crashing my system. It's the small victories, you know?
+Me: I successfully typed the word sudo without immediately crashing my system. It's the small victories, you know?
