@@ -1,55 +1,51 @@
-💩 Saltyfunnel's "Hypr" Garbage Dump (AKA: The Proof I Should Not Be Allowed Near a Keyboard)
+☘️ Saltyfunnel’s “Hypr” Garbage Dump
 
-Look, I Get It: You're Here For The Crap
+The Proof I Shouldn’t Be Trusted Within Fifty Feet of a Keyboard
 
-I'm not going to lie to you. This entire repo is a monument to procrastination, a testament to how far you can get just by typing a vague request into a fancy chatbot and hoping for the best.
+💬 Jaysus, What’s This Then?
 
-These are my Hyprland dotfiles, which are about as original as a "Live, Laugh, Love" sign. The configuration is basically a giant game of digital telephone: I saw a cool screenshot on Reddit, asked ChatGPT how to do it, and then pasted the result here without understanding half the lines.
+Welcome to me Hyprland config — or as I like to call it, “a feckin’ disgrace with animations.”
+If you’ve come lookin’ for best practices, you’ve taken a wrong turn down the arse end of GitHub.
 
-If you’re looking for best practices, turn around. This repo is a fragile house of cards, full of commented-out weirdness and half-finished ideas I abandoned when the TV got interesting. It works, mostly, which is honestly the most depressing part.
+This repo is a shrine to chaos, procrastination, and sheer stubborn willpower.
+Every line of code here is a cry for help wrapped in CSS and false confidence.
 
-🛠️ The Tech Stack (It's All Just Borrowed Stuff)
+It works, mostly, which is the most upsetting part.
 
-The only thing I actually built here was the file structure. Everything else is the heavy lifting of people smarter than me.
+🧱 The “Tech Stack” (Built on Other People’s Backs)
 
-Hyprland: The window manager itself. It’s too good for me, honestly.
+Let’s be honest: the only thing I actually made here was a folder called hypr.
+Everything else was cobbled together by ChatGPT while I sat there goin’, “Aye, that’ll do.”
 
-pywal16: The real MVP. This thing looks at my wallpaper and tells all my apps what colors to use. I didn't choose the color scheme; my wallpaper's dominant shades chose it for me. This is how I avoid making any actual decisions about aesthetics.
+🌀 Hyprland
 
-Waybar: Custom, I guess? I spent 45 minutes moving the clock from the left to the right and called it a day. It probably has a memory leak.
+The window manager that’s far too classy for the likes of me.
+I barely understand half the config, but sure look — it moves windows around and that’s grand.
 
-Tofi: A lightning-fast, highly efficient app launcher that I use, without fail, to open my terminal, which is the only app I ever use anyway. Complete overkill, but hey, it looks different.
+🎨 pywal16
 
-The Install Script: Oh, yeah. That.
+The only thing holdin’ this whole circus together.
+It picks the colours based on me wallpaper, which means every reboot is a new gamble between “not bad” and “holy feck, me eyes.”
 
-⚠️ The "Installation" (No Seriously, Don't)
+🧱 Waybar
 
-Listen closely. If you run the steps below, you are willingly taking a script written by someone who asked an AI to write a config, and you're running it with elevated privileges on your own machine. I'm not a professional. I barely passed high school. I am warning you now: Look at the script before you run it.
+A bar so “custom” I once spent 45 minutes movin’ the feckin’ clock and called it progress.
+Half the modules don’t even feckin’ work, but it looks busy so I’m keepin’ it.
 
-But if you are determined to break things, here are the instructions:
+🚀 Tofi
 
-   Get the Files (The least damaging step):
-    
-    git clone https://github.com/Saltyfunnel/hypr
+A launcher that’s faster than me internet, which isn’t sayin’ much.
+I only use it to open the terminal anyway — the one app I actually know how to use.
+Absolute overkill, but it feels posh.
 
-   Give The Scripts Permission to Wreck Your Day:
-  
-    cd hypr
-    chmod +x scripts/*.sh
+🧠 setwallpaper.sh
 
-  Run the Stupid Thing:
+This script is pure gobshite.
+It changes the wallpaper, updates the colours, and occasionally decides to delete reality.
+If your screen goes black — don’t worry, that’s normal. It’s havin’ a think.
 
-    cd scripts
-    sudo sh install.sh
+⚠️ Installation (Proceed, Ye Eejit)
 
-After running that sudo command, your computer is no longer my problem. Expect some packages to be missing, some configs to point to files that don't exist, and possibly a strange new keybind that just opens a picture of a cat.
-
-🙏 Actual Credits (The People Who Deserve Your Attention)
-
-ChatGPT: My unpaid, uncredited intern. You deserve all the stars.
-
-The pywal16 Devs: You made me look like I know what I'm doing. Thank you.
-
-Every Single Person on r/unixporn: I stole your ideas. All of them.
-
-Me: I successfully typed the word sudo without immediately crashing my system. It's the small victories, you know?
+Right, listen. If you run these commands, that’s on you.
+You’re basically givin’ a stranger’s bash script the keys to your feckin’ system.
+I warned ye.
