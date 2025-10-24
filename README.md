@@ -1,50 +1,34 @@
-☘️ Saltyfunnel’s “Hypr” Garbage Dump
+💻 Saltyfunnel’s “Hypr” Garbage Dump
 
-The Proof I Shouldn’t Be Trusted Within Fifty Feet of a Keyboard
+(AKA: The Proof I Should Not Be Allowed Near a Keyboard)
 
-💬 Jaysus, What’s This Then?
+Look, I Get It — You’re Here For The Trash Fire
 
-Welcome to me Hyprland config — or as I like to call it, “a feckin’ disgrace with animations.”
-If you’ve come lookin’ for best practices, you’ve taken a wrong turn down the arse end of GitHub.
+Welcome, brave soul. What you’ve stumbled across isn’t a polished setup — it’s a chaotic shrine to trial and error, built by someone who thought “configuring a window manager” meant “copying random snippets from Reddit and praying.”
 
-It works, mostly, which is the most upsetting part.
+These are my Hyprland dotfiles — a collection of half-baked ideas, broken scripts, and settings I barely understand. This repo is living proof that with enough caffeine and stubbornness, you too can produce something that almost works.
 
-🧱 The “Tech Stack” (Built on Other People’s Backs)
+If you came looking for elegance or logic, stop now. This is duct tape, desperation, and misplaced confidence all the way down.
 
-Let’s be honest: the only thing I actually made here was a folder called hypr.
-Everything else was cobbled together by ChatGPT while I sat there goin’, “Aye, that’ll do.”
+🛠️ The Stack (A.K.A. Everyone Else’s Hard Work)
 
-🌀 Hyprland
+I didn’t build this setup so much as I assembled it, like a raccoon rummaging through /r/unixporn.
 
-The window manager that’s far too classy for the likes of me.
-I barely understand half the config, but sure look — it moves windows around and that’s grand.
+Hyprland: The crown jewel. Too beautiful for the mess I’ve made around it.
 
-🎨 pywal16
+pywal16: Automatically picks colours based on my wallpaper, which is great because I have the design taste of a potato.
 
-The only thing holdin’ this whole circus together.
-It picks the colours based on me wallpaper, which means every reboot is a new gamble between “not bad” and “holy feck, me eyes.”
+Waybar: I moved the clock once, felt accomplished, and never touched it again. Sometimes it vanishes out of spite.
 
-🧱 Waybar
+Tofi: Supposed to be a slick app launcher. Doesn’t even open in a terminal. Useless but pretty — just like me.
 
-A bar so “custom” I once spent 45 minutes movin’ the feckin’ clock and called it progress.
-Half the modules don’t even feckin’ work, but it looks busy so I’m keepin’ it.
+The Install Script: A Frankenstein’s monster of shell commands that somehow works. Occasionally.
 
-🚀 Tofi
+⚠️ Installation (Proceed If You Hate Yourself)
 
-A launcher that’s faster than me internet, which isn’t sayin’ much.
+Let’s be clear: you’re about to execute a random script written by a guy who once broke his desktop changing a font.
 
-🧠 setwallpaper.sh
-
-This script is pure guff.
-It changes the wallpaper, updates the colours, and occasionally decides to delete reality.
-If your screen goes black — don’t worry, that’s normal. It’s havin’ a think.
-
-⚠️ Installation 
-
-Right, listen. If you run these commands, that’s on you.
-You’re basically givin’ a stranger’s bash script the keys to your feckin’ system.
-I warned ye.
-
+But sure, let’s dance with danger.
 
     git clone https://github.com/Saltyfunnel/hypr
     cd hypr
@@ -52,65 +36,47 @@ I warned ye.
     cd scripts
     sudo sh install.sh
 
-After that last one, your machine’s fate is sealed.
-Expect missing packages, random crashes, and maybe a new keybind that plays “The Fields of Athenry” for no apparent reason.
+After that, your computer’s fate is entirely your own. Expect missing packages, misconfigured paths, and keybinds that launch mysterious apps you’ve never seen before.
 
-If it does work, light a candle — you’ve witnessed a miracle.
+💩 Known “Features” (Things That Are Definitely Broken)
 
-🪦 Known “Features” (Aka Things That’ll Feckin’ Break)
+Waybar disappears whenever it feels like it.
 
-Waybar disappears like me motivation.
+Hyprland crashes for fun.
 
-Colours sometimes look like a bag of Skittles exploded.
+Tofi refuses to open in a terminal out of sheer defiance.
 
-Hyprland forgets me monitor exists mid-session.
+Wallpaper script runs on dark magic and bad intentions.
 
-The scripts act sentient but mostly act thick.
+The colors change depending on whether the moon’s in retrograde.
 
-The config folder’s half commented-out chaos.
+If it all actually works, congratulations — you’ve summoned the Linux gods.
 
-If somethin’ breaks, that’s not a bug — that’s a feature with attitude.
+🙏 Credits (The Real Heroes)
 
-🧠 Philosophy (Sort Of)
+ChatGPT: My unpaid intern, moral support, and the only reason any of this exists.
 
-I didn’t make this to be perfect.
-I made it to look cool for five seconds before it implodes.
+pywal16 devs: You made this mess look vaguely aesthetic. I owe you several beers.
 
-It’s not about stability — it’s about vibes.
-If it crashes, that’s just Hyprland’s way of remindin’ you to touch grass.
+Everyone on r/unixporn: I stole your ideas shamelessly.
 
-📸 Screenshots
+Me: Somehow didn’t nuke my install. Barely.
 
-None. Because I forgot to install a screenshot tool.
-Call it “minimalism.”
-Picture something vaguely colourful, slightly misaligned, and powered by blind faith.
+💫 Wisdom from the Abyss
 
-🙏 Credits (The Legends Behind the Madness)
+Don’t copy this expecting stability. This is a warning, not a tutorial.
 
-ChatGPT — the real dev. I just pressed Enter.
+If it breaks, reboot. If it still breaks, reinstall.
 
-pywal16 Devs — saints, the lot of ye.
+Minimalist ≠ functional.
 
-Hyprland Team — I’m sorry for what I’ve done to your creation.
+The moment you think “it’s finally working,” something will explode.
 
-r/unixporn — I robbed your ideas wholesale. Thanks.
+🔥 Final Thoughts
 
-Me — for typin’ sudo and not immediately blowin’ up me system.
+If this repo runs perfectly for you, congrats — you’re either a genius or a liar.
+If it doesn’t, welcome to the experience. Hyprland isn’t a window manager, it’s a personality test.
 
-📜 License
+This is my digital junk drawer, my monument to stubbornness, and somehow... I’m proud of it.
 
-License: “Use It & Cry” v1.0
-
-Ye can clone it, fork it, or delete it immediately — your call.
-
-Comes with no guarantees, no documentation, and no moral support.
-
-If it works, I’m as surprised as you are.
-
-💬 Final Thoughts
-
-If you’re usin’ this repo for inspiration — don’t.
-If it somehow works — take a photo before it explodes.
-If it crashes — pour yourself a pint and blame the AI.
-
-“It’s not just a config. It’s a feckin’ lifestyle of disappointment.”
+License: Do whatever you want. Fork it, fix it, mock it, print it on a T-shirt. Just don’t tag me when it breaks. I’ve suffered enough.
