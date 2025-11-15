@@ -77,7 +77,7 @@ cat > "$WAYBAR_CSS" <<EOF
 @define-color color15 ${COLORS[15]};
 
 * {
-    font-family: "CaskaydiaCove Nerd Font";
+    font-family: "FiraCode Nerd Font";
     font-size: 13px;
     min-height: 0;
 }
