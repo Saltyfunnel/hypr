@@ -7,7 +7,7 @@ padding-top = 1%
 result-spacing = 25
 num-results = 10
 
-font = CaskaydiaCove Nerd Font
+font = FiraCode Nerd Font
 font-size = 12
 
 text-color = #f0f0f0
