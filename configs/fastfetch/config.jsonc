@@ -1,0 +1,98 @@
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+
+    "logo": {
+        "source": "arch",
+        "padding": { "top": 0, "left": 2 },   // logo inset
+        "width": 24,
+        "height": 6,
+        "preserveAspectRatio": true
+    },
+
+    "display": {
+        "separator": " → ",
+        "constants": ["───────────────────────────────────────────"]
+    },
+
+    "modules": [
+
+    
+
+        // TOP COLOR BAR (aligned with logo)
+        {
+            "type": "custom",
+            "format": "{#31}█ {#32}█ {#33}█ {#34}█ {#35}█ {#36}█ {#37}█ {#38}█ {#39}█ {#38}█ {#37}█ {#36}█ {#35}█ {#34}█ {#33}█ {#32}█ {#31}█"
+        },
+"break",
+        { "type": "title", "keyWidth": 12 },
+
+        // SYSTEM INFO
+        {
+            "type": "custom",
+            "format": "{#31}┌ SYSTEM ──────────────┐"
+        },
+        { "type": "os",       "key": " OS",     "keyColor": "31" },
+        { "type": "kernel",   "key": " Kernel","keyColor": "31" },
+        {
+            "type": "custom",
+            "format": "{#31}└─────────────────────┘"
+        },
+
+        // DESKTOP INFO
+        {
+            "type": "custom",
+            "format": "{#34}┌ DESKTOP ────────────────┐"
+        },
+        { "type": "wm",       "key": " WM",    "keyColor": "34" },
+        { "type": "wmtheme",  "key": " Theme","keyColor": "34" },
+        {
+            "type": "custom",
+            "format": "{#34}└─────────────────────┘"
+        },
+
+        // HARDWARE INFO
+        {
+            "type": "custom",
+            "format": "{#32}┌ HARDWARE ─────────────┐"
+        },
+        { "type": "cpu",      "key": " CPU",  "keyColor": "32" },
+        { "type": "memory",   "key": "󰑭 RAM","keyColor": "32" },
+        {
+            "type": "custom",
+            "format": "{#32}└─────────────────────┘"
+        },
+
+        // MEDIA
+        {
+            "type": "custom",
+            "format": "{#36}┌ MEDIA ────────────────┐"
+        },
+        { 
+            "type": "sound",
+            "key": " SND",
+            "keyColor": "cyan"
+        },
+        { 
+            "type": "player", 
+            "key": "󰥠", 
+            "keyColor": "36"
+        },
+        { 
+            "type": "media", 
+            "key": "󰝚", 
+            "keyColor": "36" 
+        },
+        {
+            "type": "custom",
+            "format": "{#36}└─────────────────────┘"
+        },
+
+        // BOTTOM COLOR BAR (aligned with logo)
+        "break",
+        {
+            "type": "custom",
+            "format": "{#31}█ {#32}█ {#33}█ {#34}█ {#35}█ {#36}█ {#37}█ {#38}█ {#39}█ {#38}█ {#37}█ {#36}█ {#35}█ {#34}█ {#33}█ {#32}█ {#31}█"
+        }
+
+    ]
+}
