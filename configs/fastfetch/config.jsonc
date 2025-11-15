@@ -3,7 +3,7 @@
 
     "logo": {
         "source": "arch",
-        "padding": { "top": 0, "left": 2 },   // logo inset
+        "padding": { "top": 2, "left": 4 },
         "width": 24,
         "height": 6,
         "preserveAspectRatio": true
@@ -16,78 +16,69 @@
 
     "modules": [
 
-    
+        // Spacer between logo and first bar
+        { "type": "break", "count": 1 },
 
-        // TOP COLOR BAR (aligned with logo)
+        // TOP COLOR GRADIENT BAR (spaced)
         {
             "type": "custom",
             "format": "{#31}█ {#32}█ {#33}█ {#34}█ {#35}█ {#36}█ {#37}█ {#38}█ {#39}█ {#38}█ {#37}█ {#36}█ {#35}█ {#34}█ {#33}█ {#32}█ {#31}█"
         },
-"break",
+        "break",
+        
         { "type": "title", "keyWidth": 12 },
 
         // SYSTEM INFO
         {
             "type": "custom",
-            "format": "{#31}┌ SYSTEM ──────────────┐"
+            "format": "{#31}╭─ SYSTEM ─────────────╮"
         },
-        { "type": "os",       "key": " OS",     "keyColor": "31" },
-        { "type": "kernel",   "key": " Kernel","keyColor": "31" },
+        { "type": "os", "key": " OS", "keyColor": "31" },
+        { "type": "kernel", "key": " Kernel", "keyColor": "31" },
         {
             "type": "custom",
-            "format": "{#31}└─────────────────────┘"
+            "format": "{#31}╰──────────────────────╯"
         },
 
         // DESKTOP INFO
         {
             "type": "custom",
-            "format": "{#34}┌ DESKTOP ────────────────┐"
+            "format": "{#34}╭─ DESKTOP ─────────────╮"
         },
-        { "type": "wm",       "key": " WM",    "keyColor": "34" },
-        { "type": "wmtheme",  "key": " Theme","keyColor": "34" },
+        { "type": "wm", "key": " WM", "keyColor": "34" },
+        { "type": "wmtheme", "key": " Theme", "keyColor": "34" },
         {
             "type": "custom",
-            "format": "{#34}└─────────────────────┘"
+            "format": "{#34}╰──────────────────────╯"
         },
 
         // HARDWARE INFO
         {
             "type": "custom",
-            "format": "{#32}┌ HARDWARE ─────────────┐"
+            "format": "{#32}╭─ HARDWARE ────────────╮"
         },
-        { "type": "cpu",      "key": " CPU",  "keyColor": "32" },
-        { "type": "memory",   "key": "󰑭 RAM","keyColor": "32" },
+        { "type": "cpu", "key": " CPU", "keyColor": "32" },
+        { "type": "memory", "key": "󰑭 RAM", "keyColor": "32" },
+        { "type": "gpu", "key": "󰡸 GPU", "keyColor": "32" },
         {
             "type": "custom",
-            "format": "{#32}└─────────────────────┘"
+            "format": "{#32}╰──────────────────────╯"
         },
 
-        // MEDIA
+        // MEDIA INFO
         {
             "type": "custom",
-            "format": "{#36}┌ MEDIA ────────────────┐"
+            "format": "{#36}╭─ MEDIA ───────────────╮"
         },
-        { 
-            "type": "sound",
-            "key": " SND",
-            "keyColor": "cyan"
-        },
-        { 
-            "type": "player", 
-            "key": "󰥠", 
-            "keyColor": "36"
-        },
-        { 
-            "type": "media", 
-            "key": "󰝚", 
-            "keyColor": "36" 
-        },
+        { "type": "sound", "key": " SND", "keyColor": "36" },
+        { "type": "player", "key": "󰥠", "keyColor": "36" },
+        { "type": "media", "key": "󰝚", "keyColor": "36" },
         {
             "type": "custom",
-            "format": "{#36}└─────────────────────┘"
+            "format": "{#36}╰──────────────────────╯"
         },
 
-        // BOTTOM COLOR BAR (aligned with logo)
+        // BOTTOM COLOR GRADIENT BAR (spaced)
         "break",
         {
             "type": "custom",
