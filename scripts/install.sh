@@ -225,6 +225,22 @@ if [[ -d "$SCRIPTS_SRC" ]]; then
 fi
 
 # ----------------------------
+# Copy Dunst config
+# ----------------------------
+print_header "Copying Dunst config"
+DUNST_SRC="$REPO_ROOT/configs/dunst/dunstrc"
+DUNST_DEST="$CONFIG_DIR/dunst/dunstrc"
+
+if [[ -f "$DUNST_SRC" ]]; then
+    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/dunst"
+    sudo -u "$USER_NAME" cp "$DUNST_SRC" "$DUNST_DEST"
+    print_success "Dunst config copied to $DUNST_DEST"
+else
+    print_warning "Dunst config not found at $DUNST_SRC"
+fi
+
+
+# ----------------------------
 # Create Screenshots folder
 # ----------------------------
 print_header "Creating Screenshots Folder"
