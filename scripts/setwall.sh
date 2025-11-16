@@ -171,6 +171,59 @@ window#waybar {
 }
 EOF
 
+# ----------------------------
+# Generate Pywal-themed Dunst config
+# ----------------------------
+DUNST_CONFIG="$HOME/.config/dunst/dunstrc"
+mkdir -p "$(dirname "$DUNST_CONFIG")"
+
+# Extract colors reliably from Pywal16 CSS
+declare -A COLORS
+for i in {0..15}; do
+    COLORS[$i]=$(sed -n "s/.*--color$i: \(#[0-9a-fA-F]\{6\}\);.*/\1/p" "$PYWAL_CACHE")
+done
+
+# Default values fallback
+BG=${COLORS[0]:-"#1c1c1c"}
+FG=${COLORS[7]:-"#dcdccc"}
+FRAME=${COLORS[2]:-"#000000"}
+CRIT_BG=${COLORS[9]:-"#ff5555"}
+CRIT_FG=${COLORS[0]:-"#1c1c1c"}
+
+cat > "$DUNST_CONFIG" <<EOF
+[global]
+font = FiraCode Nerd Font 12
+frame_width = 2
+separator_height = 2
+padding = 8
+horizontal_padding = 10
+vertical_padding = 10
+geometry = 350x90
+icon_position = left
+image = yes
+shrink = true
+transparency = 0
+frame_color = "$FRAME"
+
+[urgency_low]
+timeout = 3
+background = "$BG"
+foreground = "$FG"
+
+[urgency_normal]
+timeout = 5
+background = "$BG"
+foreground = "$FG"
+
+[urgency_critical]
+timeout = 0
+background = "$CRIT_BG"
+foreground = "$CRIT_FG"
+EOF
+
+# Reload Dunst to apply new colors
+pkill dunst
+dunst &
 
 
 # Reload Waybar
