@@ -105,6 +105,7 @@ window#waybar {
 #custom-spotify,
 #custom-firefox,
 #custom-steam,
+#custom-screenshot,
 #cpu,
 #memory,
 #network,
@@ -135,6 +136,7 @@ window#waybar {
 #custom-spotify { color: @color2; }
 #custom-firefox { color: @color3; }
 #custom-steam { color: @color4; }
+#custom-screenshot { color: @color12; }
 
 /* Hover glow — safe syntax */
 #custom-spotify:hover {
