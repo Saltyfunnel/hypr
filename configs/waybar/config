@@ -25,6 +25,7 @@
     "pulseaudio",
     "pulseaudio#microphone",
     "network",
+    "custom/screenshot",
     "custom/power"
   ],
 
@@ -62,7 +63,7 @@
       "m": 30
     },
     "interval": 10,
-    "format": "󰾆 {used}GB",
+    "format": "󰾆  {used}GB",
     "format-m": "󰾅 {used}GB",
     "format-h": "󰓅 {used}GB",
     "format-c": " {used}GB",
@@ -74,7 +75,7 @@
 
   "cpu": {
     "interval": 10,
-    "format": "󰍛 {usage}%",
+    "format": "󰍛  {usage}%",
     "format-alt": "{icon0}{icon1}{icon2}{icon3}",
     "format-icons": [" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
   },
@@ -82,7 +83,7 @@
   "network": {
     "tooltip": true,
     "format-wifi": "  {essid}",
-    "format-ethernet": "󰈀 ",
+    "format-ethernet": "󰈀",
     "tooltip-format": "Network: <big><b>{essid}</b></big>\nSignal strength: <b>{signaldBm}dBm ({signalStrength}%)</b>\nFrequency: <b>{frequency}MHz</b>\nInterface: <b>{ifname}</b>\nIP: <b>{ipaddr}/{cidr}</b>\nGateway: <b>{gwaddr}</b>\nNetmask: <b>{netmask}</b>",
     "format-linked": "󰈀 {ifname} (No IP)",
     "format-disconnected": "󰖪 ",
@@ -117,7 +118,7 @@
   },
 
  "pulseaudio": {
-    "format": "{icon} {volume}%",
+    "format": "{icon}  {volume}%",
     "tooltip": false,
     "format-muted": "  Muted",
     "format-icons": ["", "", ""],   // speaker icons for different volume states
@@ -153,6 +154,23 @@
     "interval": 3600
   },
 
+"custom/screenshot": {
+  "format": "",
+  "tooltip": true,
+  "tooltip-format": "Left: Area → Save\nMiddle: Window → Save\nRight: Screen → Save",
+
+  "on-click": "grim -g \"$(slurp)\" \"$HOME/Pictures/Screenshots/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png\"",
+
+  "on-click-middle": "grim \"$HOME/Pictures/Screenshots/window_$(date +%Y-%m-%d_%H-%M-%S).png\"",
+
+  "on-click-right": "grim \"$HOME/Pictures/Screenshots/screen_$(date +%Y-%m-%d_%H-%M-%S).png\"",
+
+  "interval": 3600
+}
+
+,
+
+
   "hyprland/window": {
     "format": "  {}",
     "max-length": 40
@@ -166,15 +184,15 @@
  "hyprland/workspaces": {
     "format": "{icon}",
     "format-icons": {
-        "default": "",
-        "active": "",
-        "occupied": "",
-        "urgent": ""
+        "default":"",
+        "active":"",
+        "occupied":"",
+        "urgent":""
     },
     "persistent-workspaces": {
-        "1": [],
-        "2": [],
-        "3": []
+        "1":[],
+        "2":[],
+        "3":[]
     },
     "sort-by-number": true,
     "on-click": "activate"
