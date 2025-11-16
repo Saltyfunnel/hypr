@@ -225,6 +225,16 @@ if [[ -d "$SCRIPTS_SRC" ]]; then
 fi
 
 # ----------------------------
+# Create Screenshots folder
+# ----------------------------
+print_header "Creating Screenshots Folder"
+SCREENSHOT_DIR="$USER_HOME/Pictures/Screenshots"
+
+run_command "sudo -u $USER_NAME mkdir -p \"$SCREENSHOT_DIR\"" \
+    "Create ~/Pictures/Screenshots directory"
+
+
+# ----------------------------
 # Copy Fastfetch config
 # ----------------------------
 print_header "Copying Fastfetch config"
