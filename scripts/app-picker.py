@@ -20,6 +20,10 @@ EXCLUDE_KEYWORDS = [
     "xfce-", "gimp", "About Xfce"
 ]
 
+FONT_NAME = "Fira Code"
+FONT_SIZE = 14
+
+
 class AppPicker(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -34,10 +38,10 @@ class AppPicker(QtWidgets.QWidget):
             sys.exit(1)
 
         self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
-        self.ICON_SIZE = ICON_SIZE
-        self.SHOW_APP_ICONS = False
 
-        # --- Background color with slight tint ---
+        self.ICON_SIZE = ICON_SIZE
+        self.SHOW_APP_ICONS = True
+
         LIGHTENING_FACTOR = 2
         base_color = QtGui.QColor(self.BG)
         tint_color = QtGui.QColor("#ffffff")
@@ -47,16 +51,65 @@ class AppPicker(QtWidgets.QWidget):
         b = int(base_color.blue() * (1 - mix_factor) + tint_color.blue() * mix_factor)
         final_color = QtGui.QColor(r, g, b)
         final_color.setAlpha(OPACITY)
-        rgba_bg = f"rgba({final_color.red()},{final_color.green()},{final_color.blue()},{final_color.alpha()})"
+        self.rgba_bg = f"rgba({final_color.red()},{final_color.green()},{final_color.blue()},{final_color.alpha()})"
 
-        # --- Search Input ---
+        # --- Widgets ---
         self.search_input = QtWidgets.QLineEdit()
         self.search_input.setPlaceholderText("Search applications...")
         arch_icon_themed = self.get_themed_logo("archlinux-logo", self.FG)
-        self.search_input.addAction(
-            QtGui.QAction(arch_icon_themed, "", self.search_input),
-            QtWidgets.QLineEdit.ActionPosition.LeadingPosition
-        )
+        self.search_input.addAction(QtGui.QAction(arch_icon_themed, "", self.search_input),
+                                    QtWidgets.QLineEdit.ActionPosition.LeadingPosition)
+        self.search_input.textChanged.connect(self.filter_list)
+        self.search_input.returnPressed.connect(self.launch_selected)
+        self.search_input.keyPressEvent = self.search_key_press_event
+
+        self.list_view = QtWidgets.QListView()
+        self.list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.list_view.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        self.list_view.doubleClicked.connect(self.launch_selected)
+        self.list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.list_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        self.model = QtGui.QStandardItemModel()
+        self.list_view.setModel(self.model)
+        self.populate_model()
+
+        self.main_frame = QtWidgets.QFrame()
+        frame_layout = QtWidgets.QVBoxLayout(self.main_frame)
+        frame_layout.addWidget(self.search_input)
+        frame_layout.addWidget(self.list_view)
+        frame_layout.setContentsMargins(10, 10, 10, 10)
+        self.main_frame.setStyleSheet(f"QFrame {{ background-color: {self.rgba_bg}; border: 1px solid {self.ACCENT}; border-radius: 8px; }}")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(self.main_frame)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setStyleSheet("background-color: #00000000; border: none;")
+
+        self.resize(500, 400)
+        self.search_input.setFocus()
+
+        if self.model.rowCount() > 0:
+            self.list_view.setCurrentIndex(self.model.index(0, 0))
+
+        # Start timer to refresh Pywal colors live
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.update_pywal_colors)
+        self.timer.start(2000)  # refresh every 2 seconds
+
+        self.apply_styles()
+        self.show()
+
+    # --- Font & style methods ---
+    def apply_styles(self):
+        # Set global font
+        font = QtGui.QFont(FONT_NAME, FONT_SIZE)
+        self.setFont(font)
+        self.search_input.setFont(font)
+        self.list_view.setFont(font)
+
+        # Apply colors
         self.search_input.setStyleSheet(f"""
             QLineEdit {{
                 border: 2px solid {self.ACCENT};
@@ -67,18 +120,6 @@ class AppPicker(QtWidgets.QWidget):
                 background-color: {self.BG};
             }}
         """)
-        self.search_input.textChanged.connect(self.filter_list)
-        self.search_input.returnPressed.connect(self.launch_selected)
-        self.search_input.keyPressEvent = self.search_key_press_event
-
-        # --- List View ---
-        self.list_view = QtWidgets.QListView()
-        self.list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.list_view.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        self.list_view.doubleClicked.connect(self.launch_selected)
-        self.list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.list_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.list_view.setStyleSheet(f"""
             QListView {{
                 background-color: #00000000;
@@ -94,34 +135,18 @@ class AppPicker(QtWidgets.QWidget):
                 border: none;
             }}
         """)
+        self.main_frame.setStyleSheet(f"QFrame {{ background-color: {self.rgba_bg}; border: 1px solid {self.ACCENT}; border-radius: 8px; }}")
 
-        self.model = QtGui.QStandardItemModel()
-        self.list_view.setModel(self.model)
-        self.populate_model()
+        # Update font on each item
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row)
+            item.setFont(QtGui.QFont(FONT_NAME, FONT_SIZE))
 
-        # --- Main Frame ---
-        self.main_frame = QtWidgets.QFrame()
-        frame_layout = QtWidgets.QVBoxLayout(self.main_frame)
-        frame_layout.addWidget(self.search_input)
-        frame_layout.addWidget(self.list_view)
-        frame_layout.setContentsMargins(10, 10, 10, 10)
-        self.main_frame.setStyleSheet(
-            f"QFrame {{ background-color: {rgba_bg}; border: 1px solid {self.ACCENT}; border-radius: 8px; }}"
-        )
+    def update_pywal_colors(self):
+        self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
+        self.apply_styles()
 
-        # --- Layout ---
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(self.main_frame)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.setStyleSheet("background-color: #00000000; border: none;")
-
-        self.resize(500, 400)
-        self.search_input.setFocus()
-        if self.model.rowCount() > 0:
-            self.list_view.setCurrentIndex(self.model.index(0, 0))
-        self.show()
-
-    # --- Icons ---
+    # --- Icon methods ---
     def get_themed_logo(self, icon_name, color_hex):
         icon = QtGui.QIcon.fromTheme(icon_name)
         if icon.isNull():
@@ -152,7 +177,7 @@ class AppPicker(QtWidgets.QWidget):
             return self.recolor_icon(icon, self.FG)
         return QtGui.QIcon.fromTheme('application-default')
 
-    # --- Keyboard ---
+    # --- Keyboard/selection handling ---
     def search_key_press_event(self, event):
         key = event.key()
         if key in (QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down):
@@ -173,13 +198,14 @@ class AppPicker(QtWidgets.QWidget):
         else:
             QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
 
-    # --- Model ---
+    # --- Model population ---
     def populate_model(self):
         self.model.clear()
         for app in sorted(self.applications, key=lambda a: a['Name']):
             item = QtGui.QStandardItem(app['Name'])
             if self.SHOW_APP_ICONS:
                 item.setIcon(self.get_app_icon(app.get('Icon', 'application-default')))
+            item.setFont(QtGui.QFont(FONT_NAME, FONT_SIZE))
             item.setData(app['Exec'], QtCore.Qt.ItemDataRole.UserRole)
             self.model.appendRow(item)
 
@@ -203,7 +229,7 @@ class AppPicker(QtWidgets.QWidget):
             subprocess.Popen(cmd, shell=True, close_fds=True)
         QtWidgets.QApplication.quit()
 
-    # --- Desktop Files ---
+    # --- Desktop file parsing ---
     def parse_desktop_file(self, path):
         parser = configparser.ConfigParser(interpolation=None)
         try:
@@ -239,7 +265,6 @@ class AppPicker(QtWidgets.QWidget):
                         names.add(info['Name'])
         return apps
 
-    # --- Colors ---
     def get_pywal_colors(self):
         wal_json = Path.home() / ".cache/wal/colors.json"
         BG = "#1d1f21"
@@ -259,9 +284,5 @@ class AppPicker(QtWidgets.QWidget):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-
-    # --- Set global font and size ---
-    app.setFont(QtGui.QFont("Fira Code", 12))  # Change 16 to whatever size you like
-
     picker = AppPicker()
     sys.exit(app.exec())
