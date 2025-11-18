@@ -9,8 +9,6 @@ WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 WAYBAR_CSS="$HOME/.config/waybar/style.css"
 PYWAL_CACHE="$HOME/.cache/wal/colors.css"
 YAZI_THEME="$HOME/.config/yazi/theme.toml"
-TOFI_TEMPLATE="$HOME/.config/tofi/tofi.template"
-TOFI_OUTPUT="$HOME/.cache/wal/tofi"
 
 # ----------------------------
 # Start swww-daemon if needed
@@ -252,15 +250,3 @@ bg = "$BG"
 fg = "$FG"
 bg = "$BG"
 EOF
-
-# ----------------------------
-# Generate Tofi theme
-# ----------------------------
-if [[ -f "$TOFI_TEMPLATE" ]]; then
-    mkdir -p "$(dirname "$TOFI_OUTPUT")"
-    sed -e "s/{color0}/${BG}/g" \
-        -e "s/{color4}/${COLORS[4]}/g" \
-        -e "s/{color7}/${FG}/g" \
-        -e "s/{color15}/${COLORS[15]}/g" \
-        "$TOFI_TEMPLATE" > "$TOFI_OUTPUT"
-fi
