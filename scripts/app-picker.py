@@ -11,7 +11,6 @@ APP_DIRS = [
     Path("/usr/share/applications"),
 ]
 OPACITY = 230 
-# ICON_SIZE is defined here, but needs to be assigned to self later
 ICON_SIZE = QtCore.QSize(32, 32) 
 
 # --- AppPicker Class (Fuzzy Search) ---
@@ -33,13 +32,30 @@ class AppPicker(QtWidgets.QWidget):
         # Pywal color setup
         self.BG, self.FG, self.BORDER = self.get_pywal_colors()
         
-        # 💡 FIX: Assign ICON_SIZE to the instance (self)
+        # FIXES: Instance variables
         self.ICON_SIZE = ICON_SIZE 
+        self.SHOW_APP_ICONS = False 
         
-        bg_color = QtGui.QColor(self.BG)
-        bg_color.setAlpha(OPACITY)
-        rgba_bg = f"rgba({bg_color.red()},{bg_color.green()},{bg_color.blue()},{bg_color.alpha()})"
+        # --- COLOR TINT LOGIC ---
+        # 💡 JAZZ IT UP: Increased from 10 to 30 for a highly visible tint
+        TINT_FACTOR = 30 
         
+        base_color = QtGui.QColor(self.BG)
+        tint_color = QtGui.QColor(self.BORDER)
+        
+        # Interpolate (mix) the base color and the tint color
+        mix_factor = TINT_FACTOR / 100.0
+        r = int(base_color.red() * (1 - mix_factor) + tint_color.red() * mix_factor)
+        g = int(base_color.green() * (1 - mix_factor) + tint_color.green() * mix_factor)
+        b = int(base_color.blue() * (1 - mix_factor) + tint_color.blue() * mix_factor)
+
+        # Create the final color and apply opacity
+        final_color = QtGui.QColor(r, g, b)
+        final_color.setAlpha(OPACITY)
+        rgba_bg = f"rgba({final_color.red()},{final_color.green()},{final_color.blue()},{final_color.alpha()})"
+        # ------------------------
+        
+        # This applies the new tinted background color
         self.setStyleSheet(f"background-color: {rgba_bg}; border: 1px solid {self.BORDER}; border-radius: 8px;")
 
         # --- Widgets ---
@@ -48,12 +64,13 @@ class AppPicker(QtWidgets.QWidget):
         self.search_input = QtWidgets.QLineEdit()
         self.search_input.setPlaceholderText("Search applications...")
         
-        # --- Add Themed Arch Logo Action ---
+        # --- Add Themed Arch Logo Action (STILL THEMED) ---
         arch_icon_themed = self.get_themed_logo("archlinux-logo", self.FG)
         search_action = QtGui.QAction(arch_icon_themed, "", self.search_input)
         self.search_input.addAction(search_action, QtWidgets.QLineEdit.ActionPosition.LeadingPosition)
         # ------------------------------------
         
+        # Note: Search bar background remains the pure Pywal $BG for contrast
         self.search_input.setStyleSheet(f"""
             QLineEdit {{
                 border: 2px solid {self.BORDER};
@@ -67,7 +84,6 @@ class AppPicker(QtWidgets.QWidget):
         self.search_input.textChanged.connect(self.filter_list)
         self.search_input.returnPressed.connect(self.launch_selected)
         
-        # Enable Keyboard Scroll by intercepting key events
         self.search_input.keyPressEvent = self.search_key_press_event 
 
 
@@ -78,7 +94,6 @@ class AppPicker(QtWidgets.QWidget):
         self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.list_view.doubleClicked.connect(self.launch_selected)
 
-        # Explicitly disable scrollbars
         self.list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.list_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         
@@ -109,7 +124,7 @@ class AppPicker(QtWidgets.QWidget):
         layout.addWidget(self.list_view)
         layout.setContentsMargins(10, 10, 10, 10)
         
-        self.resize(500, 600) 
+        self.resize(500, 350) 
         self.search_input.setFocus()
         
         if self.model.rowCount() > 0:
@@ -120,7 +135,6 @@ class AppPicker(QtWidgets.QWidget):
     # --- Icon Theming Methods ---
     def recolor_icon(self, icon, color_hex):
         """Manually recolors a QIcon's pixmap representation to the given color."""
-        # Now correctly accesses self.ICON_SIZE
         pixmap = icon.pixmap(self.ICON_SIZE) 
         
         painter = QtGui.QPainter(pixmap)
@@ -136,7 +150,7 @@ class AppPicker(QtWidgets.QWidget):
         if icon.isNull():
             icon = QtGui.QIcon.fromTheme("system-search")
             
-        pixmap = icon.pixmap(QtCore.QSize(18, 18)) # Fixed size for QLineEdit
+        pixmap = icon.pixmap(QtCore.QSize(18, 18)) 
         
         painter = QtGui.QPainter(pixmap)
         painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceIn)
@@ -148,23 +162,18 @@ class AppPicker(QtWidgets.QWidget):
     def get_app_icon(self, icon_name):
         """Find the QIcon, and force it to be recolored with the Pywal color."""
         
-        # 1. Try to load the symbolic version first
         symbolic_icon_name = icon_name + '-symbolic'
         icon = QtGui.QIcon.fromTheme(symbolic_icon_name)
         
-        # 2. If symbolic is missing, fall back to the standard full-color icon
         if icon.isNull():
             icon = QtGui.QIcon.fromTheme(icon_name)
             
-        # 3. If still null, try loading by direct path
         if icon.isNull() and Path(icon_name).exists():
             icon = QtGui.QIcon(icon_name)
         
-        # 4. If an icon was found, force it to be recolored. 
         if not icon.isNull():
             return self.recolor_icon(icon, self.FG)
             
-        # 5. Final fallback
         return QtGui.QIcon.fromTheme('application-default')
     # -------------------------------
 
@@ -201,7 +210,10 @@ class AppPicker(QtWidgets.QWidget):
         
         for app_info in sorted_apps:
             item = QtGui.QStandardItem(app_info['Name'])
-            item.setIcon(self.get_app_icon(app_info.get('Icon', 'application-default')))
+            
+            if self.SHOW_APP_ICONS:
+                item.setIcon(self.get_app_icon(app_info.get('Icon', 'application-default')))
+                
             item.setData(app_info['Exec'], QtCore.Qt.ItemDataRole.UserRole)
             self.model.appendRow(item)
     
