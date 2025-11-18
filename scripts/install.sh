@@ -107,8 +107,7 @@ fi
 print_header "Installing AUR packages"
 AUR_PACKAGES=(
     python-pywal16
-    tofi
-)
+    )
 for pkg in "${AUR_PACKAGES[@]}"; do
     if yay -Qs "^$pkg$" &>/dev/null; then
         print_success "✅ $pkg is already installed"
@@ -177,21 +176,6 @@ else
     print_warning "Kitty config not found at $KITTY_CONFIG_SRC"
 fi
 
-
-# ----------------------------
-# Copy Tofi config
-# ----------------------------
-print_header "Copying Tofi config"
-TOFI_CONFIG_SRC="$REPO_ROOT/configs/tofi"
-
-if [[ -d "$TOFI_CONFIG_SRC" ]]; then
-    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/tofi"
-    sudo -u "$USER_NAME" cp -rf "$TOFI_CONFIG_SRC/." "$CONFIG_DIR/tofi/"
-    print_success "Tofi config copied"
-else
-    print_warning "Tofi config folder not found at $TOFI_CONFIG_SRC"
-fi
-
 # ----------------------------
 # Copy Yazi config
 # ----------------------------
@@ -219,6 +203,12 @@ if [[ -d "$SCRIPTS_SRC" ]]; then
     if [[ -f "$CONFIG_DIR/scripts/wallpaper-picker.py" ]]; then
         sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/wallpaper-picker.py"
         print_success "wallpaper-picker.py made executable"
+    fi
+
+      # Make appr-picker.py executable
+    if [[ -f "$CONFIG_DIR/scripts/app-picker.py" ]]; then
+        sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/app-picker.py"
+        print_success "app-picker.py made executable"
     fi
 
     print_success "User scripts copied"
