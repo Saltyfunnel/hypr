@@ -107,6 +107,8 @@ window#waybar {
 #custom-steam,
 #custom-screenshot,
 #cpu,
+#battery,
+#backlight,
 #memory,
 #network,
 #pulseaudio,
@@ -125,6 +127,8 @@ window#waybar {
 #window { color: @color5; }
 #clock { color: @color3; }
 #cpu { color: @color2; }
+#battery { color: @color5; }
+#backlight { color: @color2; }
 #memory { color: @color4; }
 #network { color: @color6; }
 #pulseaudio { color: @color1; }
