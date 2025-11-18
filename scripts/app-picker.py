@@ -13,6 +13,14 @@ APP_DIRS = [
 OPACITY = 230 
 ICON_SIZE = QtCore.QSize(32, 32) 
 
+# --- NEW: Keywords for excluding unwanted apps from the launcher list ---
+EXCLUDE_KEYWORDS = [
+    "ssh", "server", "avahi", "browser", "helper", 
+    "setup", "settings daemon", "gnome-session", "kde-", 
+    "xfce-", "gimp", "manjaro"
+]
+# ------------------------------------------------------------------------
+
 # --- AppPicker Class (Fuzzy Search) ---
 class AppPicker(QtWidgets.QWidget):
     def __init__(self):
@@ -34,11 +42,10 @@ class AppPicker(QtWidgets.QWidget):
         
         # FIXES: Instance variables
         self.ICON_SIZE = ICON_SIZE 
-        self.SHOW_APP_ICONS = False 
+        self.SHOW_APP_ICONS = False # Set to False for a clean, text-only list
         
-        # --- COLOR TINT LOGIC ---
-        # 💡 JAZZ IT UP: Increased from 10 to 30 for a highly visible tint
-        TINT_FACTOR = 30 
+        # --- COLOR TINT LOGIC (Aggressive Tint) ---
+        TINT_FACTOR = 30 # 30% mix of BORDER color into BG color for visible tint
         
         base_color = QtGui.QColor(self.BG)
         tint_color = QtGui.QColor(self.BORDER)
@@ -55,7 +62,6 @@ class AppPicker(QtWidgets.QWidget):
         rgba_bg = f"rgba({final_color.red()},{final_color.green()},{final_color.blue()},{final_color.alpha()})"
         # ------------------------
         
-        # This applies the new tinted background color
         self.setStyleSheet(f"background-color: {rgba_bg}; border: 1px solid {self.BORDER}; border-radius: 8px;")
 
         # --- Widgets ---
@@ -64,13 +70,12 @@ class AppPicker(QtWidgets.QWidget):
         self.search_input = QtWidgets.QLineEdit()
         self.search_input.setPlaceholderText("Search applications...")
         
-        # --- Add Themed Arch Logo Action (STILL THEMED) ---
+        # --- Add Themed Arch Logo Action ---
         arch_icon_themed = self.get_themed_logo("archlinux-logo", self.FG)
         search_action = QtGui.QAction(arch_icon_themed, "", self.search_input)
         self.search_input.addAction(search_action, QtWidgets.QLineEdit.ActionPosition.LeadingPosition)
         # ------------------------------------
         
-        # Note: Search bar background remains the pure Pywal $BG for contrast
         self.search_input.setStyleSheet(f"""
             QLineEdit {{
                 border: 2px solid {self.BORDER};
@@ -275,16 +280,25 @@ class AppPicker(QtWidgets.QWidget):
         return None
 
     def find_applications(self):
-        """Locate and parse relevant application (.desktop) files."""
+        """Locate and parse relevant application (.desktop) files, excluding unwanted apps."""
         apps = []
         app_names = set() 
+        
         for app_dir in APP_DIRS:
             if app_dir.exists():
                 for app_file in app_dir.glob("*.desktop"):
                     info = self.parse_desktop_file(app_file)
+                    
                     if info and info['Name'] not in app_names:
-                        apps.append(info)
-                        app_names.add(info['Name'])
+                        app_name_lower = info['Name'].lower()
+                        
+                        # Check against Exclude Keywords
+                        is_excluded = any(keyword in app_name_lower for keyword in EXCLUDE_KEYWORDS)
+                        
+                        if not is_excluded:
+                            apps.append(info)
+                            app_names.add(info['Name'])
+                            
         return apps
 
     def get_pywal_colors(self):
