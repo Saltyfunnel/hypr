@@ -17,11 +17,11 @@ ICON_SIZE = QtCore.QSize(32, 32)
 EXCLUDE_KEYWORDS = [
     "ssh", "server", "avahi", "browser", "helper",
     "setup", "settings daemon", "gnome-session", "kde-",
-    "xfce-", "gimp", "About Xfce"
+    "xfce-", "gimp", "about xfce"
 ]
 
 FONT_NAME = "Fira Code"
-FONT_SIZE = 14
+FONT_SIZE = 12
 
 
 class AppPicker(QtWidgets.QWidget):
@@ -57,8 +57,10 @@ class AppPicker(QtWidgets.QWidget):
         self.search_input = QtWidgets.QLineEdit()
         self.search_input.setPlaceholderText("Search applications...")
         arch_icon_themed = self.get_themed_logo("archlinux-logo", self.FG)
-        self.search_input.addAction(QtGui.QAction(arch_icon_themed, "", self.search_input),
-                                    QtWidgets.QLineEdit.ActionPosition.LeadingPosition)
+        self.search_input.addAction(
+            QtGui.QAction(arch_icon_themed, "", self.search_input),
+            QtWidgets.QLineEdit.ActionPosition.LeadingPosition
+        )
         self.search_input.textChanged.connect(self.filter_list)
         self.search_input.returnPressed.connect(self.launch_selected)
         self.search_input.keyPressEvent = self.search_key_press_event
@@ -80,14 +82,16 @@ class AppPicker(QtWidgets.QWidget):
         frame_layout.addWidget(self.search_input)
         frame_layout.addWidget(self.list_view)
         frame_layout.setContentsMargins(10, 10, 10, 10)
-        self.main_frame.setStyleSheet(f"QFrame {{ background-color: {self.rgba_bg}; border: 1px solid {self.ACCENT}; border-radius: 8px; }}")
+        self.main_frame.setStyleSheet(
+            f"QFrame {{ background-color: {self.rgba_bg}; border: 1px solid {self.ACCENT}; border-radius: 8px; }}"
+        )
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(self.main_frame)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setStyleSheet("background-color: #00000000; border: none;")
 
-        self.resize(500, 400)
+        self.resize(450, 500)
         self.search_input.setFocus()
 
         if self.model.rowCount() > 0:
@@ -96,20 +100,18 @@ class AppPicker(QtWidgets.QWidget):
         # Start timer to refresh Pywal colors live
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_pywal_colors)
-        self.timer.start(2000)  # refresh every 2 seconds
+        self.timer.start(2000)
 
         self.apply_styles()
         self.show()
 
     # --- Font & style methods ---
     def apply_styles(self):
-        # Set global font
         font = QtGui.QFont(FONT_NAME, FONT_SIZE)
         self.setFont(font)
         self.search_input.setFont(font)
         self.list_view.setFont(font)
 
-        # Apply colors
         self.search_input.setStyleSheet(f"""
             QLineEdit {{
                 border: 2px solid {self.ACCENT};
@@ -120,6 +122,7 @@ class AppPicker(QtWidgets.QWidget):
                 background-color: {self.BG};
             }}
         """)
+
         self.list_view.setStyleSheet(f"""
             QListView {{
                 background-color: #00000000;
@@ -135,9 +138,11 @@ class AppPicker(QtWidgets.QWidget):
                 border: none;
             }}
         """)
-        self.main_frame.setStyleSheet(f"QFrame {{ background-color: {self.rgba_bg}; border: 1px solid {self.ACCENT}; border-radius: 8px; }}")
 
-        # Update font on each item
+        self.main_frame.setStyleSheet(
+            f"QFrame {{ background-color: {self.rgba_bg}; border: 1px solid {self.ACCENT}; border-radius: 8px; }}"
+        )
+
         for row in range(self.model.rowCount()):
             item = self.model.item(row)
             item.setFont(QtGui.QFont(FONT_NAME, FONT_SIZE))
@@ -146,11 +151,8 @@ class AppPicker(QtWidgets.QWidget):
         self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
         self.apply_styles()
 
-    # --- Icon methods ---
-    def get_themed_logo(self, icon_name, color_hex):
-        icon = QtGui.QIcon.fromTheme(icon_name)
-        if icon.isNull():
-            icon = QtGui.QIcon.fromTheme("system-search")
+    # --- Arch logo recoloring only ---
+    def recolor_icon(self, icon, color_hex):
         pixmap = icon.pixmap(QtCore.QSize(18, 18))
         painter = QtGui.QPainter(pixmap)
         painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceIn)
@@ -158,14 +160,13 @@ class AppPicker(QtWidgets.QWidget):
         painter.end()
         return QtGui.QIcon(pixmap)
 
-    def recolor_icon(self, icon, color_hex):
-        pixmap = icon.pixmap(self.ICON_SIZE)
-        painter = QtGui.QPainter(pixmap)
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceIn)
-        painter.fillRect(pixmap.rect(), QtGui.QColor(color_hex))
-        painter.end()
-        return QtGui.QIcon(pixmap)
+    def get_themed_logo(self, icon_name, color_hex):
+        icon = QtGui.QIcon.fromTheme(icon_name)
+        if icon.isNull():
+            icon = QtGui.QIcon.fromTheme("system-search")
+        return self.recolor_icon(icon, color_hex)
 
+    # --- App icons (keep original colors) ---
     def get_app_icon(self, icon_name):
         symbolic_icon_name = icon_name + "-symbolic"
         icon = QtGui.QIcon.fromTheme(symbolic_icon_name)
@@ -174,10 +175,10 @@ class AppPicker(QtWidgets.QWidget):
         if icon.isNull() and Path(icon_name).exists():
             icon = QtGui.QIcon(icon_name)
         if not icon.isNull():
-            return self.recolor_icon(icon, self.FG)
+            return icon
         return QtGui.QIcon.fromTheme('application-default')
 
-    # --- Keyboard/selection handling ---
+    # --- Keyboard handling ---
     def search_key_press_event(self, event):
         key = event.key()
         if key in (QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down):
@@ -186,10 +187,7 @@ class AppPicker(QtWidgets.QWidget):
                 new_row = self.list_view.model().rowCount() - 1 if key == QtCore.Qt.Key.Key_Up else 0
             else:
                 row = current_index.row()
-                if key == QtCore.Qt.Key.Key_Up:
-                    new_row = max(0, row - 1)
-                else:
-                    new_row = min(self.list_view.model().rowCount() - 1, row + 1)
+                new_row = max(0, row - 1) if key == QtCore.Qt.Key.Key_Up else min(self.list_view.model().rowCount() - 1, row + 1)
             new_index = self.list_view.model().index(new_row, 0)
             self.list_view.setCurrentIndex(new_index)
             self.list_view.scrollTo(new_index)
