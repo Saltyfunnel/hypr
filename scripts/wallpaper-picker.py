@@ -4,7 +4,7 @@ from pathlib import Path
 from PyQt6 import QtWidgets, QtGui, QtCore
 
 WALLPAPER_DIR = Path.home() / "Pictures/Wallpapers"
-THUMB_SIZE = (150, 100)
+THUMB_SIZE = (350, 300)
 THUMBS_PER_ROW = 4
 MAX_VISIBLE_ROWS = 3
 OPACITY = 200
