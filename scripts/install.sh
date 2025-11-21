@@ -5,19 +5,19 @@ set -euo pipefail
 # ----------------------------
 # Helper functions
 # ----------------------------
-print_header()    { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
-print_success()   { echo -e "\e[32m$1\e[0m"; }
-print_warning()   { echo -e "\e[33mWarning: $1\e[0m" >&2; }
-print_error()     { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
+print_header()    { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
+print_success()   { echo -e "\e[32m$1\e[0m"; }
+print_warning()   { echo -e "\e[33mWarning: $1\e[0m" >&2; }
+print_error()     { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 
 run_command() {
-    local cmd="$1"
-    local desc="$2"
-    echo -e "\nRunning: $desc"
-    if ! eval "$cmd"; then
-        print_error "Failed: $desc"
-    fi
-    print_success "✅ Success: $desc"
+    local cmd="$1"
+    local desc="$2"
+    echo -e "\nRunning: $desc"
+    if ! eval "$cmd"; then
+        print_error "Failed: $desc"
+    fi
+    print_success "✅ Success: $desc"
 }
 
 # ----------------------------
@@ -55,13 +55,13 @@ print_header "Detecting GPU"
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
 
 if echo "$GPU_INFO" | grep -qi nvidia; then
-    run_command "pacman -S --noconfirm nvidia nvidia-utils" "Install NVIDIA drivers"
+    run_command "pacman -S --noconfirm nvidia nvidia-utils" "Install NVIDIA drivers"
 elif echo "$GPU_INFO" | grep -qi amd; then
-    run_command "pacman -S --noconfirm xf86-video-amdgpu mesa vulkan-radeon" "Install AMD drivers"
+    run_command "pacman -S --noconfirm xf86-video-amdgpu mesa vulkan-radeon" "Install AMD drivers"
 elif echo "$GPU_INFO" | grep -qi intel; then
-    run_command "pacman -S --noconfirm mesa vulkan-intel" "Install Intel drivers"
+    run_command "pacman -S --noconfirm mesa vulkan-intel" "Install Intel drivers"
 else
-    print_warning "No supported GPU detected. Skipping driver installation."
+    print_warning "No supported GPU detected. Skipping driver installation."
 fi
 
 # ----------------------------
@@ -69,16 +69,16 @@ fi
 # ----------------------------
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
-    # Core system + Hyprland essentials
-    hyprland waybar swww dunst grim slurp kitty nano wget jq oculante btop
-    sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
-    thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look papirus-icon-theme
-    thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
-    firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
+    # Core system + Hyprland essentials
+    hyprland waybar swww mako grim slurp kitty nano wget jq oculante btop     # <-- CHANGED: Replaced 'dunst' with 'mako'
+    sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
+    thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look papirus-icon-theme
+    thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
+    firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
 
-    # GUI / Wayland / Fonts
-    qt5-wayland qt6-wayland gtk3 gtk4 libgit2
-    ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
+    # GUI / Wayland / Fonts
+    qt5-wayland qt6-wayland gtk3 gtk4 libgit2
+    ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
 
@@ -91,14 +91,14 @@ run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth service
 # ----------------------------
 print_header "Installing Yay"
 if command -v yay &>/dev/null; then
-    print_success "Yay already installed"
+    print_success "Yay already installed"
 else
-    run_command "pacman -S --noconfirm --needed git base-devel" "Install git + base-devel"
-    run_command "rm -rf /tmp/yay" "Remove old yay folder"
-    run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay"
-    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
-    run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
-    run_command "rm -rf /tmp/yay" "Clean up temporary yay files"
+    run_command "pacman -S --noconfirm --needed git base-devel" "Install git + base-devel"
+    run_command "rm -rf /tmp/yay" "Remove old yay folder"
+    run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay"
+    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
+    run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
+    run_command "rm -rf /tmp/yay" "Clean up temporary yay files"
 fi
 
 # ----------------------------
@@ -106,14 +106,14 @@ fi
 # ----------------------------
 print_header "Installing AUR packages"
 AUR_PACKAGES=(
-    python-pywal16
-    )
+    python-pywal16
+    )
 for pkg in "${AUR_PACKAGES[@]}"; do
-    if yay -Qs "^$pkg$" &>/dev/null; then
-        print_success "✅ $pkg is already installed"
-    else
-        run_command "sudo -u $USER_NAME yay -S --noconfirm $pkg" "Install $pkg from AUR"
-    fi
+    if yay -Qs "^$pkg$" &>/dev/null; then
+        print_success "✅ $pkg is already installed"
+    else
+        run_command "sudo -u $USER_NAME yay -S --noconfirm $pkg" "Install $pkg from AUR"
+    fi
 done
 
 # ----------------------------
@@ -126,11 +126,11 @@ BASHRC_SRC="$REPO_ROOT/configs/.bashrc"
 BASHRC_DEST="$USER_HOME/.bashrc"
 
 if [[ -f "$BASHRC_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$BASHRC_SRC" "$BASHRC_DEST"
-    print_success ".bashrc copied from repo"
+    sudo -u "$USER_NAME" cp "$BASHRC_SRC" "$BASHRC_DEST"
+    print_success ".bashrc copied from repo"
 else
-    print_warning "No .bashrc found in repo, creating a minimal one"
-    cat <<'EOF' | sudo -u "$USER_NAME" tee "$BASHRC_DEST" >/dev/null
+    print_warning "No .bashrc found in repo, creating a minimal one"
+    cat <<'EOF' | sudo -u "$USER_NAME" tee "$BASHRC_DEST" >/dev/null
 # Restore Pywal colors and clear terminal
 wal -r && clear
 
@@ -140,7 +140,7 @@ eval "$(starship init bash)"
 # Run fastfetch after login
 fastfetch
 EOF
-    print_success "Minimal .bashrc created with wal + fastfetch + starship"
+    print_success "Minimal .bashrc created with wal + fastfetch + starship"
 fi
 
 # ----------------------------
@@ -156,9 +156,9 @@ sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/hypr"
 # ----------------------------
 print_header "Copying Waybar config"
 if [[ -d "$WAYBAR_CONFIG_SRC" ]]; then
-    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/waybar"
-    sudo -u "$USER_NAME" cp -rf "$WAYBAR_CONFIG_SRC/." "$CONFIG_DIR/waybar/"
-    print_success "Waybar config copied"
+    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/waybar"
+    sudo -u "$USER_NAME" cp -rf "$WAYBAR_CONFIG_SRC/." "$CONFIG_DIR/waybar/"
+    print_success "Waybar config copied"
 fi
 
 # ----------------------------
@@ -170,10 +170,10 @@ KITTY_CONFIG_DEST="$CONFIG_DIR/kitty/kitty.conf"
 
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/kitty"
 if [[ -f "$KITTY_CONFIG_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$KITTY_CONFIG_SRC" "$KITTY_CONFIG_DEST"
-    print_success "Kitty config copied to $KITTY_CONFIG_DEST"
+    sudo -u "$USER_NAME" cp "$KITTY_CONFIG_SRC" "$KITTY_CONFIG_DEST"
+    print_success "Kitty config copied to $KITTY_CONFIG_DEST"
 else
-    print_warning "Kitty config not found at $KITTY_CONFIG_SRC"
+    print_warning "Kitty config not found at $KITTY_CONFIG_SRC"
 fi
 
 # ----------------------------
@@ -183,9 +183,9 @@ print_header "Copying Yazi config"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/yazi"
 YAZI_FILES=("yazi.toml" "keybind.toml" "theme.toml")
 for file in "${YAZI_FILES[@]}"; do
-    SRC="$REPO_ROOT/configs/yazi/$file"
-    DEST="$CONFIG_DIR/yazi/$file"
-    [[ -f "$SRC" ]] && sudo -u "$USER_NAME" cp "$SRC" "$DEST" && print_success "Copied $file"
+    SRC="$REPO_ROOT/configs/yazi/$file"
+    DEST="$CONFIG_DIR/yazi/$file"
+    [[ -f "$SRC" ]] && sudo -u "$USER_NAME" cp "$SRC" "$DEST" && print_success "Copied $file"
 done
 
 # ----------------------------
@@ -193,42 +193,43 @@ done
 # ----------------------------
 print_header "Copying user scripts"
 if [[ -d "$SCRIPTS_SRC" ]]; then
-    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/scripts"
-    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC/." "$CONFIG_DIR/scripts/"
+    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/scripts"
+    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC/." "$CONFIG_DIR/scripts/"
 
-    # Make all .sh scripts executable
-    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*.sh
+    # Make all .sh scripts executable
+    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*.sh
 
-    # Make wallpaper-picker.py executable
-    if [[ -f "$CONFIG_DIR/scripts/wallpaper-picker.py" ]]; then
-        sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/wallpaper-picker.py"
-        print_success "wallpaper-picker.py made executable"
-    fi
+    # Make wallpaper-picker.py executable
+    if [[ -f "$CONFIG_DIR/scripts/wallpaper-picker.py" ]]; then
+        sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/wallpaper-picker.py"
+        print_success "wallpaper-picker.py made executable"
+    fi
 
-      # Make appr-picker.py executable
-    if [[ -f "$CONFIG_DIR/scripts/app-picker.py" ]]; then
-        sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/app-picker.py"
-        print_success "app-picker.py made executable"
-    fi
+      # Make appr-picker.py executable
+    if [[ -f "$CONFIG_DIR/scripts/app-picker.py" ]]; then
+        sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/app-picker.py"
+        print_success "app-picker.py made executable"
+    fi
 
-    print_success "User scripts copied"
+    print_success "User scripts copied"
 fi
 
 # ----------------------------
-# Copy Dunst config
+# Copy Mako config
 # ----------------------------
-print_header "Copying Dunst config"
-DUNST_SRC="$REPO_ROOT/configs/dunst/dunstrc"
-DUNST_DEST="$CONFIG_DIR/dunst/dunstrc"
+print_header "Copying Mako config" # <-- ADDED: New Mako config block
+MAKO_SRC="$REPO_ROOT/configs/mako/config"
+MAKO_DEST="$CONFIG_DIR/mako/config"
 
-if [[ -f "$DUNST_SRC" ]]; then
-    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/dunst"
-    sudo -u "$USER_NAME" cp "$DUNST_SRC" "$DUNST_DEST"
-    print_success "Dunst config copied to $DUNST_DEST"
+if [[ -f "$MAKO_SRC" ]]; then
+    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/mako"
+    sudo -u "$USER_NAME" cp "$MAKO_SRC" "$MAKO_DEST"
+    print_success "Mako config copied to $MAKO_DEST"
 else
-    print_warning "Dunst config not found at $DUNST_SRC"
+    print_warning "Mako config not found at $MAKO_SRC. Mako will use defaults."
 fi
 
+# Note: The 'Copy Dunst config' block has been removed here.
 
 # ----------------------------
 # Create Screenshots folder
@@ -237,7 +238,7 @@ print_header "Creating Screenshots Folder"
 SCREENSHOT_DIR="$USER_HOME/Pictures/Screenshots"
 
 run_command "sudo -u $USER_NAME mkdir -p \"$SCREENSHOT_DIR\"" \
-    "Create ~/Pictures/Screenshots directory"
+    "Create ~/Pictures/Screenshots directory"
 
 
 # ----------------------------
@@ -255,10 +256,10 @@ STARSHIP_SRC="$REPO_ROOT/configs/starship/starship.toml"
 STARSHIP_DEST="$CONFIG_DIR/starship.toml"
 
 if [[ -f "$STARSHIP_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$STARSHIP_SRC" "$STARSHIP_DEST"
-    print_success "Starship config copied to $STARSHIP_DEST"
+    sudo -u "$USER_NAME" cp "$STARSHIP_SRC" "$STARSHIP_DEST"
+    print_success "Starship config copied to $STARSHIP_DEST"
 else
-    print_warning "Starship config not found at $STARSHIP_SRC"
+    print_warning "Starship config not found at $STARSHIP_SRC"
 fi
 
 # ----------------------------
@@ -268,9 +269,9 @@ print_header "Copying Wallpapers"
 WALLPAPER_SRC="$REPO_ROOT/Pictures/Wallpapers"
 PICTURES_DEST="$USER_HOME/Pictures"
 if [[ -d "$WALLPAPER_SRC" ]]; then
-    sudo -u "$USER_NAME" mkdir -p "$PICTURES_DEST"
-    sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC" "$PICTURES_DEST/"
-    print_success "Wallpapers copied"
+    sudo -u "$USER_NAME" mkdir -p "$PICTURES_DEST"
+    sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC" "$PICTURES_DEST/"
+    print_success "Wallpapers copied"
 fi
 
 # ----------------------------
@@ -283,4 +284,5 @@ run_command "systemctl enable sddm.service" "Enable SDDM login manager"
 # Final message
 # ----------------------------
 print_success "✅ Installation complete!"
+echo -e "\nIMPORTANT: Remember to change 'exec-once = dunst' to 'exec-once = mako' in your \$REPO_ROOT/configs/hypr/hyprland.conf file before running this script."
 echo -e "\nYou can now log out and select Hyprland session in SDDM."
