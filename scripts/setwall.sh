@@ -9,28 +9,28 @@ WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 WAYBAR_CSS="$HOME/.config/waybar/style.css"
 PYWAL_CACHE="$HOME/.cache/wal/colors.css"
 YAZI_THEME="$HOME/.config/yazi/theme.toml"
-MAKO_CONFIG="$HOME/.config/mako/config" # <-- ADDED: Mako config path
+MAKO_CONFIG="$HOME/.config/mako/config"
 
 # ----------------------------
 # Start swww-daemon if needed
 # ----------------------------
 if ! pgrep -x "swww-daemon" >/dev/null; then
-    swww-daemon &
-    sleep 1
+    swww-daemon &
+    sleep 1
 fi
 
 # ----------------------------
 # Pick a random wallpaper if not provided
 # ----------------------------
 if [[ -z "${1-}" ]]; then
-    WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -iname "*.png" -o -iname "*.jpg" \) | shuf -n 1)
+    WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -iname "*.png" -o -iname "*.jpg" \) | shuf -n 1)
 else
-    WALLPAPER="$1"
+    WALLPAPER="$1"
 fi
 
 if [[ -z "$WALLPAPER" ]]; then
-    echo "No wallpapers found in $WALLPAPER_DIR"
-    exit 1
+    echo "No wallpapers found in $WALLPAPER_DIR"
+    exit 1
 fi
 
 # ----------------------------
@@ -45,17 +45,19 @@ wal -n -q -i "$WALLPAPER"
 sleep 0.5
 
 # ----------------------------
-# Read colors (used for Waybar and Mako)
+# Read colors (used for Waybar, Mako, and Yazi)
 # ----------------------------
 declare -A COLORS
 for i in {0..15}; do
-    COLORS[$i]=$(grep "color$i" "$PYWAL_CACHE" | grep -o '#[0-9A-Fa-f]\{6\}' | head -n1)
+    COLORS[$i]=$(grep "color$i" "$PYWAL_CACHE" | grep -o '#[0-9A-Fa-f]\{6\}' | head -n1)
 done
 
 BG=${COLORS[0]}
 FG=${COLORS[7]}
 
-# Standard modules
+# ----------------------------
+# Update Waybar CSS
+# ----------------------------
 cat > "$WAYBAR_CSS" <<EOF
 /* Waybar CSS - Pywal colors applied */
 @define-color color0 ${COLORS[0]};
@@ -76,26 +78,26 @@ cat > "$WAYBAR_CSS" <<EOF
 @define-color color15 ${COLORS[15]};
 
 * {
-    font-family: "FiraCode Nerd Font";
-    font-size: 13px;
-    min-height: 0;
+    font-family: "FiraCode Nerd Font";
+    font-size: 13px;
+    min-height: 0;
 }
 
 window#waybar {
-    background-color: transparent;
-    color: @color7;
-    border: none;
-    transition: background-color 0.3s;
+    background-color: transparent;
+    color: @color7;
+    border: none;
+    transition: background-color 0.3s;
 }
 
 /* Modules container */
 .modules-left,
 .modules-center,
 .modules-right {
-    background-color: transparent;
-    border-radius: 0;
-    margin: 0;
-    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
 }
 
 /* Module boxes */
@@ -115,11 +117,11 @@ window#waybar {
 #custom-power,
 #tray,
 #workspaces {
-    background-color: rgba(15, 15, 15, 0.8);
-    border-radius: 10px;
-    margin: 3px;
-    padding: 5px 10px;
-    transition: all 0.3s ease;
+    background-color: rgba(15, 15, 15, 0.8);
+    border-radius: 10px;
+    margin: 3px;
+    padding: 5px 10px;
+    transition: all 0.3s ease;
 }
 
 /* Module text colors */
@@ -141,36 +143,36 @@ window#waybar {
 #custom-steam { color: @color4; }
 #custom-screenshot { color: @color12; }
 
-/* Hover glow — safe syntax */
+/* Hover glow */
 #custom-spotify:hover {
-    box-shadow: 0 0 8px @color2;
-    background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 8px @color2;
+    background-color: rgba(255, 255, 255, 0.05);
 }
 #custom-firefox:hover {
-    box-shadow: 0 0 8px @color3;
-    background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 8px @color3;
+    background-color: rgba(255, 255, 255, 0.05);
 }
 #custom-steam:hover {
-    box-shadow: 0 0 8px @color4;
-    background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 8px @color4;
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 /* Workspaces */
 #workspaces button {
-    background-color: transparent;
-    color: @color2;
-    border: none;
-    margin: 0 3px;
-    padding: 0 6px;
+    background-color: transparent;
+    color: @color2;
+    border: none;
+    margin: 0 3px;
+    padding: 0 6px;
 }
 
 #workspaces button.active {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
 }
 
 #workspaces button:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.08);
 }
 EOF
 
@@ -178,11 +180,10 @@ EOF
 pkill -USR2 waybar || waybar &
 
 # ----------------------------
-# Generate Pywal-themed Mako config                            # <-- CHANGED: Mako block starts here
+# Generate Pywal-themed Mako config
 # ----------------------------
 mkdir -p "$(dirname "$MAKO_CONFIG")"
 
-# Fallbacks for Mako colors (using the same logic as your old Dunst script)
 BG_MAKO=${COLORS[0]:-"#1c1c1c"}
 FG_MAKO=${COLORS[7]:-"#dcdccc"}
 BORDER_MAKO=${COLORS[2]:-"#000000"}
@@ -191,7 +192,6 @@ CRIT_FG=${COLORS[0]:-"#1c1c1c"}
 
 cat > "$MAKO_CONFIG" <<EOF
 # Mako Configuration - Pywal Colors
-# Based on old Dunst settings
 anchor=top-right
 width=350
 height=90
@@ -201,38 +201,30 @@ gap=5
 border-size=2
 border-radius=10
 
-# Default Appearance
 font=FiraCode Nerd Font 12
 text-color=${FG_MAKO}
 background-color=${BG_MAKO}
 border-color=${BORDER_MAKO}
 default-timeout=5000
 
-# Rule for Urgency Low
 [urgency=low]
 background-color=${BG_MAKO}
 text-color=${FG_MAKO}
 default-timeout=3000
 
-# Rule for Urgency Normal
 [urgency=normal]
 background-color=${BG_MAKO}
 text-color=${FG_MAKO}
 default-timeout=5000
 
-# Rule for Urgency Critical
 [urgency=critical]
 background-color=${CRIT_BG}
 text-color=${CRIT_FG}
 default-timeout=0
 EOF
 
-# Reload Mako to apply new colors
-makoctl reload                                               # <-- CHANGED: Mako reload command
-# ----------------------------
-# End Mako block
-# ----------------------------
-
+# Reload Mako
+makoctl reload
 
 # ----------------------------
 # Update Yazi theme
