@@ -257,18 +257,28 @@ cat > "$SCREENSHOT_SCRIPT" <<'EOS'
 #!/bin/bash
 DIR="$HOME/Pictures/Screenshots"
 mkdir -p "$DIR"
-FILE="$DIR/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"
+FILE="$DIR/screenshot_$(date +%F_%T).png"
 
 case "$1" in
-    area) grim -g "$(slurp)" "$FILE" ;;
-    window) grim "$FILE" ;;
-    screen) grim "$FILE" ;;
-    *) grim "$FILE" ;;
+    area)
+        grim -g "$(slurp)" "$FILE"
+        ;;
+    window)
+        RECT=$(hyprctl activewindow -j | jq -r '.at | "\(.x),\(.y) \(.width)x\(.height)"')
+        grim -g "$RECT" "$FILE"
+        ;;
+    screen)
+        grim "$FILE"
+        ;;
+    *)
+        grim "$FILE"
+        ;;
 esac
 
 notify-send "Screenshot saved" "$FILE"
 EOS
 chmod +x "$SCREENSHOT_SCRIPT"
+
 
 # ----------------------------
 # Finished
