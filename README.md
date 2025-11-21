@@ -1,3 +1,17 @@
+```
+██╗  ██╗██╗   ██╗██████╗ ██████╗ 
+██║ ██╔╝██║   ██║██╔══██╗██╔══██╗
+█████╔╝ ██║   ██║██║  ██║██║  ██║
+██╔═██╗ ██║   ██║██║  ██║██║  ██║
+██║  ██╗╚██████╔╝██████╔╝██████╔╝
+╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═════╝ 
+
+Built with:
+1% Knowledge
+99% ChatGPT
+100% Regret
+```
+
 # ☕ Saltyfunnel’s Hyprland Config
 
 *(Lovingly duct-taped together by me, technically typed by ChatGPT)*
@@ -34,7 +48,7 @@ It’s your funeral now.
 | mako           | For notifications when everything breaks                                        |
 | python-pywal16 | The color generator controlling the mood swings                                 |
 | PyQt6          | Used for custom GUI pickers nobody asked for                                    |
-| Waybar         | The bar that changes themes more often than people change underwear             |
+| Waybar         | The bar that changes themes more often than some people change underwear        |
 | Yazi           | File manager that also gets re-themed because why not                           |
 
 ## 🛠 The Scripts (Where the Crimes Are Committed)
@@ -70,8 +84,6 @@ Two PyQt6 scripts replacing good, working tools with homemade knockoffs that mat
 * **App Picker**: A Pywal-themed launcher with “please work” energy
 
 ## ⌨️ Keybinds
-
-Here are the important shortcuts before everything collapses:
 
 | Shortcut          | What It Does                      | Script              |
 | ----------------- | --------------------------------- | ------------------- |
