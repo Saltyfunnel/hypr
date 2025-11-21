@@ -235,7 +235,7 @@ window#waybar {{
 #custom-power,
 #tray,
 #workspaces {{
-    background-color: {background};
+    background-color: {background}cc;
     border-radius: 10px;
     margin: 3px;
     padding: 5px 10px;
