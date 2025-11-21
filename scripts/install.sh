@@ -128,7 +128,6 @@ print_header "Installing AUR packages"
 AUR_PACKAGES=(
     python-pywal16
     localsend-bin
-    spotify
     protonplus
 )
 for pkg in "${AUR_PACKAGES[@]}"; do
