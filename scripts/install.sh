@@ -70,7 +70,7 @@ fi
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
     # Core system + Hyprland essentials
-    hyprland waybar swww mako grim slurp kitty nano wget jq oculante btop     # <-- CHANGED: Replaced 'dunst' with 'mako'
+    hyprland waybar swww mako grim slurp kitty nano wget jq oculante btop    # <-- CHANGED: 'dunst' replaced with 'mako'
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look papirus-icon-theme
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
@@ -217,7 +217,7 @@ fi
 # ----------------------------
 # Copy Mako config
 # ----------------------------
-print_header "Copying Mako config" # <-- ADDED: New Mako config block
+print_header "Copying Mako config" # <-- CHANGED: New Mako config block
 MAKO_SRC="$REPO_ROOT/configs/mako/config"
 MAKO_DEST="$CONFIG_DIR/mako/config"
 
@@ -228,8 +228,8 @@ if [[ -f "$MAKO_SRC" ]]; then
 else
     print_warning "Mako config not found at $MAKO_SRC. Mako will use defaults."
 fi
+# NOTE: The old 'Copy Dunst config' block was removed here.
 
-# Note: The 'Copy Dunst config' block has been removed here.
 
 # ----------------------------
 # Create Screenshots folder
@@ -284,5 +284,5 @@ run_command "systemctl enable sddm.service" "Enable SDDM login manager"
 # Final message
 # ----------------------------
 print_success "✅ Installation complete!"
-echo -e "\nIMPORTANT: Remember to change 'exec-once = dunst' to 'exec-once = mako' in your \$REPO_ROOT/configs/hypr/hyprland.conf file before running this script."
+echo -e "\nACTION NEEDED: Update your Hyprland config (configs/hypr/hyprland.conf) to change 'exec-once = dunst' to 'exec-once = mako'."
 echo -e "\nYou can now log out and select Hyprland session in SDDM."
