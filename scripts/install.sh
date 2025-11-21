@@ -81,7 +81,7 @@ fi
 # ----------------------------
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
-    hyprland waybar swww mako grim slurp kitty nano wget jq oculante btop
+    hyprland waybar swww mako grim slurp kitty nano wget jq oculante btop steam
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look papirus-icon-theme
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
@@ -116,6 +116,9 @@ fi
 print_header "Installing AUR packages"
 AUR_PACKAGES=(
     python-pywal16
+    localsend
+    spotify
+    protonplus
 )
 for pkg in "${AUR_PACKAGES[@]}"; do
     if yay -Qs "^$pkg$" &>/dev/null; then
