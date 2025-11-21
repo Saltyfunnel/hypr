@@ -70,7 +70,7 @@ fi
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
     # Core system + Hyprland essentials
-    hyprland waybar swww dunst grim slurp kitty nano wget jq oculante
+    hyprland waybar swww dunst grim slurp kitty nano wget jq oculante btop
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
     thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look papirus-icon-theme
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
