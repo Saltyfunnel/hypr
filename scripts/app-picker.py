@@ -22,7 +22,7 @@ EXCLUDE_KEYWORDS = [
 
 FONT_NAME = "Fira Code"
 FONT_SIZE = 12
-
+TERMINAL = "kitty"  # <-- change this to foot, alacritty, wezterm, etc.
 
 class AppPicker(QtWidgets.QWidget):
     def __init__(self):
@@ -38,10 +38,10 @@ class AppPicker(QtWidgets.QWidget):
             sys.exit(1)
 
         self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
-
         self.ICON_SIZE = ICON_SIZE
         self.SHOW_APP_ICONS = True
 
+        # Calculate translucent background
         LIGHTENING_FACTOR = 2
         base_color = QtGui.QColor(self.BG)
         tint_color = QtGui.QColor("#ffffff")
@@ -97,7 +97,7 @@ class AppPicker(QtWidgets.QWidget):
         if self.model.rowCount() > 0:
             self.list_view.setCurrentIndex(self.model.index(0, 0))
 
-        # Start timer to refresh Pywal colors live
+        # Periodically refresh Pywal colors
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_pywal_colors)
         self.timer.start(2000)
@@ -105,7 +105,7 @@ class AppPicker(QtWidgets.QWidget):
         self.apply_styles()
         self.show()
 
-    # --- Font & style methods ---
+    # --- Styles ---
     def apply_styles(self):
         font = QtGui.QFont(FONT_NAME, FONT_SIZE)
         self.setFont(font)
@@ -117,7 +117,7 @@ class AppPicker(QtWidgets.QWidget):
                 border: 2px solid {self.ACCENT};
                 border-radius: 4px;
                 padding: 5px;
-                padding-left: 28px;
+                padding-left: 10px;
                 color: {self.FG};
                 background-color: {self.BG};
             }}
@@ -151,7 +151,7 @@ class AppPicker(QtWidgets.QWidget):
         self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
         self.apply_styles()
 
-    # --- Arch logo recoloring only ---
+    # --- Icons ---
     def recolor_icon(self, icon, color_hex):
         pixmap = icon.pixmap(QtCore.QSize(18, 18))
         painter = QtGui.QPainter(pixmap)
@@ -166,7 +166,6 @@ class AppPicker(QtWidgets.QWidget):
             icon = QtGui.QIcon.fromTheme("system-search")
         return self.recolor_icon(icon, color_hex)
 
-    # --- App icons (keep original colors) ---
     def get_app_icon(self, icon_name):
         symbolic_icon_name = icon_name + "-symbolic"
         icon = QtGui.QIcon.fromTheme(symbolic_icon_name)
@@ -178,7 +177,7 @@ class AppPicker(QtWidgets.QWidget):
             return icon
         return QtGui.QIcon.fromTheme('application-default')
 
-    # --- Keyboard handling ---
+    # --- Keyboard ---
     def search_key_press_event(self, event):
         key = event.key()
         if key in (QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down):
@@ -196,7 +195,7 @@ class AppPicker(QtWidgets.QWidget):
         else:
             QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
 
-    # --- Model population ---
+    # --- Model ---
     def populate_model(self):
         self.model.clear()
         for app in sorted(self.applications, key=lambda a: a['Name']):
@@ -205,6 +204,7 @@ class AppPicker(QtWidgets.QWidget):
                 item.setIcon(self.get_app_icon(app.get('Icon', 'application-default')))
             item.setFont(QtGui.QFont(FONT_NAME, FONT_SIZE))
             item.setData(app['Exec'], QtCore.Qt.ItemDataRole.UserRole)
+            item.setData(app['Terminal'], QtCore.Qt.ItemDataRole.UserRole + 1)
             self.model.appendRow(item)
 
     def filter_list(self, text):
@@ -218,16 +218,25 @@ class AppPicker(QtWidgets.QWidget):
         if proxy.rowCount() > 0:
             self.list_view.setCurrentIndex(proxy.index(0, 0))
 
+    # --- Launch ---
     def launch_selected(self):
         index = self.list_view.currentIndex()
         if not index.isValid():
             return
-        cmd = self.list_view.model().data(index, QtCore.Qt.ItemDataRole.UserRole)
-        if cmd:
+
+        model = self.list_view.model()
+        cmd = model.data(index, QtCore.Qt.ItemDataRole.UserRole)
+        needs_terminal = model.data(index, QtCore.Qt.ItemDataRole.UserRole + 1)
+
+        if needs_terminal:
+            # Launch in a login shell so Pywal colors are applied
+            subprocess.Popen([TERMINAL, "--hold", "-e", "bash", "-l", "-c", cmd], close_fds=True)
+        else:
             subprocess.Popen(cmd, shell=True, close_fds=True)
+
         QtWidgets.QApplication.quit()
 
-    # --- Desktop file parsing ---
+    # --- Desktop parsing ---
     def parse_desktop_file(self, path):
         parser = configparser.ConfigParser(interpolation=None)
         try:
@@ -235,17 +244,23 @@ class AppPicker(QtWidgets.QWidget):
                 parser.read_string(f.read())
         except Exception:
             return None
+
         if 'Desktop Entry' not in parser:
             return None
+
         entry = parser['Desktop Entry']
         if entry.getboolean('NoDisplay', fallback=False) or entry.get('Type') != 'Application':
             return None
+
         name = entry.get('Name')
         exec_cmd = entry.get('Exec', '').split('%', 1)[0].strip()
         icon = entry.get('Icon')
+        terminal = entry.getboolean('Terminal', fallback=False)
+
         if not name or not exec_cmd:
             return None
-        return {'Name': name, 'Exec': exec_cmd, 'Icon': icon}
+
+        return {'Name': name, 'Exec': exec_cmd, 'Icon': icon, 'Terminal': terminal}
 
     def find_applications(self):
         apps, names = [], set()
