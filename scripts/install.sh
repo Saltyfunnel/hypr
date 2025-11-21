@@ -116,7 +116,7 @@ fi
 print_header "Installing AUR packages"
 AUR_PACKAGES=(
     python-pywal16
-    localsend
+    localsend-bin
     spotify
     protonplus
 )
