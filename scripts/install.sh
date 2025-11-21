@@ -32,6 +32,13 @@ run_command() {
     print_success "✅ Success: $desc"
 }
 
+COLOR_RED="\e[31m"
+COLOR_GREEN="\e[32m"
+COLOR_YELLOW="\e[33m"
+COLOR_BLUE="\e[34m"
+COLOR_RESET="\e[0m"
+
+
 # ----------------------------
 # Setup Variables
 # ----------------------------
