@@ -1,5 +1,5 @@
 #!/bin/bash
-# setwall.sh - Sets wallpaper + Pywal + updates Waybar, Yazi, Tofi
+# setwall.sh - Sets wallpaper + Pywal + updates Waybar, Yazi, Mako + screenshot notifications
 set -euo pipefail
 
 # ----------------------------
@@ -7,9 +7,15 @@ set -euo pipefail
 # ----------------------------
 WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 WAYBAR_CSS="$HOME/.config/waybar/style.css"
+WAYBAR_CONFIG="$HOME/.config/waybar/config"
 PYWAL_CACHE="$HOME/.cache/wal/colors.css"
 YAZI_THEME="$HOME/.config/yazi/theme.toml"
 MAKO_CONFIG="$HOME/.config/mako/config"
+SCREENSHOT_DIR="$HOME/Pictures/Screenshots"
+SCREENSHOT_SCRIPT="$HOME/.local/bin/screenshot_notify.sh"
+
+mkdir -p "$SCREENSHOT_DIR"
+mkdir -p "$(dirname "$SCREENSHOT_SCRIPT")"
 
 # ----------------------------
 # Start swww-daemon if needed
@@ -45,7 +51,7 @@ wal -n -q -i "$WALLPAPER"
 sleep 0.5
 
 # ----------------------------
-# Read colors (used for Waybar, Mako, and Yazi)
+# Read colors
 # ----------------------------
 declare -A COLORS
 for i in {0..15}; do
@@ -128,8 +134,6 @@ window#waybar {
 #window { color: @color5; }
 #clock { color: @color3; }
 #cpu { color: @color2; }
-#battery { color: @color5; }
-#backlight { color: @color2; }
 #memory { color: @color4; }
 #network { color: @color6; }
 #pulseaudio { color: @color1; }
@@ -197,7 +201,6 @@ width=350
 height=90
 margin=10
 padding=8
-gap=5
 border-size=2
 border-radius=10
 
@@ -224,7 +227,8 @@ default-timeout=0
 EOF
 
 # Reload Mako
-makoctl reload
+pkill mako
+mako &
 
 # ----------------------------
 # Update Yazi theme
@@ -245,3 +249,29 @@ bg = "$BG"
 fg = "$FG"
 bg = "$BG"
 EOF
+
+# ----------------------------
+# Screenshot helper (sends notifications)
+# ----------------------------
+cat > "$SCREENSHOT_SCRIPT" <<'EOS'
+#!/bin/bash
+DIR="$HOME/Pictures/Screenshots"
+mkdir -p "$DIR"
+FILE="$DIR/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"
+
+case "$1" in
+    area) grim -g "$(slurp)" "$FILE" ;;
+    window) grim "$FILE" ;;
+    screen) grim "$FILE" ;;
+    *) grim "$FILE" ;;
+esac
+
+notify-send "Screenshot saved" "$FILE"
+EOS
+chmod +x "$SCREENSHOT_SCRIPT"
+
+# ----------------------------
+# Finished
+# ----------------------------
+notify-send "Wallpaper & Theme" "✅ Waybar, Mako, and Yazi updated!"
+echo "✅ setwall.sh complete!"
