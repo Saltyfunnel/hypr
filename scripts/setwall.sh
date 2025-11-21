@@ -1,5 +1,5 @@
 #!/bin/bash
-# setwall.sh - Sets wallpaper + Pywal + updates Waybar, Yazi, Mako
+# setwall.sh - Sets wallpaper + Pywal + updates Waybar, Yazi, Tofi
 set -euo pipefail
 
 # ----------------------------
@@ -45,18 +45,17 @@ wal -n -q -i "$WALLPAPER"
 sleep 0.5
 
 # ----------------------------
-# Read colors
+# Read colors (used for Waybar and Mako)
 # ----------------------------
 declare -A COLORS
 for i in {0..15}; do
-    # Extract colors reliably from Pywal16 CSS
     COLORS[$i]=$(grep "color$i" "$PYWAL_CACHE" | grep -o '#[0-9A-Fa-f]\{6\}' | head -n1)
 done
 
 BG=${COLORS[0]}
 FG=${COLORS[7]}
 
-# Standard modules - Waybar color definitions (unchanged)
+# Standard modules
 cat > "$WAYBAR_CSS" <<EOF
 /* Waybar CSS - Pywal colors applied */
 @define-color color0 ${COLORS[0]};
@@ -183,7 +182,7 @@ pkill -USR2 waybar || waybar &
 # ----------------------------
 mkdir -p "$(dirname "$MAKO_CONFIG")"
 
-# Fallbacks for Mako
+# Fallbacks for Mako colors (using the same logic as your old Dunst script)
 BG_MAKO=${COLORS[0]:-"#1c1c1c"}
 FG_MAKO=${COLORS[7]:-"#dcdccc"}
 BORDER_MAKO=${COLORS[2]:-"#000000"}
@@ -192,7 +191,7 @@ CRIT_FG=${COLORS[0]:-"#1c1c1c"}
 
 cat > "$MAKO_CONFIG" <<EOF
 # Mako Configuration - Pywal Colors
-# Position and Geometry (Modify as needed)
+# Based on old Dunst settings
 anchor=top-right
 width=350
 height=90
