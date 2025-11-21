@@ -158,13 +158,9 @@
   "format": "",
   "tooltip": true,
   "tooltip-format": "Left: Area → Save\nMiddle: Window → Save\nRight: Screen → Save",
-
-  "on-click": "grim -g \"$(slurp)\" \"$HOME/Pictures/Screenshots/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png\"",
-
-  "on-click-middle": "grim \"$HOME/Pictures/Screenshots/window_$(date +%Y-%m-%d_%H-%M-%S).png\"",
-
-  "on-click-right": "grim \"$HOME/Pictures/Screenshots/screen_$(date +%Y-%m-%d_%H-%M-%S).png\"",
-
+  "on-click": "~/.local/bin/screenshot_notify.sh left",
+  "on-click-middle": "~/.local/bin/screenshot_notify.sh middle",
+  "on-click-right": "~/.local/bin/screenshot_notify.sh right",
   "interval": 3600
 }
 
