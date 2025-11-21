@@ -241,7 +241,7 @@ window#waybar {{
 #custom-power,
 #tray,
 #workspaces {{
-    background-color: {background}cc;
+    background-color: {background};
     border-radius: 10px;
     margin: 3px;
     padding: 5px 10px;
@@ -265,17 +265,17 @@ window#waybar {{
 
 #custom-spotify:hover {{
     box-shadow: 0 0 8px {color2};
-    background-color: {color2}0D;
+    background-color: {color2};
 }}
 
 #custom-firefox:hover {{
     box-shadow: 0 0 8px {color3};
-    background-color: {color3}0D;
+    background-color: {color3};
 }}
 
 #custom-steam:hover {{
     box-shadow: 0 0 8px {color4};
-    background-color: {color4}0D;
+    background-color: {color4};
 }}
 
 #workspaces button {{
@@ -287,12 +287,12 @@ window#waybar {{
 }}
 
 #workspaces button.active {{
-    background-color: {color2}1A;
+    background-color: {color2};
     border-radius: 6px;
 }}
 
 #workspaces button:hover {{
-    background-color: {color7}14;
+    background-color: {color7};
 }}
 EOF
 print_success "Waybar template created"
