@@ -158,9 +158,9 @@
   "format": "",
   "tooltip": true,
   "tooltip-format": "Left: Area → Save\nMiddle: Window → Save\nRight: Screen → Save",
-  "on-click": "~/.local/bin/screenshot_notify.sh area",
-  "on-click-middle": "~/.local/bin/screenshot_notify.sh window",
-  "on-click-right": "~/.local/bin/screenshot_notify.sh screen",
+  "on-click": "~/.config/scripts/screenshot_notify.sh area",
+  "on-click-middle": "~/.config/scripts/screenshot_notify.sh window",
+  "on-click-right": "~/.config/scripts/screenshot_notify.sh screen",
   "interval": 3600
 }
 ,
