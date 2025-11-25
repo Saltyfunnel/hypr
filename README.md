@@ -1,17 +1,3 @@
-```
-██╗  ██╗██╗   ██╗██████╗ ██████╗ 
-██║ ██╔╝██║   ██║██╔══██╗██╔══██╗
-█████╔╝ ██║   ██║██║  ██║██║  ██║
-██╔═██╗ ██║   ██║██║  ██║██║  ██║
-██║  ██╗╚██████╔╝██████╔╝██████╔╝
-╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═════╝ 
-
-Built with:
-1% Knowledge
-99% ChatGPT
-100% Regret
-```
-
 # ☕ Saltyfunnel’s Hyprland Config
 
 *(Lovingly duct-taped together by me, technically typed by ChatGPT)*
