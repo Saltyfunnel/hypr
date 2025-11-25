@@ -159,7 +159,7 @@ fi
 # Setup Directory Structure
 # ----------------------------
 print_header "Creating config directories"
-sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,yazi,fastfetch,mako,scripts}
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts}
 sudo -u "$USER_NAME" mkdir -p "$WAL_TEMPLATES"
 sudo -u "$USER_NAME" mkdir -p "$WAL_CACHE"
 sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures/Screenshots"
