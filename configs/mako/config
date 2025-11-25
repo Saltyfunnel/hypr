@@ -1,0 +1,30 @@
+
+# Mako Configuration - Pywal Colors
+anchor=top-right
+width=350
+height=90
+margin=10
+padding=8
+border-size=2
+border-radius=10
+
+font=FiraCode Nerd Font 12
+text-color=#c3c5c8
+background-color=#101726
+border-color=#5675B1
+default-timeout=5000
+
+[urgency=low]
+background-color=#101726
+text-color=#c3c5c8
+default-timeout=3000
+
+[urgency=normal]
+background-color=#101726
+text-color=#c3c5c8
+default-timeout=5000
+
+[urgency=critical]
+background-color=#2C6EBD
+text-color=#101726
+default-timeout=0

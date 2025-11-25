@@ -1,0 +1,197 @@
+{
+  "layer": "top",
+  "position": "top",
+  "mod": "dock",
+  "exclusive": true,
+  "passthrough": false,
+
+  "modules-left": [
+    "hyprland/workspaces",
+    "hyprland/window"
+  ],
+
+  "modules-center": [
+    "clock"
+  ],
+
+  "modules-right": [
+    "custom/spotify",
+    "custom/firefox",
+    "custom/steam",
+    "memory",
+    "cpu",
+    "battery",
+    "backlight",
+    "pulseaudio",
+    "pulseaudio#microphone",
+    "network",
+    "custom/screenshot",
+    "custom/power"
+  ],
+
+  "custom/spotify": {
+  "exec": "pgrep -x spotify >/dev/null && echo '' || echo ''",
+  "interval": 5,
+  "format": "{}",
+  "tooltip": false,
+  "max-length": 1,
+  "class": "spotify"
+},
+
+"custom/firefox": {
+  "exec": "pgrep -x firefox >/dev/null && echo '' || echo ''",
+  "interval": 5,
+  "format": "{}",
+  "tooltip": false,
+  "max-length": 1,
+  "class": "firefox"
+},
+
+"custom/steam": {
+  "exec": "pgrep -x steam >/dev/null && echo '' || echo ''",
+  "interval": 5,
+  "format": "{}",
+  "tooltip": false,
+  "max-length": 1,
+  "class": "steam"
+},
+
+  "memory": {
+    "states": {
+      "c": 90,
+      "h": 60,
+      "m": 30
+    },
+    "interval": 10,
+    "format": "󰾆  {used}GB",
+    "format-m": "󰾅 {used}GB",
+    "format-h": "󰓅 {used}GB",
+    "format-c": " {used}GB",
+    "format-alt": "󰾆 {percentage}%",
+    "max-length": 10,
+    "tooltip": true,
+    "tooltip-format": "󰾆 {percentage}%\n {used:0.1f}GB/{total:0.1f}GB"
+  },
+
+  "cpu": {
+    "interval": 10,
+    "format": "󰍛  {usage}%",
+    "format-alt": "{icon0}{icon1}{icon2}{icon3}",
+    "format-icons": [" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
+  },
+
+  "network": {
+    "tooltip": true,
+    "format-wifi": "  {essid}",
+    "format-ethernet": "󰈀",
+    "tooltip-format": "Network: <big><b>{essid}</b></big>\nSignal strength: <b>{signaldBm}dBm ({signalStrength}%)</b>\nFrequency: <b>{frequency}MHz</b>\nInterface: <b>{ifname}</b>\nIP: <b>{ipaddr}/{cidr}</b>\nGateway: <b>{gwaddr}</b>\nNetmask: <b>{netmask}</b>",
+    "format-linked": "󰈀 {ifname} (No IP)",
+    "format-disconnected": "󰖪 ",
+    "tooltip-format-disconnected": "Disconnected",
+    "format-alt": "<span foreground='#99ffdd'> {bandwidthDownBytes}</span> <span foreground='#ffcc66'> {bandwidthUpBytes}</span>",
+    "interval": 2
+  },
+
+  "battery": {
+    "states": {
+      "good": 95,
+      "warning": 30,
+      "critical": 20
+    },
+    "format": "{icon} {capacity}%",
+    "format-charging": " {capacity}%",
+    "format-plugged": " {capacity}%",
+    "format-alt": "{time} {icon}",
+    "format-icons": [
+      "󰂃", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿",
+      "󰂀", "󰂁", "󰂂", "󰁹"
+    ]
+  },
+
+  "backlight": {
+    "device": "intel_backlight",
+    "format": "{icon} {percent}%",
+    "format-icons": ["󰃞", "󰃟", "󰃠"],
+    "on-scroll-up": "brightnessctl set 1%+",
+    "on-scroll-down": "brightnessctl set 1%-",
+    "min-length": 6
+  },
+
+ "pulseaudio": {
+    "format": "{icon}  {volume}%",
+    "tooltip": false,
+    "format-muted": "  Muted",
+    "format-icons": ["", "", ""],   // speaker icons for different volume states
+    "on-click": "pamixer -t",
+    "on-scroll-up": "pamixer -i 1",
+    "on-scroll-down": "pamixer -d 1",
+    "scroll-step": 5
+},
+
+  "pulseaudio#microphone": {
+    "format": "{format_source}",
+    "format-source": " {volume}%",
+    "format-source-muted": "  Muted",
+    "on-click": "pamixer --default-source -t",
+    "on-scroll-up": "pamixer --default-source -i 5",
+    "on-scroll-down": "pamixer --default-source -d 5",
+    "scroll-step": 5
+  },
+
+  "clock": {
+    "format": "{:%H:%M %p}",
+    "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>",
+    "interval": 1
+  },
+
+  "custom/power": {
+    "format": "",
+    "tooltip": true,
+    "tooltip-format": "Left: Shutdown\nMiddle: Logout\nRight: Reboot",
+    "on-click": "systemctl poweroff",
+    "on-click-middle": "hyprctl dispatch exit",
+    "on-click-right": "systemctl reboot",
+    "interval": 3600
+  },
+
+"custom/screenshot": {
+  "format": "",
+  "tooltip": true,
+  "tooltip-format": "Left: Area → Save\nMiddle: Window → Save\nRight: Screen → Save",
+  "on-click": "~/.local/bin/screenshot_notify.sh area",
+  "on-click-middle": "~/.local/bin/screenshot_notify.sh window",
+  "on-click-right": "~/.local/bin/screenshot_notify.sh screen",
+  "interval": 3600
+}
+,
+
+
+  "hyprland/window": {
+    "format": "  {}",
+    "max-length": 40
+  },
+
+  "tray": {
+    "icon-size": 14,
+    "spacing": 10
+  },
+
+ "hyprland/workspaces": {
+    "format": "{icon}",
+    "format-icons": {
+        "default":"",
+        "active":"",
+        "occupied":"",
+        "urgent":""
+    },
+    "persistent-workspaces": {
+        "1":[],
+        "2":[],
+        "3":[]
+    },
+    "sort-by-number": true,
+    "on-click": "activate"
+}
+
+  }
+}
