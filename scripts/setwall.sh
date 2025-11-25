@@ -51,9 +51,6 @@ pkill -USR2 waybar 2>/dev/null || waybar &
 pkill mako 2>/dev/null
 mako &
 
-# Kitty (if running, send signal to reload)
-killall -SIGUSR1 kitty 2>/dev/null || true
-
 # ----------------------------
 # Done!
 # ----------------------------
