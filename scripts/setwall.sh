@@ -3,38 +3,6 @@
 set -euo pipefail
 
 WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
-SCREENSHOT_DIR="$HOME/Pictures/Screenshots"
-SCREENSHOT_SCRIPT="$HOME/.local/bin/screenshot_notify.sh"
-
-# ----------------------------
-# Create screenshot script if it doesn't exist
-# ----------------------------
-mkdir -p "$(dirname "$SCREENSHOT_SCRIPT")"
-mkdir -p "$SCREENSHOT_DIR"
-
-cat > "$SCREENSHOT_SCRIPT" <<'SCRIPT_END'
-#!/bin/bash
-DIR="$HOME/Pictures/Screenshots"
-mkdir -p "$DIR"
-FILE="$DIR/screenshot_$(date +%F_%T).png"
-
-case "$1" in
-    area)
-        grim -g "$(slurp)" "$FILE" && notify-send "Screenshot" "Area saved to $FILE" -i "$FILE"
-        ;;
-    window)
-        grim -g "$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" "$FILE" && notify-send "Screenshot" "Window saved to $FILE" -i "$FILE"
-        ;;
-    screen)
-        grim "$FILE" && notify-send "Screenshot" "Screen saved to $FILE" -i "$FILE"
-        ;;
-    *)
-        grim "$FILE" && notify-send "Screenshot" "Screen saved to $FILE" -i "$FILE"
-        ;;
-esac
-SCRIPT_END
-
-chmod +x "$SCREENSHOT_SCRIPT"
 
 # ----------------------------
 # Start swww-daemon if needed
@@ -65,8 +33,13 @@ swww img "$WALLPAPER" --transition-type any --transition-step 90 --transition-fp
 # ----------------------------
 wal -n -q -i "$WALLPAPER"
 
-# Small delay to ensure cache is written
-sleep 0.3
+# Wait for pywal to finish writing all files
+sleep 0.5
+
+# ----------------------------
+# Reload Hyprland to pick up new colors
+# ----------------------------
+hyprctl reload
 
 # ----------------------------
 # Reload services to pick up new colors
