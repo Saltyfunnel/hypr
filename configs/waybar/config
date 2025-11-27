@@ -29,13 +29,17 @@
     "custom/power"
   ],
 
-  "custom/spotify": {
-  "exec": "pgrep -x spotify >/dev/null && echo '' || echo ''",
-  "interval": 5,
+"custom/spotify": {
+  "exec": "playerctl -p spotify metadata --format ' {{ artist }} - {{ title }}' 2>/dev/null || echo ''",
+  "exec-if": "playerctl -p spotify status >/dev/null 2>&1",
+  "interval": 3,
   "format": "{}",
   "tooltip": false,
-  "max-length": 1,
-  "class": "spotify"
+  "max-length": 40,
+  "class": "spotify",
+  "on-click": "playerctl -p spotify play-pause",
+  "on-scroll-up": "playerctl -p spotify next",
+  "on-scroll-down": "playerctl -p spotify previous"
 },
 
 "custom/firefox": {
