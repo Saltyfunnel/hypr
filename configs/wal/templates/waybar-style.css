@@ -47,8 +47,8 @@ window#waybar {{
 #window {{ color: {color5}; }}
 #clock {{ 
     color: {color3}; 
-    padding: 5px 10px;
-    margin: 3px;
+    padding-top: 8px;
+    padding-bottom: 5px;
 }}
 #cpu {{ color: {color2}; }}
 #memory {{ color: {color4}; }}
