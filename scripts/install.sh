@@ -279,8 +279,14 @@ if [[ -f "$ICONS_SRC" ]]; then
     sudo chmod -R 755 "$SYSTEM_ICON_DEST/YAMIS"
     print_success "✅ YAMIS installed to $SYSTEM_ICON_DEST/YAMIS"
 
-    # Update icon cache
-    sudo gtk-update-icon-cache -f -t "$SYSTEM_ICON_DEST/YAMIS" 2>/dev/null || true
+    # Update icon cache - CRITICAL for icons to show up
+    run_command "gtk-update-icon-cache -f -t $SYSTEM_ICON_DEST/YAMIS" "Update YAMIS icon cache"
+    
+    # Verify icon theme is valid
+    if [[ ! -f "$SYSTEM_ICON_DEST/YAMIS/index.theme" ]]; then
+        print_error "YAMIS index.theme not found - icon theme is invalid!"
+    fi
+    print_success "✅ YAMIS icon theme validated"
 
     # GTK3 settings
     GTK3_SETTINGS="$USER_HOME/.config/gtk-3.0/settings.ini"
