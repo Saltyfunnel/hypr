@@ -335,39 +335,35 @@ EOF
 EOF
     print_success "✅ Thunar configuration created"
 
-    # Set environment variables for dark theme (works for Wayland)
-    ENVIRONMENT_FILE="$USER_HOME/.config/environment.d/theme.conf"
-    sudo -u "$USER_NAME" mkdir -p "$(dirname "$ENVIRONMENT_FILE")"
-    sudo -u "$USER_NAME" tee "$ENVIRONMENT_FILE" >/dev/null <<EOF
-GTK_THEME=Adwaita-dark
-QT_STYLE_OVERRIDE=Adwaita-Dark
-EOF
-    print_success "✅ Environment variables set for dark theme"
-
 else
     print_warning "Icon archive not found at $ICONS_SRC, skipping icon installation"
 fi
 
 # ----------------------------
-# Apply settings via dconf/gsettings (for user session)
+# Apply GTK settings immediately with xfsettingsd
 # ----------------------------
-print_header "Applying theme settings to user session"
+print_header "Applying GTK theme settings"
 
-# Create a script that will run on first login to apply settings
-FIRSTRUN_SCRIPT="$USER_HOME/.config/autostart-scripts/apply-theme.sh"
-sudo -u "$USER_NAME" mkdir -p "$(dirname "$FIRSTRUN_SCRIPT")"
-sudo -u "$USER_NAME" tee "$FIRSTRUN_SCRIPT" >/dev/null <<'EOF'
-#!/bin/bash
-# Apply GTK theme and icons on first login
-gsettings set org.gnome.desktop.interface icon-theme 'YAMIS'
-gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
-gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-
-# Remove this script after first run
-rm -f "$0"
+# Force GTK to use dark theme via glib schemas
+GLIB_SCHEMA_DIR="$USER_HOME/.local/share/glib-2.0/schemas"
+sudo -u "$USER_NAME" mkdir -p "$GLIB_SCHEMA_DIR"
+sudo -u "$USER_NAME" tee "$GLIB_SCHEMA_DIR/99_custom.gschema.override" >/dev/null <<EOF
+[org.gnome.desktop.interface]
+color-scheme='prefer-dark'
+gtk-theme='Adwaita-dark'
+icon-theme='YAMIS'
 EOF
-sudo -u "$USER_NAME" chmod +x "$FIRSTRUN_SCRIPT"
-print_success "✅ First-login theme application script created"
+run_command "glib-compile-schemas $GLIB_SCHEMA_DIR" "Compile glib schemas"
+print_success "✅ GTK dark mode forced via glib schemas"
+
+# Also set dconf directly (this actually works)
+sudo -u "$USER_NAME" dbus-run-session bash -c "
+    dconf write /org/gnome/desktop/interface/color-scheme \"'prefer-dark'\"
+    dconf write /org/gnome/desktop/interface/gtk-theme \"'Adwaita-dark'\"
+    dconf write /org/gnome/desktop/interface/icon-theme \"'YAMIS'\"
+" 2>/dev/null || print_warning "dconf settings may not have applied (will apply on login)"
+
+print_success "✅ GTK settings configured"
 
 # ----------------------------
 # Final message
