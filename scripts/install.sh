@@ -62,19 +62,6 @@ print_header "Updating system"
 run_command "pacman -Syyu --noconfirm" "System update"
 
 # ----------------------------
-# Enable Pacman ILoveCandy
-# ----------------------------
-print_header "Enabling Pacman ILoveCandy"
-PACMAN_CONF="/etc/pacman.conf"
-
-if ! grep -q "^ILoveCandy" "$PACMAN_CONF"; then
-    sed -i '/^\[options\]/a ILoveCandy' "$PACMAN_CONF"
-    print_success "✅ ILoveCandy added to pacman.conf"
-else
-    print_success "ILoveCandy already present in pacman.conf"
-fi
-
-# ----------------------------
 # GPU Drivers
 # ----------------------------
 print_header "Detecting GPU"
@@ -97,15 +84,15 @@ print_header "Installing core packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww mako grim slurp kitty nano wget jq oculante btop steam
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
-    thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
+    thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look papirus-icon-theme
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
-    gnome-themes-extra
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
 
+# Enable essential services
 run_command "systemctl enable --now polkit.service" "Enable polkit"
 run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth service"
 
@@ -182,18 +169,22 @@ print_success "Directory structure created"
 # Copy Static Configs (no colors!)
 # ----------------------------
 print_header "Copying static configuration files"
-HYPR_CONFIG_SRC="$REPO_ROOT/configs/hypr/hyprland.conf"
-WAYBAR_CONFIG_SRC="$REPO_ROOT/configs/waybar/config"
 
+# Hyprland main config (keybinds, window rules, etc)
+HYPR_CONFIG_SRC="$REPO_ROOT/configs/hypr/hyprland.conf"
 if [[ -f "$HYPR_CONFIG_SRC" ]]; then
     sudo -u "$USER_NAME" cp "$HYPR_CONFIG_SRC" "$CONFIG_DIR/hypr/hyprland.conf"
     print_success "✅ Copied hyprland.conf"
 fi
+
+# Waybar config (modules and layout only, no colors)
+WAYBAR_CONFIG_SRC="$REPO_ROOT/configs/waybar/config"
 if [[ -f "$WAYBAR_CONFIG_SRC" ]]; then
     sudo -u "$USER_NAME" cp "$WAYBAR_CONFIG_SRC" "$CONFIG_DIR/waybar/config"
     print_success "✅ Copied waybar/config"
 fi
 
+# Yazi configs (all 3 files)
 for file in yazi.toml keybind.toml theme.toml; do
     SRC="$REPO_ROOT/configs/yazi/$file"
     if [[ -f "$SRC" ]]; then
@@ -202,12 +193,14 @@ for file in yazi.toml keybind.toml theme.toml; do
     fi
 done
 
+# Fastfetch config
 FASTFETCH_SRC="$REPO_ROOT/configs/fastfetch/config.jsonc"
 if [[ -f "$FASTFETCH_SRC" ]]; then
     sudo -u "$USER_NAME" cp "$FASTFETCH_SRC" "$CONFIG_DIR/fastfetch/config.jsonc"
     print_success "✅ Copied fastfetch/config.jsonc"
 fi
 
+# Starship config
 STARSHIP_SRC="$REPO_ROOT/configs/starship/starship.toml"
 if [[ -f "$STARSHIP_SRC" ]]; then
     sudo -u "$USER_NAME" cp "$STARSHIP_SRC" "$CONFIG_DIR/starship.toml"
@@ -218,10 +211,14 @@ fi
 # Copy Pywal Templates
 # ----------------------------
 print_header "Copying Pywal templates"
+
+# Copy ALL templates from repo
 TEMPLATE_SOURCE="$REPO_ROOT/configs/wal/templates"
 if [[ -d "$TEMPLATE_SOURCE" ]]; then
     sudo -u "$USER_NAME" cp -r "$TEMPLATE_SOURCE"/* "$WAL_TEMPLATES/"
     print_success "✅ Copied all pywal templates"
+    
+    # List what was copied
     echo "Templates installed:"
     ls -1 "$WAL_TEMPLATES" | sed 's/^/   - /'
 else
@@ -232,49 +229,39 @@ fi
 # Create Symlinks to Pywal Cache
 # ----------------------------
 print_header "Creating symlinks to pywal cache"
+
+# Waybar CSS symlink
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
+print_success "✅ Waybar: style.css → ~/.cache/wal/waybar-style.css"
+
+# Mako config symlink
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
+print_success "✅ Mako: config → ~/.cache/wal/mako-config"
+
+# Kitty config symlink
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/kitty"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
+print_success "✅ Kitty: kitty.conf → ~/.cache/wal/kitty.conf"
+
+# Hyprland colors symlink
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
-print_success "✅ Pywal symlinks created"
+print_success "✅ Hyprland: colors-hyprland.conf → ~/.cache/wal/colors-hyprland.conf"
 
 # ----------------------------
 # Copy Scripts
 # ----------------------------
 print_header "Copying user scripts"
-
-# Create the firstrun script FIRST before copying other scripts
-FIRSTRUN_SCRIPT="$CONFIG_DIR/scripts/apply-theme-firstrun.sh"
-sudo -u "$USER_NAME" tee "$FIRSTRUN_SCRIPT" >/dev/null <<'EOF'
-#!/bin/bash
-# Apply icon theme and GTK settings on first login
-gsettings set org.gnome.desktop.interface icon-theme 'YAMIS'
-gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
-gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-
-# Apply xfconf settings for Thunar
-xfconf-query -c xsettings -p /Net/IconThemeName -t string -s "YAMIS" --create
-xfconf-query -c xsettings -p /Net/ThemeName -t string -s "Adwaita-dark" --create
-xfconf-query -c xsettings -p /Gtk/ColorScheme -t string -s "prefer-dark" --create
-
-# Remove the exec-once line and comment from hyprland.conf
-sed -i '/# Apply theme settings on first login/d' "$HOME/.config/hypr/hyprland.conf"
-sed -i '/apply-theme-firstrun.sh/d' "$HOME/.config/hypr/hyprland.conf"
-
-# Remove this script after execution
-rm -f "$0"
-EOF
-sudo -u "$USER_NAME" chmod +x "$FIRSTRUN_SCRIPT"
-print_success "✅ First-run theme script created at $FIRSTRUN_SCRIPT"
-
-# Now copy other scripts from repo
 if [[ -d "$SCRIPTS_SRC" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/"
+    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/*.sh "$CONFIG_DIR/scripts/" 2>/dev/null || true
+    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/*.py "$CONFIG_DIR/scripts/" 2>/dev/null || true
     sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*.sh
     sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*.py 2>/dev/null || true
     print_success "✅ User scripts copied and made executable"
 fi
+
+# Screenshot script is now in the repo's scripts/ folder
+# It will be copied with the other scripts above
+print_success "✅ Screenshot script copied with other user scripts"
 
 # ----------------------------
 # Copy Wallpapers
@@ -294,76 +281,36 @@ print_header "Setting up SDDM"
 run_command "systemctl enable sddm.service" "Enable SDDM login manager"
 
 # ----------------------------
-# Install and Apply YAMIS Icon Theme System-Wide + Dark GTK
-# ----------------------------
-print_header "Installing YAMIS icon theme system-wide and enabling dark mode"
-
-ICONS_SRC="$REPO_ROOT/configs/icons/yet-another-monochrome-icon-set.tar.gz"
-SYSTEM_ICON_DEST="/usr/share/icons"
-
-if [[ -f "$ICONS_SRC" ]]; then
-    sudo tar -xzf "$ICONS_SRC" -C "$SYSTEM_ICON_DEST"
-    sudo chmod -R 755 "$SYSTEM_ICON_DEST/YAMIS"
-    print_success "✅ YAMIS installed to $SYSTEM_ICON_DEST/YAMIS"
-
-    # Update icon cache - CRITICAL for icons to show up
-    run_command "gtk-update-icon-cache -f -t $SYSTEM_ICON_DEST/YAMIS" "Update YAMIS icon cache"
-    
-    # Verify icon theme is valid
-    if [[ ! -f "$SYSTEM_ICON_DEST/YAMIS/index.theme" ]]; then
-        print_error "YAMIS index.theme not found - icon theme is invalid!"
-    fi
-    print_success "✅ YAMIS icon theme validated"
-
-    # GTK3 settings
-    GTK3_SETTINGS="$USER_HOME/.config/gtk-3.0/settings.ini"
-    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK3_SETTINGS")"
-    sudo -u "$USER_NAME" tee "$GTK3_SETTINGS" >/dev/null <<EOF
-[Settings]
-gtk-icon-theme-name=YAMIS
-gtk-theme-name=Adwaita-dark
-gtk-application-prefer-dark-theme=1
-gtk-cursor-theme-name=Adwaita
-gtk-font-name=Sans 10
-EOF
-    print_success "✅ GTK3 configured with YAMIS + dark mode"
-
-    # GTK4 settings
-    GTK4_SETTINGS="$USER_HOME/.config/gtk-4.0/settings.ini"
-    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK4_SETTINGS")"
-    sudo -u "$USER_NAME" tee "$GTK4_SETTINGS" >/dev/null <<EOF
-[Settings]
-gtk-icon-theme-name=YAMIS
-gtk-theme-name=Adwaita-dark
-gtk-application-prefer-dark-theme=1
-gtk-cursor-theme-name=Adwaita
-gtk-font-name=Sans 10
-EOF
-    print_success "✅ GTK4 configured with YAMIS + dark mode"
-
-    # Force Qt/KDE apps to use YAMIS icons
-    KDEGLOBALS="$USER_HOME/.config/kdeglobals"
-    sudo -u "$USER_NAME" mkdir -p "$(dirname "$KDEGLOBALS")"
-    if ! grep -q "^\[Icons\]" "$KDEGLOBALS" 2>/dev/null; then
-        sudo -u "$USER_NAME" tee -a "$KDEGLOBALS" >/dev/null <<EOF
-[Icons]
-Theme=YAMIS
-EOF
-    else
-        sudo -u "$USER_NAME" sed -i '/^\[Icons\]/,/^\[/ s/^Theme=.*/Theme=YAMIS/' "$KDEGLOBALS"
-    fi
-    print_success "✅ Qt/KDE apps configured to use YAMIS icons"
-
-    print_success "✅ XFCE/Thunar dark mode configured via xfconf"
-
-else
-    print_warning "Icon archive not found at $ICONS_SRC, skipping icon installation"
-fi
-
-# ----------------------------
 # Final message
 # ----------------------------
 print_success "\n✅ Installation complete!"
 echo -e "\n╔════════════════════════════════════════════════════════════╗"
 echo -e "║         Pywal Template System Setup Complete! 🎨          ║"
 echo -e "╚════════════════════════════════════════════════════════════╝"
+echo ""
+echo "📁 Configuration Structure:"
+echo "   • Static configs: ~/.config/{hypr,waybar,yazi,fastfetch}/"
+echo "   • Pywal templates: ~/.config/wal/templates/"
+echo "   • Generated configs: ~/.cache/wal/ (symlinked)"
+echo ""
+echo "🎨 How the theming works:"
+echo "   1. Templates contain color variables: {color1}, {background}, etc."
+echo "   2. Run: setwall.sh <wallpaper>"
+echo "   3. Pywal generates colors from wallpaper"
+echo "   4. Templates are processed with new colors"
+echo "   5. Symlinked configs update automatically"
+echo "   6. Services reload with new theme"
+echo ""
+echo "🚀 Next Steps:"
+echo "   1. Reboot or log out"
+echo "   2. Select 'Hyprland' in SDDM"
+echo "   3. Run: ~/.config/scripts/setwall.sh"
+echo "   4. Pick a wallpaper with: Super+W"
+echo ""
+echo "📖 Keybinds:"
+echo "   • Super+W = Wallpaper picker"
+echo "   • Super+D = App launcher"
+echo "   • Super+Return = Terminal"
+echo "   • Super+F = File manager (Yazi)"
+echo ""
+print_success "Enjoy your themed Hyprland setup! 🎉"
