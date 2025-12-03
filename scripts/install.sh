@@ -334,25 +334,20 @@ done
 
 print_success "✅ GTK3/GTK4 configured with YAMIS + forced dark mode"
 
-
 # ----------------------------
-# Qt/KDE Settings
+# Qt/KDE Settings (force YAMIS)
 # ----------------------------
 KDEGLOBALS="$USER_HOME/.config/kdeglobals"
 sudo -u "$USER_NAME" mkdir -p "$(dirname "$KDEGLOBALS")"
 
+# Ensure [Icons] section exists and is correct
 if ! grep -q "^\[Icons\]" "$KDEGLOBALS" 2>/dev/null; then
     echo -e "[Icons]\nTheme=YAMIS" | sudo -u "$USER_NAME" tee -a "$KDEGLOBALS" >/dev/null
 else
-    sudo -u "$USER_NAME" sed -i '/^\[Icons\]/,/^\[/ s/^Theme=.*/Theme=YAMIS/' "$KDEGLOBALS" || \
-    echo -e "\n[Icons]\nTheme=YAMIS" | sudo -u "$USER_NAME" tee -a "$KDEGLOBALS" >/dev/null
+    sudo -u "$USER_NAME" sed -i '/^\[Icons\]/,/^\[/ s/^Theme=.*/Theme=YAMIS/' "$KDEGLOBALS"
 fi
 
-print_success "✅ Qt/KDE apps configured with YAMIS"
-
-else
-    print_warning "Icon archive not found at $ICONS_SRC, skipping icon installation"
-fi
+print_success "✅ Qt/KDE apps forced to use YAMIS"
 
 # ----------------------------
 # Final message
