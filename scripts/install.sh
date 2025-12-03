@@ -313,6 +313,7 @@ if [[ -f "$ICONS_SRC" ]]; then
     sudo -u "$USER_NAME" chmod -R 755 "$ICON_THEME_DEST/YAMIS"
     
     print_success "✅ YAMIS icon theme installed to $ICON_THEME_DEST/YAMIS"
+fi
 
 # ----------------------------
 # ICON + GTK + QT CONFIG
