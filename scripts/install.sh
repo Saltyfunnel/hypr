@@ -327,11 +327,13 @@ for GTK_CONF in "$GTK3_SETTINGS" "$GTK4_SETTINGS"; do
     sudo -u "$USER_NAME" tee "$GTK_CONF" >/dev/null <<EOF
 [Settings]
 gtk-icon-theme-name = YAMIS
-gtk-theme-name = Adwaita-dark
+gtk-theme-name = Adwaita
+gtk-application-prefer-dark-theme = 1
 EOF
 done
 
-print_success "✅ GTK3/GTK4 configured with YAMIS and dark mode"
+print_success "✅ GTK3/GTK4 configured with YAMIS + forced dark mode"
+
 
 # ----------------------------
 # Qt/KDE Settings
