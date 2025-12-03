@@ -243,6 +243,32 @@ print_success "✅ Pywal symlinks created"
 # Copy Scripts
 # ----------------------------
 print_header "Copying user scripts"
+
+# Create the firstrun script FIRST before copying other scripts
+FIRSTRUN_SCRIPT="$CONFIG_DIR/scripts/apply-theme-firstrun.sh"
+sudo -u "$USER_NAME" tee "$FIRSTRUN_SCRIPT" >/dev/null <<'EOF'
+#!/bin/bash
+# Apply icon theme and GTK settings on first login
+gsettings set org.gnome.desktop.interface icon-theme 'YAMIS'
+gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+
+# Apply xfconf settings for Thunar
+xfconf-query -c xsettings -p /Net/IconThemeName -t string -s "YAMIS" --create
+xfconf-query -c xsettings -p /Net/ThemeName -t string -s "Adwaita-dark" --create
+xfconf-query -c xsettings -p /Gtk/ColorScheme -t string -s "prefer-dark" --create
+
+# Remove the exec-once line and comment from hyprland.conf
+sed -i '/# Apply theme settings on first login/d' "$HOME/.config/hypr/hyprland.conf"
+sed -i '/apply-theme-firstrun.sh/d' "$HOME/.config/hypr/hyprland.conf"
+
+# Remove this script after execution
+rm -f "$0"
+EOF
+sudo -u "$USER_NAME" chmod +x "$FIRSTRUN_SCRIPT"
+print_success "✅ First-run theme script created at $FIRSTRUN_SCRIPT"
+
+# Now copy other scripts from repo
 if [[ -d "$SCRIPTS_SRC" ]]; then
     sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/"
     sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*.sh
