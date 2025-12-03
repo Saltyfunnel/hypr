@@ -279,45 +279,95 @@ if [[ -f "$ICONS_SRC" ]]; then
     sudo chmod -R 755 "$SYSTEM_ICON_DEST/YAMIS"
     print_success "✅ YAMIS installed to $SYSTEM_ICON_DEST/YAMIS"
 
-    # GTK3 & GTK4 settings
-    GTK3_SETTINGS="$USER_HOME/.config/gtk-3.0/settings.ini"
-    GTK4_SETTINGS="$USER_HOME/.config/gtk-4.0/settings.ini"
-    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK3_SETTINGS")"
-    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK4_SETTINGS")"
-    for GTK_CONF in "$GTK3_SETTINGS" "$GTK4_SETTINGS"; do
-        sudo -u "$USER_NAME" tee "$GTK_CONF" >/dev/null <<EOF
-[Settings]
-gtk-icon-theme-name = YAMIS
-gtk-theme-name = Adwaita
-gtk-application-prefer-dark-theme = 1
-EOF
-    done
-    print_success "✅ GTK3/GTK4 configured with YAMIS + dark mode"
+    # Update icon cache
+    sudo gtk-update-icon-cache -f -t "$SYSTEM_ICON_DEST/YAMIS" 2>/dev/null || true
 
-    # Force Qt/KDE apps to use YAMIS
+    # GTK3 settings
+    GTK3_SETTINGS="$USER_HOME/.config/gtk-3.0/settings.ini"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK3_SETTINGS")"
+    sudo -u "$USER_NAME" tee "$GTK3_SETTINGS" >/dev/null <<EOF
+[Settings]
+gtk-icon-theme-name=YAMIS
+gtk-theme-name=Adwaita-dark
+gtk-application-prefer-dark-theme=1
+gtk-cursor-theme-name=Adwaita
+gtk-font-name=Sans 10
+EOF
+    print_success "✅ GTK3 configured with YAMIS + dark mode"
+
+    # GTK4 settings
+    GTK4_SETTINGS="$USER_HOME/.config/gtk-4.0/settings.ini"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK4_SETTINGS")"
+    sudo -u "$USER_NAME" tee "$GTK4_SETTINGS" >/dev/null <<EOF
+[Settings]
+gtk-icon-theme-name=YAMIS
+gtk-theme-name=Adwaita-dark
+gtk-application-prefer-dark-theme=1
+gtk-cursor-theme-name=Adwaita
+gtk-font-name=Sans 10
+EOF
+    print_success "✅ GTK4 configured with YAMIS + dark mode"
+
+    # Force Qt/KDE apps to use YAMIS icons
     KDEGLOBALS="$USER_HOME/.config/kdeglobals"
     sudo -u "$USER_NAME" mkdir -p "$(dirname "$KDEGLOBALS")"
     if ! grep -q "^\[Icons\]" "$KDEGLOBALS" 2>/dev/null; then
-        echo -e "[Icons]\nTheme=YAMIS" | sudo -u "$USER_NAME" tee -a "$KDEGLOBALS" >/dev/null
+        sudo -u "$USER_NAME" tee -a "$KDEGLOBALS" >/dev/null <<EOF
+[Icons]
+Theme=YAMIS
+EOF
     else
         sudo -u "$USER_NAME" sed -i '/^\[Icons\]/,/^\[/ s/^Theme=.*/Theme=YAMIS/' "$KDEGLOBALS"
     fi
-    print_success "✅ Qt/KDE apps forced to use YAMIS"
+    print_success "✅ Qt/KDE apps configured to use YAMIS icons"
+
+    # Thunar-specific dark mode settings
+    THUNAR_RC="$USER_HOME/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$THUNAR_RC")"
+    sudo -u "$USER_NAME" tee "$THUNAR_RC" >/dev/null <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="thunar" version="1.0">
+  <property name="misc-folder-item-count" type="string" value="THUNAR_FOLDER_ITEM_COUNT_ALWAYS"/>
+  <property name="misc-text-beside-icons" type="bool" value="false"/>
+  <property name="misc-thumbnail-mode" type="string" value="THUNAR_THUMBNAIL_MODE_ALWAYS"/>
+  <property name="shortcuts-icon-size" type="string" value="THUNAR_ICON_SIZE_SMALLEST"/>
+</channel>
+EOF
+    print_success "✅ Thunar configuration created"
+
+    # Set environment variables for dark theme (works for Wayland)
+    ENVIRONMENT_FILE="$USER_HOME/.config/environment.d/theme.conf"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$ENVIRONMENT_FILE")"
+    sudo -u "$USER_NAME" tee "$ENVIRONMENT_FILE" >/dev/null <<EOF
+GTK_THEME=Adwaita-dark
+QT_STYLE_OVERRIDE=Adwaita-Dark
+EOF
+    print_success "✅ Environment variables set for dark theme"
+
 else
     print_warning "Icon archive not found at $ICONS_SRC, skipping icon installation"
 fi
 
 # ----------------------------
-# Apply GTK & Icon theme immediately via gsettings
+# Apply settings via dconf/gsettings (for user session)
 # ----------------------------
-print_header "Applying GTK & Icon theme immediately"
+print_header "Applying theme settings to user session"
 
-# GTK3/GTK4 icon and theme
-sudo -u "$USER_NAME" dbus-launch gsettings set org.gnome.desktop.interface icon-theme 'YAMIS'
-sudo -u "$USER_NAME" dbus-launch gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+# Create a script that will run on first login to apply settings
+FIRSTRUN_SCRIPT="$USER_HOME/.config/autostart-scripts/apply-theme.sh"
+sudo -u "$USER_NAME" mkdir -p "$(dirname "$FIRSTRUN_SCRIPT")"
+sudo -u "$USER_NAME" tee "$FIRSTRUN_SCRIPT" >/dev/null <<'EOF'
+#!/bin/bash
+# Apply GTK theme and icons on first login
+gsettings set org.gnome.desktop.interface icon-theme 'YAMIS'
+gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 
-print_success "✅ GTK3/GTK4 icon/theme applied immediately"
-
+# Remove this script after first run
+rm -f "$0"
+EOF
+sudo -u "$USER_NAME" chmod +x "$FIRSTRUN_SCRIPT"
+print_success "✅ First-login theme application script created"
 
 # ----------------------------
 # Final message
