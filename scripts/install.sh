@@ -315,71 +315,50 @@ if [[ -f "$ICONS_SRC" ]]; then
     print_success "✅ YAMIS icon theme installed to $ICON_THEME_DEST/YAMIS"
 
 # ----------------------------
-# GTK3 & GTK4 Settings
+# ICON + GTK + QT CONFIG
 # ----------------------------
-GTK3_SETTINGS="$USER_HOME/.config/gtk-3.0/settings.ini"
-GTK4_SETTINGS="$USER_HOME/.config/gtk-4.0/settings.ini"
 
-sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK3_SETTINGS")"
-sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK4_SETTINGS")"
+if [ -d "$ICONS_SRC" ] || [ -f "$ICONS_SRC" ]; then
 
-for GTK_CONF in "$GTK3_SETTINGS" "$GTK4_SETTINGS"; do
-    sudo -u "$USER_NAME" tee "$GTK_CONF" >/dev/null <<EOF
+    # ----------------------------
+    # GTK3 & GTK4 Settings (FORCED DARK)
+    # ----------------------------
+    GTK3_SETTINGS="$USER_HOME/.config/gtk-3.0/settings.ini"
+    GTK4_SETTINGS="$USER_HOME/.config/gtk-4.0/settings.ini"
+
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK3_SETTINGS")"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK4_SETTINGS")"
+
+    for GTK_CONF in "$GTK3_SETTINGS" "$GTK4_SETTINGS"; do
+        sudo -u "$USER_NAME" tee "$GTK_CONF" >/dev/null <<EOF
 [Settings]
 gtk-icon-theme-name = YAMIS
 gtk-theme-name = Adwaita
 gtk-application-prefer-dark-theme = 1
 EOF
-done
+    done
 
-print_success "✅ GTK3/GTK4 configured with YAMIS + forced dark mode"
+    print_success "✅ GTK3/GTK4 configured with YAMIS + Adwaita-dark"
 
-# ----------------------------
-# Qt/KDE Settings (force YAMIS)
-# ----------------------------
-KDEGLOBALS="$USER_HOME/.config/kdeglobals"
-sudo -u "$USER_NAME" mkdir -p "$(dirname "$KDEGLOBALS")"
+    run_command "sudo -u $USER_NAME gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark" "Force GTK dark"
+    run_command "sudo -u $USER_NAME gsettings set org.gnome.desktop.interface icon-theme YAMIS" "Force YAMIS icons"
 
-# Ensure [Icons] section exists and is correct
-if ! grep -q "^\[Icons\]" "$KDEGLOBALS" 2>/dev/null; then
-    echo -e "[Icons]\nTheme=YAMIS" | sudo -u "$USER_NAME" tee -a "$KDEGLOBALS" >/dev/null
+    # ----------------------------
+    # Qt/KDE Settings (force YAMIS)
+    # ----------------------------
+    KDEGLOBALS="$USER_HOME/.config/kdeglobals"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$KDEGLOBALS")"
+
+    if ! grep -q "^\[Icons\]" "$KDEGLOBALS" 2>/dev/null; then
+        echo -e "[Icons]\nTheme=YAMIS" | sudo -u "$USER_NAME" tee -a "$KDEGLOBALS" >/dev/null
+    else
+        sudo -u "$USER_NAME" sed -i '/^\[Icons\]/,/^\[/ s/^Theme=.*/Theme=YAMIS/' "$KDEGLOBALS"
+    fi
+
+    print_success "✅ Qt/KDE apps forced to use YAMIS"
+
 else
-    sudo -u "$USER_NAME" sed -i '/^\[Icons\]/,/^\[/ s/^Theme=.*/Theme=YAMIS/' "$KDEGLOBALS"
+    print_warning "Icon archive not found at $ICONS_SRC, skipping icon + theme setup"
 fi
 
-print_success "✅ Qt/KDE apps forced to use YAMIS"
 
-# ----------------------------
-# Final message
-# ----------------------------
-print_success "\n✅ Installation complete!"
-echo -e "\n╔════════════════════════════════════════════════════════════╗"
-echo -e "║         Pywal Template System Setup Complete! 🎨          ║"
-echo -e "╚════════════════════════════════════════════════════════════╝"
-echo ""
-echo "📁 Configuration Structure:"
-echo "   • Static configs: ~/.config/{hypr,waybar,yazi,fastfetch}/"
-echo "   • Pywal templates: ~/.config/wal/templates/"
-echo "   • Generated configs: ~/.cache/wal/ (symlinked)"
-echo ""
-echo "🎨 How the theming works:"
-echo "   1. Templates contain color variables: {color1}, {background}, etc."
-echo "   2. Run: setwall.sh <wallpaper>"
-echo "   3. Pywal generates colors from wallpaper"
-echo "   4. Templates are processed with new colors"
-echo "   5. Symlinked configs update automatically"
-echo "   6. Services reload with new theme"
-echo ""
-echo "🚀 Next Steps:"
-echo "   1. Reboot or log out"
-echo "   2. Select 'Hyprland' in SDDM"
-echo "   3. Run: ~/.config/scripts/setwall.sh"
-echo "   4. Pick a wallpaper with: Super+W"
-echo ""
-echo "📖 Keybinds:"
-echo "   • Super+W = Wallpaper picker"
-echo "   • Super+D = App launcher"
-echo "   • Super+Return = Terminal"
-echo "   • Super+F = File manager (Yazi)"
-echo ""
-print_success "Enjoy your themed Hyprland setup! 🎉"
