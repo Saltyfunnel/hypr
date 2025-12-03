@@ -321,58 +321,11 @@ EOF
     fi
     print_success "✅ Qt/KDE apps configured to use YAMIS icons"
 
-    # Thunar-specific dark mode settings via xfconf
-    XFCE_SETTINGS="$USER_HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml"
-    sudo -u "$USER_NAME" mkdir -p "$(dirname "$XFCE_SETTINGS")"
-    sudo -u "$USER_NAME" tee "$XFCE_SETTINGS" >/dev/null <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xsettings" version="1.0">
-  <property name="Net" type="empty">
-    <property name="ThemeName" type="string" value="Adwaita-dark"/>
-    <property name="IconThemeName" type="string" value="YAMIS"/>
-  </property>
-  <property name="Gtk" type="empty">
-    <property name="ColorScheme" type="string" value="prefer-dark"/>
-  </property>
-</channel>
-EOF
     print_success "✅ XFCE/Thunar dark mode configured via xfconf"
 
 else
     print_warning "Icon archive not found at $ICONS_SRC, skipping icon installation"
 fi
-
-# ----------------------------
-# Force GTK Dark Mode via Environment Variables
-# ----------------------------
-print_header "Forcing GTK dark mode via environment variables"
-
-# Add to Hyprland config to set env vars for ALL GTK apps
-HYPR_ENV_FILE="$CONFIG_DIR/hypr/env.conf"
-sudo -u "$USER_NAME" tee "$HYPR_ENV_FILE" >/dev/null <<EOF
-# Force GTK dark mode
-env = GTK_THEME,Adwaita:dark
-env = GTK2_RC_FILES,/usr/share/themes/Adwaita-dark/gtk-2.0/gtkrc
-EOF
-
-# Source this in hyprland.conf if not already
-HYPRLAND_CONF="$CONFIG_DIR/hypr/hyprland.conf"
-if [[ -f "$HYPRLAND_CONF" ]] && ! grep -q "source.*env.conf" "$HYPRLAND_CONF"; then
-    sudo -u "$USER_NAME" sed -i '1i source = ~/.config/hypr/env.conf' "$HYPRLAND_CONF"
-    print_success "✅ Added env.conf source to hyprland.conf"
-fi
-
-# Also add to .bashrc for terminal sessions
-if ! grep -q "GTK_THEME=Adwaita:dark" "$USER_HOME/.bashrc"; then
-    sudo -u "$USER_NAME" tee -a "$USER_HOME/.bashrc" >/dev/null <<'EOF'
-
-# Force GTK apps to use dark theme
-export GTK_THEME=Adwaita:dark
-EOF
-    print_success "✅ Added GTK_THEME to .bashrc"
-fi
-
-print_success "✅ GTK dark mode environment variables set"
 
 # ----------------------------
 # Final message
