@@ -321,49 +321,58 @@ EOF
     fi
     print_success "✅ Qt/KDE apps configured to use YAMIS icons"
 
-    # Thunar-specific dark mode settings
-    THUNAR_RC="$USER_HOME/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml"
-    sudo -u "$USER_NAME" mkdir -p "$(dirname "$THUNAR_RC")"
-    sudo -u "$USER_NAME" tee "$THUNAR_RC" >/dev/null <<EOF
+    # Thunar-specific dark mode settings via xfconf
+    XFCE_SETTINGS="$USER_HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$XFCE_SETTINGS")"
+    sudo -u "$USER_NAME" tee "$XFCE_SETTINGS" >/dev/null <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
-<channel name="thunar" version="1.0">
-  <property name="misc-folder-item-count" type="string" value="THUNAR_FOLDER_ITEM_COUNT_ALWAYS"/>
-  <property name="misc-text-beside-icons" type="bool" value="false"/>
-  <property name="misc-thumbnail-mode" type="string" value="THUNAR_THUMBNAIL_MODE_ALWAYS"/>
-  <property name="shortcuts-icon-size" type="string" value="THUNAR_ICON_SIZE_SMALLEST"/>
+<channel name="xsettings" version="1.0">
+  <property name="Net" type="empty">
+    <property name="ThemeName" type="string" value="Adwaita-dark"/>
+    <property name="IconThemeName" type="string" value="YAMIS"/>
+  </property>
+  <property name="Gtk" type="empty">
+    <property name="ColorScheme" type="string" value="prefer-dark"/>
+  </property>
 </channel>
 EOF
-    print_success "✅ Thunar configuration created"
+    print_success "✅ XFCE/Thunar dark mode configured via xfconf"
 
 else
     print_warning "Icon archive not found at $ICONS_SRC, skipping icon installation"
 fi
 
 # ----------------------------
-# Apply GTK settings immediately with xfsettingsd
+# Force GTK Dark Mode via Environment Variables
 # ----------------------------
-print_header "Applying GTK theme settings"
+print_header "Forcing GTK dark mode via environment variables"
 
-# Force GTK to use dark theme via glib schemas
-GLIB_SCHEMA_DIR="$USER_HOME/.local/share/glib-2.0/schemas"
-sudo -u "$USER_NAME" mkdir -p "$GLIB_SCHEMA_DIR"
-sudo -u "$USER_NAME" tee "$GLIB_SCHEMA_DIR/99_custom.gschema.override" >/dev/null <<EOF
-[org.gnome.desktop.interface]
-color-scheme='prefer-dark'
-gtk-theme='Adwaita-dark'
-icon-theme='YAMIS'
+# Add to Hyprland config to set env vars for ALL GTK apps
+HYPR_ENV_FILE="$CONFIG_DIR/hypr/env.conf"
+sudo -u "$USER_NAME" tee "$HYPR_ENV_FILE" >/dev/null <<EOF
+# Force GTK dark mode
+env = GTK_THEME,Adwaita:dark
+env = GTK2_RC_FILES,/usr/share/themes/Adwaita-dark/gtk-2.0/gtkrc
 EOF
-run_command "glib-compile-schemas $GLIB_SCHEMA_DIR" "Compile glib schemas"
-print_success "✅ GTK dark mode forced via glib schemas"
 
-# Also set dconf directly (this actually works)
-sudo -u "$USER_NAME" dbus-run-session bash -c "
-    dconf write /org/gnome/desktop/interface/color-scheme \"'prefer-dark'\"
-    dconf write /org/gnome/desktop/interface/gtk-theme \"'Adwaita-dark'\"
-    dconf write /org/gnome/desktop/interface/icon-theme \"'YAMIS'\"
-" 2>/dev/null || print_warning "dconf settings may not have applied (will apply on login)"
+# Source this in hyprland.conf if not already
+HYPRLAND_CONF="$CONFIG_DIR/hypr/hyprland.conf"
+if [[ -f "$HYPRLAND_CONF" ]] && ! grep -q "source.*env.conf" "$HYPRLAND_CONF"; then
+    sudo -u "$USER_NAME" sed -i '1i source = ~/.config/hypr/env.conf' "$HYPRLAND_CONF"
+    print_success "✅ Added env.conf source to hyprland.conf"
+fi
 
-print_success "✅ GTK settings configured"
+# Also add to .bashrc for terminal sessions
+if ! grep -q "GTK_THEME=Adwaita:dark" "$USER_HOME/.bashrc"; then
+    sudo -u "$USER_NAME" tee -a "$USER_HOME/.bashrc" >/dev/null <<'EOF'
+
+# Force GTK apps to use dark theme
+export GTK_THEME=Adwaita:dark
+EOF
+    print_success "✅ Added GTK_THEME to .bashrc"
+fi
+
+print_success "✅ GTK dark mode environment variables set"
 
 # ----------------------------
 # Final message
