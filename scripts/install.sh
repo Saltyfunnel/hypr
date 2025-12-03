@@ -308,6 +308,18 @@ else
 fi
 
 # ----------------------------
+# Apply GTK & Icon theme immediately via gsettings
+# ----------------------------
+print_header "Applying GTK & Icon theme immediately"
+
+# GTK3/GTK4 icon and theme
+sudo -u "$USER_NAME" dbus-launch gsettings set org.gnome.desktop.interface icon-theme 'YAMIS'
+sudo -u "$USER_NAME" dbus-launch gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+
+print_success "✅ GTK3/GTK4 icon/theme applied immediately"
+
+
+# ----------------------------
 # Final message
 # ----------------------------
 print_success "\n✅ Installation complete!"
