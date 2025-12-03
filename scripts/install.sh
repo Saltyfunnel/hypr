@@ -62,6 +62,21 @@ print_header "Updating system"
 run_command "pacman -Syyu --noconfirm" "System update"
 
 # ----------------------------
+# Enable Pacman ILoveCandy
+# ----------------------------
+print_header "Enabling Pacman ILoveCandy"
+PACMAN_CONF="/etc/pacman.conf"
+
+# Add ILoveCandy under [options] if not already present
+if ! grep -q "^ILoveCandy" "$PACMAN_CONF"; then
+    sed -i '/^\[options\]/a ILoveCandy' "$PACMAN_CONF"
+    print_success "✅ ILoveCandy added to pacman.conf"
+else
+    print_success "ILoveCandy already present in pacman.conf"
+fi
+
+
+# ----------------------------
 # GPU Drivers
 # ----------------------------
 print_header "Detecting GPU"
