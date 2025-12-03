@@ -84,7 +84,7 @@ print_header "Installing core packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww mako grim slurp kitty nano wget jq oculante btop steam
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
-    thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa nwg-look papirus-icon-theme
+    thunar gvfs gvfs-mtp gvfs-gphoto2 gvfs-smb udisks2 chafa
     thunar-archive-plugin thunar-volman tumbler ffmpegthumbnailer file-roller
     firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2
@@ -279,6 +279,50 @@ fi
 # ----------------------------
 print_header "Setting up SDDM"
 run_command "systemctl enable sddm.service" "Enable SDDM login manager"
+
+# ----------------------------
+# Install and Set Icon Theme
+# ----------------------------
+print_header "Installing Yet Another Monochrome Icon Set (YAMIS)"
+
+ICONS_SRC="$REPO_ROOT/configs/icons/yet-another-monochrome-icon-set.tar.gz"
+ICON_THEME_DEST="$USER_HOME/.icons"
+
+if [[ -f "$ICONS_SRC" ]]; then
+    sudo -u "$USER_NAME" mkdir -p "$ICON_THEME_DEST"
+    
+    # Extract tar.gz into ~/.icons
+    sudo -u "$USER_NAME" tar -xzf "$ICONS_SRC" -C "$ICON_THEME_DEST"
+    
+    # Ensure correct permissions
+    sudo -u "$USER_NAME" chmod -R 755 "$ICON_THEME_DEST/YAMIS"
+    
+    print_success "✅ YAMIS icon theme installed to $ICON_THEME_DEST/YAMIS"
+
+    # Set as default GTK icon theme (GTK3 + GTK4)
+    GTK_SETTINGS="$USER_HOME/.config/gtk-3.0/settings.ini"
+    GTK4_SETTINGS="$USER_HOME/.config/gtk-4.0/settings.ini"
+
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK_SETTINGS")"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK4_SETTINGS")"
+
+    # GTK3
+    cat <<EOF | sudo -u "$USER_NAME" tee "$GTK_SETTINGS" >/dev/null
+[Settings]
+gtk-icon-theme-name = YAMIS
+EOF
+
+    # GTK4
+    cat <<EOF | sudo -u "$USER_NAME" tee "$GTK4_SETTINGS" >/dev/null
+[Settings]
+gtk-icon-theme-name = YAMIS
+EOF
+
+    print_success "✅ YAMIS set as default GTK3/GTK4 icon theme"
+
+else
+    print_warning "Icon archive not found at $ICONS_SRC, skipping icon installation"
+fi
 
 # ----------------------------
 # Final message
