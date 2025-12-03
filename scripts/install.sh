@@ -296,9 +296,9 @@ print_header "Setting up SDDM"
 run_command "systemctl enable sddm.service" "Enable SDDM login manager"
 
 # ----------------------------
-# Install and Set Icon Theme
+# Install and Apply YAMIS Icon Theme + Dark Mode
 # ----------------------------
-print_header "Installing Yet Another Monochrome Icon Set (YAMIS)"
+print_header "Installing Yet Another Monochrome Icon Set (YAMIS) and enabling dark mode"
 
 ICONS_SRC="$REPO_ROOT/configs/icons/yet-another-monochrome-icon-set.tar.gz"
 ICON_THEME_DEST="$USER_HOME/.icons"
@@ -314,26 +314,44 @@ if [[ -f "$ICONS_SRC" ]]; then
     
     print_success "✅ YAMIS icon theme installed to $ICON_THEME_DEST/YAMIS"
 
-    # Set as default GTK icon theme (GTK3 + GTK4)
-    GTK_SETTINGS="$USER_HOME/.config/gtk-3.0/settings.ini"
+    # ----------------------------
+    # GTK3 & GTK4 Settings
+    # ----------------------------
+    GTK3_SETTINGS="$USER_HOME/.config/gtk-3.0/settings.ini"
     GTK4_SETTINGS="$USER_HOME/.config/gtk-4.0/settings.ini"
 
-    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK_SETTINGS")"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK3_SETTINGS")"
     sudo -u "$USER_NAME" mkdir -p "$(dirname "$GTK4_SETTINGS")"
 
-    # GTK3
-    cat <<EOF | sudo -u "$USER_NAME" tee "$GTK_SETTINGS" >/dev/null
+    for GTK_CONF in "$GTK3_SETTINGS" "$GTK4_SETTINGS"; do
+        sudo -u "$USER_NAME" tee "$GTK_CONF" >/dev/null <<EOF
 [Settings]
 gtk-icon-theme-name = YAMIS
+gtk-application-prefer-dark-theme = 1
 EOF
+    done
 
-    # GTK4
-    cat <<EOF | sudo -u "$USER_NAME" tee "$GTK4_SETTINGS" >/dev/null
-[Settings]
-gtk-icon-theme-name = YAMIS
-EOF
+    print_success "✅ GTK3/GTK4 configured with YAMIS and dark mode"
 
-    print_success "✅ YAMIS set as default GTK3/GTK4 icon theme"
+    # Apply icon theme immediately for GTK apps
+    sudo -u "$USER_NAME" dbus-launch gsettings set org.gnome.desktop.interface icon-theme "YAMIS"
+    sudo -u "$USER_NAME" dbus-launch gsettings set org.gnome.desktop.interface gtk-application-prefer-dark-theme true
+    print_success "✅ GTK icon theme applied immediately via gsettings"
+
+    # ----------------------------
+    # Qt/KDE Settings
+    # ----------------------------
+    KDEGLOBALS="$USER_HOME/.config/kdeglobals"
+    sudo -u "$USER_NAME" mkdir -p "$(dirname "$KDEGLOBALS")"
+
+    if ! grep -q "^\[Icons\]" "$KDEGLOBALS" 2>/dev/null; then
+        echo -e "[Icons]\nTheme=YAMIS" | sudo -u "$USER_NAME" tee -a "$KDEGLOBALS" >/dev/null
+    else
+        sudo -u "$USER_NAME" sed -i '/^\[Icons\]/,/^\[/ s/^Theme=.*/Theme=YAMIS/' "$KDEGLOBALS" || \
+        echo -e "\n[Icons]\nTheme=YAMIS" | sudo -u "$USER_NAME" tee -a "$KDEGLOBALS" >/dev/null
+    fi
+
+    print_success "✅ Qt/KDE apps configured with YAMIS"
 
 else
     print_warning "Icon archive not found at $ICONS_SRC, skipping icon installation"
