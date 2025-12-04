@@ -279,37 +279,6 @@ print_header "Setting up SDDM"
 run_command "systemctl enable sddm.service" "Enable SDDM login manager"
 
 # ----------------------------
-# Optional SDDM Theme Setup
-# ----------------------------
-print_header "Optional: Install SDDM Theme (NeonSky)"
-
-read -rp "Do you want to install the NeonSky SDDM theme? (y/N): " INSTALL_SDDM_THEME
-INSTALL_SDDM_THEME=${INSTALL_SDDM_THEME,,}  # lowercase
-
-if [[ "$INSTALL_SDDM_THEME" == "y" || "$INSTALL_SDDM_THEME" == "yes" ]]; then
-    TEMP_DIR=$(mktemp -d)
-    THEME_PATH="$TEMP_DIR/sddm-neonsky-theme" # Define a variable for clarity
-    
-    print_header "Cloning NeonSky theme into $THEME_PATH"
-    run_command "git clone https://github.com/Saltyfunnel/sddm-neonsky-theme $THEME_PATH" "Clone NeonSky theme"
-
-    # --- ADDED CHMOD +x STEP ---
-    print_header "Setting execute permission for install.sh"
-    run_command "chmod +x $THEME_PATH/install.sh" "Set execute permission"
-    # ---------------------------
-
-    print_header "Installing NeonSky theme"
-    # Using the absolute path to execute the script with sudo
-    run_command "sudo $THEME_PATH/install.sh" "Run NeonSky install.sh"
-
-    print_success "✅ NeonSky SDDM theme installed!"
-    rm -rf "$TEMP_DIR"
-else
-    print_success "Skipped NeonSky SDDM theme installation"
-fi
-
-
-# ----------------------------
 # Final message
 # ----------------------------
 print_success "\n✅ Installation complete!"
