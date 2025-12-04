@@ -85,7 +85,7 @@ PACMAN_PACKAGES=(
     hyprland waybar swww mako grim slurp kitty nano wget jq btop steam
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
     udisks2 chafa firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
-    qt5-wayland qt6-wayland gtk3 gtk4 libgit2
+    qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
