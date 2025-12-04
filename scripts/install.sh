@@ -288,11 +288,19 @@ INSTALL_SDDM_THEME=${INSTALL_SDDM_THEME,,}  # lowercase
 
 if [[ "$INSTALL_SDDM_THEME" == "y" || "$INSTALL_SDDM_THEME" == "yes" ]]; then
     TEMP_DIR=$(mktemp -d)
-    print_header "Cloning NeonSky theme into $TEMP_DIR"
-    run_command "git clone https://github.com/Saltyfunnel/sddm-neonsky-theme.git $TEMP_DIR/sddm-neonsky-theme" "Clone NeonSky theme"
+    THEME_PATH="$TEMP_DIR/sddm-neonsky-theme" # Define a variable for clarity
+    
+    print_header "Cloning NeonSky theme into $THEME_PATH"
+    run_command "git clone https://github.com/Saltyfunnel/sddm-neonsky-theme $THEME_PATH" "Clone NeonSky theme"
+
+    # --- ADDED CHMOD +x STEP ---
+    print_header "Setting execute permission for install.sh"
+    run_command "chmod +x $THEME_PATH/install.sh" "Set execute permission"
+    # ---------------------------
 
     print_header "Installing NeonSky theme"
-    run_command "cd $TEMP_DIR/sddm-neonsky-theme && sudo sh install.sh" "Run NeonSky install.sh"
+    # Using the absolute path to execute the script with sudo
+    run_command "sudo $THEME_PATH/install.sh" "Run NeonSky install.sh"
 
     print_success "✅ NeonSky SDDM theme installed!"
     rm -rf "$TEMP_DIR"
