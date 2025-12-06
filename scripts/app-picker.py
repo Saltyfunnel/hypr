@@ -11,7 +11,7 @@ APP_DIRS = [
     Path.home() / ".local/share/applications",
     Path("/usr/share/applications"),
 ]
-OPACITY = 210
+OPACITY = 255 # Solid opacity for a crisp, non-transparent look
 ICON_SIZE = QtCore.QSize(30, 30)
 
 EXCLUDE_KEYWORDS = [
@@ -24,7 +24,16 @@ FONT_NAME = "Fira Code"
 FONT_SIZE = 10
 TERMINAL = "kitty"  # Customize your preferred terminal
 
+# --- Custom Delegate (Crucial for alignment fix) ---
+class NoMarginItemDelegate(QtWidgets.QStyledItemDelegate):
+    def sizeHint(self, option, index):
+        size = super().sizeHint(option, index)
+        # Force width to fill the view's available space
+        if option.widget:
+            size.setWidth(option.rect.width())
+        return size
 
+# --- Main App Picker Class ---
 class AppPicker(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -52,17 +61,14 @@ class AppPicker(QtWidgets.QWidget):
         self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
         self.SHOW_APP_ICONS = True
 
-        # --- Translucent background mixing ---
-        LIGHTEN = 2
+        # --- Solid Background Color ---
         base = QtGui.QColor(self.BG)
-        white = QtGui.QColor("#ffffff")
-        mix = LIGHTEN / 100
-        r = int(base.red() * (1 - mix) + white.red() * mix)
-        g = int(base.green() * (1 - mix) + white.green() * mix)
-        b = int(base.blue() * (1 - mix) + white.blue() * mix)
-        final = QtGui.QColor(r, g, b)
+        final = base
         final.setAlpha(OPACITY)
-        self.rgba_bg = f"rgba({r},{g},{b},{final.alpha()})"
+        self.rgba_bg = f"rgba({final.red()},{final.green()},{final.blue()},{final.alpha()})"
+        
+        # Determine colors for the search bar background (a lighter version of BG)
+        search_bg_color = QtGui.QColor(self.BG).lighter(120).name()
 
         # --- Search bar ---
         self.search_input = QtWidgets.QLineEdit()
@@ -71,7 +77,7 @@ class AppPicker(QtWidgets.QWidget):
         self.search_input.returnPressed.connect(self.launch_selected)
         self.search_input.keyPressEvent = self.search_key_press_event
 
-        arch_icon = self.get_themed_logo("archlinux-logo", self.FG)
+        arch_icon = self.get_themed_logo("system-search", self.ACCENT) # Using system-search
         self.search_input.addAction(
             QtGui.QAction(arch_icon, "", self.search_input),
             QtWidgets.QLineEdit.ActionPosition.LeadingPosition
@@ -81,12 +87,16 @@ class AppPicker(QtWidgets.QWidget):
         self.list_view = QtWidgets.QListView()
         self.list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        self.list_view.setResizeMode(QtWidgets.QListView.ResizeMode.Adjust) 
+        
+        # Set the custom delegate for guaranteed full-width drawing
+        self.delegate = NoMarginItemDelegate(self.list_view)
+        self.list_view.setItemDelegate(self.delegate) 
 
         # Disable scrollbars fully
         self.list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.list_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        self.list_view.doubleClicked.connect(self.launch_selected)
         self.list_view.doubleClicked.connect(self.launch_selected)
 
         # Model of all apps
@@ -96,24 +106,13 @@ class AppPicker(QtWidgets.QWidget):
         # Initially show main model
         self.list_view.setModel(self.model)
 
-        # --- Frame ---
-        self.main_frame = QtWidgets.QFrame()
-        inner = QtWidgets.QVBoxLayout(self.main_frame)
-        inner.addWidget(self.search_input)
-        inner.addWidget(self.list_view)
-        inner.setContentsMargins(12, 12, 12, 12)
-
-        # Drop shadow
-        shadow = QtWidgets.QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(40)
-        shadow.setOffset(0, 4)
-        shadow.setColor(QtGui.QColor(0, 0, 0, 160))
-        self.main_frame.setGraphicsEffect(shadow)
-
-        # Outer container
+        # --- Outer container (main layout) ---
         outer = QtWidgets.QVBoxLayout(self)
-        outer.addWidget(self.main_frame)
-        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(self.search_input)
+        outer.addWidget(self.list_view)
+        # Reduce main window padding slightly for a tighter fit
+        outer.setContentsMargins(10, 10, 10, 10) 
+        outer.setSpacing(0) 
 
         self.resize(450, 500)
         self.search_input.setFocus()
@@ -125,6 +124,9 @@ class AppPicker(QtWidgets.QWidget):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_pywal_colors)
         self.timer.start(2000)
+        
+        # Store search bar color for dynamic use in apply_styles
+        self.search_bg_color = search_bg_color
 
         self.apply_styles()
         self.animate_open()
@@ -152,54 +154,65 @@ class AppPicker(QtWidgets.QWidget):
         scale.start()
         self.scale_anim = scale
 
-    # --- Styles ---
+    # --- Styles: Modern Flat & Crisp ---
     def apply_styles(self):
         font = QtGui.QFont(FONT_NAME, FONT_SIZE)
         self.setFont(font)
         self.search_input.setFont(font)
         self.list_view.setFont(font)
 
-        self.search_input.setStyleSheet(f"""
-            QLineEdit {{
-                border: 2px solid {self.ACCENT};
-                border-radius: 6px;
-                padding: 5px 10px;
-                color: {self.FG};
-                background-color: {self.BG};
+        # Style for the main window (self) - Sharp corners
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {self.rgba_bg};
+                border-radius: 4px; 
+                border: 1px solid {self.ACCENT}; /* Thin border for definition */
             }}
         """)
 
+        # Style for search bar - Uses a distinct color for separation
+        self.search_input.setStyleSheet(f"""
+            QLineEdit {{
+                border: none;
+                border-bottom: 2px solid {self.ACCENT}; /* Accent line under search */
+                border-radius: 0px; 
+                padding: 6px 10px;
+                color: {self.FG};
+                background-color: {self.search_bg_color};
+            }}
+        """)
+
+        # Style for list view - Flat, full-width selection
         self.list_view.setStyleSheet(f"""
             QListView {{
                 background: transparent;
                 border: none;
                 color: {self.FG};
+                margin-top: 5px; 
+                padding-right: 0px; 
             }}
             QListView::item {{
-                padding: 6px 10px;
-                border-radius: 6px;
-                margin: 2px 4px;
+                padding: 8px 0px 8px 10px; /* Slightly more vertical padding */
+                margin: 0px; /* Zero margin for full stretch */
             }}
+            /* Full-width, accent-colored selection */
             QListView::item:selected {{
-                background: rgba(255,255,255,0.10);
-                border: 1px solid {self.ACCENT};
+                background: {self.ACCENT};
+                color: {self.BG}; /* Invert text color for selection */
+                border: none;
+                border-radius: 0px; /* Flat selection */
             }}
             QListView::item:hover {{
-                background: rgba(255,255,255,0.05);
-            }}
-        """)
-
-        self.main_frame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {self.rgba_bg};
-                border: 1px solid {self.ACCENT};
-                border-radius: 12px;
-                backdrop-filter: blur(20px);
+                background: rgba(255,255,255,0.08); /* Subtle hover */
+                border-radius: 0px;
             }}
         """)
 
     def update_pywal_colors(self):
         self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
+        # Recalculate search bar color based on new BG
+        base = QtGui.QColor(self.BG)
+        self.search_bg_color = base.lighter(120).name()
         self.apply_styles()
 
     # --- Icons ---
