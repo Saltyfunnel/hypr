@@ -182,13 +182,20 @@ if [[ -f "$WAYBAR_CONFIG_SRC" ]]; then
     print_success "✅ Copied waybar/config"
 fi
 
-# Yazi configs (all 3 files)
-for file in yazi.toml keybind.toml theme.toml; do
-    SRC="$REPO_ROOT/configs/yazi/$file"
-    if [[ -f "$SRC" ]]; then
-        sudo -u "$USER_NAME" cp "$SRC" "$CONFIG_DIR/yazi/$file"
-        print_success "✅ Copied yazi/$file"
-    fi
+# Copy ALL Yazi configuration files (including yazi.toml, keymap.toml, theme.toml, AND init.lua)
+YAZI_CONFIG_SRC="$REPO_ROOT/configs/yazi"
+YAZI_CONFIG_DEST="$CONFIG_DIR/yazi"
+
+if [[ -d "$YAZI_CONFIG_SRC" ]]; then
+    # Ensure the destination directory exists
+    sudo -u "$USER_NAME" mkdir -p "$YAZI_CONFIG_DEST"
+    
+    # Use cp -r (recursive copy) and tell it to copy everything inside the source directory
+    sudo -u "$USER_NAME" cp -r "$YAZI_CONFIG_SRC"/* "$YAZI_CONFIG_DEST/"
+    print_success "✅ Copied all files from configs/yazi/ to $YAZI_CONFIG_DEST"
+else
+    print_warning "Source directory not found: $YAZI_CONFIG_SRC. Skipping Yazi config copy."
+fi
 done
 
 # Fastfetch config
