@@ -125,7 +125,14 @@ class AppPicker(QtWidgets.QWidget):
         self.search_input.setFocus()
 
         if self.model.rowCount() > 0:
-            self.list_view.setCurrentIndex(self.proxy_model.index(0, 0))
+            initial_index = self.proxy_model.index(0, 0)
+            self.list_view.setCurrentIndex(initial_index)
+            
+            # 🌟 SCROLL ADJUSTMENT on OPENING 
+            self.list_view.scrollTo(
+                initial_index,
+                QtWidgets.QAbstractItemView.ScrollHint.PositionAtCenter
+            )
 
         # Periodically re-read pywal colors
         self.timer = QtCore.QTimer()
@@ -158,7 +165,7 @@ class AppPicker(QtWidgets.QWidget):
         scale.start()
         self.scale_anim = scale
 
-    # --- Styles (Minor refinement to selection/hover aesthetics) ---
+    # --- Styles (Same as previous version) ---
     def apply_styles(self):
         font = QtGui.QFont(FONT_NAME, FONT_SIZE)
         self.setFont(font)
@@ -318,7 +325,14 @@ class AppPicker(QtWidgets.QWidget):
 
         # Select the first item if the list isn't empty
         if self.proxy_model.rowCount() > 0:
-            self.list_view.setCurrentIndex(self.proxy_model.index(0, 0))
+            index = self.proxy_model.index(0, 0)
+            self.list_view.setCurrentIndex(index)
+            
+            # 🌟 SCROLL ADJUSTMENT on FILTERING
+            self.list_view.scrollTo(
+                index,
+                QtWidgets.QAbstractItemView.ScrollHint.PositionAtCenter
+            )
 
     # --- Launch selected app (Same) ---
     def launch_selected(self):
