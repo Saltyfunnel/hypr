@@ -12,7 +12,7 @@ APP_DIRS = [
     Path("/usr/share/applications"),
 ]
 OPACITY = 210
-ICON_SIZE = QtCore.QSize(30, 30) # Used by setIconSize below
+ICON_SIZE = QtCore.QSize(30, 30)
 
 EXCLUDE_KEYWORDS = [
     "ssh", "server", "avahi", "browser", "helper",
@@ -66,6 +66,11 @@ class AppPicker(QtWidgets.QWidget):
 
         # --- Search bar ---
         self.search_input = QtWidgets.QLineEdit()
+        # 🌟 FIX: Ensure the search input is properly sized horizontally
+        self.search_input.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed
+        )
         self.search_input.setPlaceholderText("Search applications…")
         self.search_input.textChanged.connect(self.filter_list)
         self.search_input.returnPressed.connect(self.launch_selected)
@@ -81,10 +86,7 @@ class AppPicker(QtWidgets.QWidget):
         self.list_view = QtWidgets.QListView()
         self.list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        
-        # 🌟 FIX: Set the icon size directly on the view to reserve space
-        self.list_view.setIconSize(ICON_SIZE) 
-        self.list_view.setUniformItemSizes(True)
+        self.list_view.setUniformItemSizes(True) # Kept for consistency
 
         # Disable scrollbars fully
         self.list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -316,7 +318,7 @@ class AppPicker(QtWidgets.QWidget):
         else:
             QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
 
-    # --- Model population (Cleaned up) ---
+    # --- Model population (Reverted to working state) ---
     def populate_model(self):
         self.model.clear()
         for app in sorted(self.applications, key=lambda a: a["Name"]):
