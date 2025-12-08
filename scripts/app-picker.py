@@ -12,6 +12,7 @@ APP_DIRS = [
     Path("/usr/share/applications"),
 ]
 OPACITY = 210
+# 🚨 IMPORTANT: ICON_SIZE is used to calculate the height of the list item
 ICON_SIZE = QtCore.QSize(30, 30)
 
 EXCLUDE_KEYWORDS = [
@@ -81,6 +82,8 @@ class AppPicker(QtWidgets.QWidget):
         self.list_view = QtWidgets.QListView()
         self.list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        # Set uniform row height to help ensure consistent sizing
+        self.list_view.setUniformItemSizes(True)
 
         # Disable scrollbars fully
         self.list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -138,7 +141,7 @@ class AppPicker(QtWidgets.QWidget):
                 QtWidgets.QAbstractItemView.ScrollHint.PositionAtCenter
             )
             
-            # 🌟 FIX: Force repaint and layout recalculation on initial open
+            # Force repaint and layout recalculation on initial open
             self.list_view.updateGeometries() 
             self.list_view.viewport().update()
 
@@ -173,7 +176,7 @@ class AppPicker(QtWidgets.QWidget):
         scale.start()
         self.scale_anim = scale
 
-    # --- Styles (Same) ---
+    # --- Styles (Adjusted Padding) ---
     def apply_styles(self):
         font = QtGui.QFont(FONT_NAME, FONT_SIZE)
         self.setFont(font)
@@ -198,7 +201,7 @@ class AppPicker(QtWidgets.QWidget):
                 outline: 0; /* Remove focus rectangle */
             }}
             QListView::item {{
-                padding: 6px 10px;
+                padding: 6px 12px; /* Adjusted padding */
                 border-radius: 6px;
                 margin: 2px 4px;
             }}
@@ -312,21 +315,25 @@ class AppPicker(QtWidgets.QWidget):
         else:
             QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
 
-    # --- Model population (Same) ---
+    # --- Model population (Fixed Geometry) ---
     def populate_model(self):
         self.model.clear()
         for app in sorted(self.applications, key=lambda a: a["Name"]):
             item = QtGui.QStandardItem(app["Name"])
             if self.SHOW_APP_ICONS:
                 item.setIcon(self.get_app_icon(app.get("Icon", "")))
+                
+                # 🌟 FIX: Force size hint based on icon size + padding buffer
+                # ICON_SIZE is (30, 30). Adding a buffer of 15 (6px padding top + 6px padding bottom + margin/font height)
+                item.setSizeHint(QtCore.QSize(ICON_SIZE.width(), ICON_SIZE.height() + 15)) 
+                
             item.setData(app["Exec"], QtCore.Qt.ItemDataRole.UserRole)
             item.setData(app["Terminal"], QtCore.Qt.ItemDataRole.UserRole + 1)
             self.model.appendRow(item)
 
-    # --- Substring Search Reverted (Original Logic) ---
+    # --- Substring Search Reverted (With Repaint) ---
     def filter_list(self, text):
         # Set the filter using a regex pattern that matches the text anywhere
-        # This is simple substring matching
         regex = QtCore.QRegularExpression(text, 
             QtCore.QRegularExpression.PatternOption.CaseInsensitiveOption)
         self.proxy_model.setFilterRegularExpression(regex)
@@ -342,7 +349,7 @@ class AppPicker(QtWidgets.QWidget):
                 QtWidgets.QAbstractItemView.ScrollHint.PositionAtCenter
             )
             
-            # 🌟 FIX: Force repaint and layout recalculation on filter change
+            # Force repaint and layout recalculation on filter change
             self.list_view.updateGeometries()
             self.list_view.viewport().update()
 
