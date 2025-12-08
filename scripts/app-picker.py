@@ -11,7 +11,7 @@ APP_DIRS = [
     Path.home() / ".local/share/applications",
     Path("/usr/share/applications"),
 ]
-OPACITY = 255 # Solid opacity for a crisp, non-transparent look
+OPACITY = 210
 ICON_SIZE = QtCore.QSize(30, 30)
 
 EXCLUDE_KEYWORDS = [
@@ -24,16 +24,7 @@ FONT_NAME = "Fira Code"
 FONT_SIZE = 10
 TERMINAL = "kitty"  # Customize your preferred terminal
 
-# --- Custom Delegate (Crucial for alignment fix) ---
-class NoMarginItemDelegate(QtWidgets.QStyledItemDelegate):
-    def sizeHint(self, option, index):
-        size = super().sizeHint(option, index)
-        # Force width to fill the view's available space
-        if option.widget:
-            size.setWidth(option.rect.width())
-        return size
 
-# --- Main App Picker Class ---
 class AppPicker(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -61,14 +52,17 @@ class AppPicker(QtWidgets.QWidget):
         self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
         self.SHOW_APP_ICONS = True
 
-        # --- Solid Background Color ---
+        # --- Translucent background mixing (Using your original logic) ---
+        LIGHTEN = 2
         base = QtGui.QColor(self.BG)
-        final = base
+        white = QtGui.QColor("#ffffff")
+        mix = LIGHTEN / 100
+        r = int(base.red() * (1 - mix) + white.red() * mix)
+        g = int(base.green() * (1 - mix) + white.green() * mix)
+        b = int(base.blue() * (1 - mix) + white.blue() * mix)
+        final = QtGui.QColor(r, g, b)
         final.setAlpha(OPACITY)
-        self.rgba_bg = f"rgba({final.red()},{final.green()},{final.blue()},{final.alpha()})"
-        
-        # Determine colors for the search bar background (a lighter version of BG)
-        search_bg_color = QtGui.QColor(self.BG).lighter(120).name()
+        self.rgba_bg = f"rgba({r},{g},{b},{final.alpha()})"
 
         # --- Search bar ---
         self.search_input = QtWidgets.QLineEdit()
@@ -77,7 +71,7 @@ class AppPicker(QtWidgets.QWidget):
         self.search_input.returnPressed.connect(self.launch_selected)
         self.search_input.keyPressEvent = self.search_key_press_event
 
-        arch_icon = self.get_themed_logo("system-search", self.ACCENT) # Using system-search
+        arch_icon = self.get_themed_logo("archlinux-logo", self.FG)
         self.search_input.addAction(
             QtGui.QAction(arch_icon, "", self.search_input),
             QtWidgets.QLineEdit.ActionPosition.LeadingPosition
@@ -87,52 +81,62 @@ class AppPicker(QtWidgets.QWidget):
         self.list_view = QtWidgets.QListView()
         self.list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        self.list_view.setResizeMode(QtWidgets.QListView.ResizeMode.Adjust) 
-        
-        # Set the custom delegate for guaranteed full-width drawing
-        self.delegate = NoMarginItemDelegate(self.list_view)
-        self.list_view.setItemDelegate(self.delegate) 
 
         # Disable scrollbars fully
         self.list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.list_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.list_view.doubleClicked.connect(self.launch_selected)
+        
+        # Proxy model for filtering
+        self.proxy_model = QtCore.QSortFilterProxyModel()
+        self.proxy_model.setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
+        self.proxy_model.setFilterRole(QtCore.Qt.ItemDataRole.DisplayRole)
 
         # Model of all apps
         self.model = QtGui.QStandardItemModel()
         self.populate_model()
+        
+        self.proxy_model.setSourceModel(self.model)
 
         # Initially show main model
-        self.list_view.setModel(self.model)
+        self.list_view.setModel(self.proxy_model)
 
-        # --- Outer container (main layout) ---
+        # --- Frame ---
+        self.main_frame = QtWidgets.QFrame()
+        inner = QtWidgets.QVBoxLayout(self.main_frame)
+        inner.addWidget(self.search_input)
+        inner.addWidget(self.list_view)
+        inner.setContentsMargins(12, 12, 12, 12)
+
+        # Drop shadow
+        shadow = QtWidgets.QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(40)
+        shadow.setOffset(0, 4)
+        shadow.setColor(QtGui.QColor(0, 0, 0, 160))
+        self.main_frame.setGraphicsEffect(shadow)
+
+        # Outer container
         outer = QtWidgets.QVBoxLayout(self)
-        outer.addWidget(self.search_input)
-        outer.addWidget(self.list_view)
-        # Reduce main window padding slightly for a tighter fit
-        outer.setContentsMargins(10, 10, 10, 10) 
-        outer.setSpacing(0) 
+        outer.addWidget(self.main_frame)
+        outer.setContentsMargins(0, 0, 0, 0)
 
         self.resize(450, 500)
         self.search_input.setFocus()
 
         if self.model.rowCount() > 0:
-            self.list_view.setCurrentIndex(self.model.index(0, 0))
+            self.list_view.setCurrentIndex(self.proxy_model.index(0, 0))
 
         # Periodically re-read pywal colors
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_pywal_colors)
         self.timer.start(2000)
-        
-        # Store search bar color for dynamic use in apply_styles
-        self.search_bg_color = search_bg_color
 
         self.apply_styles()
         self.animate_open()
         self.show()
 
-    # --- Animations ---
+    # --- Animations (Same) ---
     def animate_open(self):
         self.setWindowOpacity(0.0)
 
@@ -154,68 +158,77 @@ class AppPicker(QtWidgets.QWidget):
         scale.start()
         self.scale_anim = scale
 
-    # --- Styles: Modern Flat & Crisp ---
+    # --- Styles (Minor refinement to selection/hover aesthetics) ---
     def apply_styles(self):
         font = QtGui.QFont(FONT_NAME, FONT_SIZE)
         self.setFont(font)
         self.search_input.setFont(font)
         self.list_view.setFont(font)
 
-        # Style for the main window (self) - Sharp corners
-        self.setStyleSheet(f"""
-            QWidget {{
-                background-color: {self.rgba_bg};
-                border-radius: 4px; 
-                border: 1px solid {self.ACCENT}; /* Thin border for definition */
-            }}
-        """)
-
-        # Style for search bar - Uses a distinct color for separation
         self.search_input.setStyleSheet(f"""
             QLineEdit {{
-                border: none;
-                border-bottom: 2px solid {self.ACCENT}; /* Accent line under search */
-                border-radius: 0px; 
-                padding: 6px 10px;
+                border: 2px solid {self.ACCENT};
+                border-radius: 6px;
+                padding: 5px 10px;
                 color: {self.FG};
-                background-color: {self.search_bg_color};
+                background-color: {self.BG};
             }}
         """)
 
-        # Style for list view - Flat, full-width selection
         self.list_view.setStyleSheet(f"""
             QListView {{
                 background: transparent;
                 border: none;
                 color: {self.FG};
-                margin-top: 5px; 
-                padding-right: 0px; 
+                outline: 0; /* Remove focus rectangle */
             }}
             QListView::item {{
-                padding: 8px 0px 8px 10px; /* Slightly more vertical padding */
-                margin: 0px; /* Zero margin for full stretch */
+                padding: 6px 10px;
+                border-radius: 6px;
+                margin: 2px 4px;
             }}
-            /* Full-width, accent-colored selection */
             QListView::item:selected {{
-                background: {self.ACCENT};
-                color: {self.BG}; /* Invert text color for selection */
-                border: none;
-                border-radius: 0px; /* Flat selection */
+                /* Use accent color for selected item background */
+                background: {self.ACCENT}; 
+                color: {self.BG}; /* Invert text color for contrast */
+                border: 1px solid {self.ACCENT};
             }}
-            QListView::item:hover {{
-                background: rgba(255,255,255,0.08); /* Subtle hover */
-                border-radius: 0px;
+            QListView::item:hover:!selected {{
+                /* Lighter hover effect for unselected items */
+                background: rgba(255,255,255,0.08); 
+            }}
+        """)
+
+        self.main_frame.setStyleSheet(f"""
+            QFrame {{
+                background-color: {self.rgba_bg};
+                border: 1px solid {self.ACCENT};
+                border-radius: 12px;
+                backdrop-filter: blur(20px);
             }}
         """)
 
     def update_pywal_colors(self):
+        # Your Pywal colors refresh logic
+        old_bg, old_fg, old_accent = self.BG, self.FG, self.ACCENT
         self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
-        # Recalculate search bar color based on new BG
-        base = QtGui.QColor(self.BG)
-        self.search_bg_color = base.lighter(120).name()
-        self.apply_styles()
+        
+        if old_bg != self.BG or old_accent != self.ACCENT:
+            # Recompute rgba_bg if BG color changes
+            LIGHTEN = 2
+            base = QtGui.QColor(self.BG)
+            white = QtGui.QColor("#ffffff")
+            mix = LIGHTEN / 100
+            r = int(base.red() * (1 - mix) + white.red() * mix)
+            g = int(base.green() * (1 - mix) + white.green() * mix)
+            b = int(base.blue() * (1 - mix) + white.blue() * mix)
+            final = QtGui.QColor(r, g, b)
+            final.setAlpha(OPACITY)
+            self.rgba_bg = f"rgba({r},{g},{b},{final.alpha()})"
+            
+            self.apply_styles()
 
-    # --- Icons ---
+    # --- Icons (Same) ---
     def recolor_icon(self, icon, color_hex):
         pixmap = icon.pixmap(QtCore.QSize(18, 18))
         painter = QtGui.QPainter(pixmap)
@@ -259,7 +272,7 @@ class AppPicker(QtWidgets.QWidget):
 
         return self.round_icon(QtGui.QIcon.fromTheme("application-default"))
 
-    # --- Keyboard navigation ---
+    # --- Keyboard navigation (Same) ---
     def search_key_press_event(self, event):
         key = event.key()
         if key in (QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down):
@@ -284,7 +297,7 @@ class AppPicker(QtWidgets.QWidget):
         else:
             QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
 
-    # --- Model population ---
+    # --- Model population (Same) ---
     def populate_model(self):
         self.model.clear()
         for app in sorted(self.applications, key=lambda a: a["Name"]):
@@ -295,30 +308,31 @@ class AppPicker(QtWidgets.QWidget):
             item.setData(app["Terminal"], QtCore.Qt.ItemDataRole.UserRole + 1)
             self.model.appendRow(item)
 
-    # --- **Substring Search** (no fuzzy) ---
+    # --- Substring Search Reverted (Original Logic) ---
     def filter_list(self, text):
-        proxy = QtCore.QSortFilterProxyModel(self)
-        proxy.setSourceModel(self.model)
-        proxy.setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
+        # Set the filter using a regex pattern that matches the text anywhere
+        # This is simple substring matching
+        regex = QtCore.QRegularExpression(text, 
+            QtCore.QRegularExpression.PatternOption.CaseInsensitiveOption)
+        self.proxy_model.setFilterRegularExpression(regex)
 
-        if text.strip():
-            escaped = QtCore.QRegularExpression.escape(text)
-            proxy.setFilterRegularExpression(f".*{escaped}.*")
+        # Select the first item if the list isn't empty
+        if self.proxy_model.rowCount() > 0:
+            self.list_view.setCurrentIndex(self.proxy_model.index(0, 0))
 
-        self.list_view.setModel(proxy)
-
-        if proxy.rowCount() > 0:
-            self.list_view.setCurrentIndex(proxy.index(0, 0))
-
-    # --- Launch selected app ---
+    # --- Launch selected app (Same) ---
     def launch_selected(self):
         index = self.list_view.currentIndex()
         if not index.isValid():
             return
 
-        model = self.list_view.model()
-        cmd = model.data(index, QtCore.Qt.ItemDataRole.UserRole)
-        needs_terminal = bool(model.data(index, QtCore.Qt.ItemDataRole.UserRole + 1))
+        # Get the index from the proxy model, then map it back to the source model to read data
+        source_index = self.proxy_model.mapToSource(index)
+        
+        # We need the source model to read the UserRole data correctly
+        model = self.model
+        cmd = model.data(source_index, QtCore.Qt.ItemDataRole.UserRole)
+        needs_terminal = bool(model.data(source_index, QtCore.Qt.ItemDataRole.UserRole + 1))
 
         if needs_terminal:
             subprocess.Popen([TERMINAL, "--hold", "-e", "bash", "-l", "-c", cmd])
@@ -327,7 +341,7 @@ class AppPicker(QtWidgets.QWidget):
 
         QtWidgets.QApplication.quit()
 
-    # --- Desktop file parser ---
+    # --- Desktop file parser (Same) ---
     def parse_desktop_file(self, path):
         parser = configparser.ConfigParser(interpolation=None)
         try:
@@ -355,7 +369,7 @@ class AppPicker(QtWidgets.QWidget):
 
         return {"Name": name, "Exec": exec_cmd, "Icon": icon, "Terminal": terminal}
 
-    # --- Collect applications ---
+    # --- Collect applications (Same) ---
     def find_applications(self):
         apps, names = [], set()
 
