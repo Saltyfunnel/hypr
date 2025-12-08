@@ -107,6 +107,10 @@ class AppPicker(QtWidgets.QWidget):
         inner = QtWidgets.QVBoxLayout(self.main_frame)
         inner.addWidget(self.search_input)
         inner.addWidget(self.list_view)
+        
+        # Give the list view a high stretch factor to fill space
+        inner.setStretchFactor(self.list_view, 1) 
+        
         inner.setContentsMargins(12, 12, 12, 12)
 
         # Drop shadow
@@ -128,11 +132,15 @@ class AppPicker(QtWidgets.QWidget):
             initial_index = self.proxy_model.index(0, 0)
             self.list_view.setCurrentIndex(initial_index)
             
-            # 🌟 SCROLL ADJUSTMENT on OPENING 
+            # Ensure the selected item is centered vertically
             self.list_view.scrollTo(
                 initial_index,
                 QtWidgets.QAbstractItemView.ScrollHint.PositionAtCenter
             )
+            
+            # 🌟 FIX: Force repaint and layout recalculation on initial open
+            self.list_view.updateGeometries() 
+            self.list_view.viewport().update()
 
         # Periodically re-read pywal colors
         self.timer = QtCore.QTimer()
@@ -165,7 +173,7 @@ class AppPicker(QtWidgets.QWidget):
         scale.start()
         self.scale_anim = scale
 
-    # --- Styles (Same as previous version) ---
+    # --- Styles (Same) ---
     def apply_styles(self):
         font = QtGui.QFont(FONT_NAME, FONT_SIZE)
         self.setFont(font)
@@ -328,11 +336,15 @@ class AppPicker(QtWidgets.QWidget):
             index = self.proxy_model.index(0, 0)
             self.list_view.setCurrentIndex(index)
             
-            # 🌟 SCROLL ADJUSTMENT on FILTERING
+            # SCROLL ADJUSTMENT on FILTERING
             self.list_view.scrollTo(
                 index,
                 QtWidgets.QAbstractItemView.ScrollHint.PositionAtCenter
             )
+            
+            # 🌟 FIX: Force repaint and layout recalculation on filter change
+            self.list_view.updateGeometries()
+            self.list_view.viewport().update()
 
     # --- Launch selected app (Same) ---
     def launch_selected(self):
@@ -424,8 +436,6 @@ class AppPicker(QtWidgets.QWidget):
                 or data["colors"].get("color4")
                 or ACCENT
             )
-            return BG, FG, ACCENT
-        except Exception:
             return BG, FG, ACCENT
 
 
