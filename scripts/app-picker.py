@@ -12,8 +12,7 @@ APP_DIRS = [
     Path("/usr/share/applications"),
 ]
 OPACITY = 210
-# 🚨 IMPORTANT: ICON_SIZE is used to calculate the height of the list item
-ICON_SIZE = QtCore.QSize(30, 30)
+ICON_SIZE = QtCore.QSize(30, 30) # Used by setIconSize below
 
 EXCLUDE_KEYWORDS = [
     "ssh", "server", "avahi", "browser", "helper",
@@ -82,7 +81,9 @@ class AppPicker(QtWidgets.QWidget):
         self.list_view = QtWidgets.QListView()
         self.list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        # Set uniform row height to help ensure consistent sizing
+        
+        # 🌟 FIX: Set the icon size directly on the view to reserve space
+        self.list_view.setIconSize(ICON_SIZE) 
         self.list_view.setUniformItemSizes(True)
 
         # Disable scrollbars fully
@@ -315,17 +316,13 @@ class AppPicker(QtWidgets.QWidget):
         else:
             QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
 
-    # --- Model population (Fixed Geometry) ---
+    # --- Model population (Cleaned up) ---
     def populate_model(self):
         self.model.clear()
         for app in sorted(self.applications, key=lambda a: a["Name"]):
             item = QtGui.QStandardItem(app["Name"])
             if self.SHOW_APP_ICONS:
                 item.setIcon(self.get_app_icon(app.get("Icon", "")))
-                
-                # 🌟 FIX: Force size hint based on icon size + padding buffer
-                # ICON_SIZE is (30, 30). Adding a buffer of 15 (6px padding top + 6px padding bottom + margin/font height)
-                item.setSizeHint(QtCore.QSize(ICON_SIZE.width(), ICON_SIZE.height() + 15)) 
                 
             item.setData(app["Exec"], QtCore.Qt.ItemDataRole.UserRole)
             item.setData(app["Terminal"], QtCore.Qt.ItemDataRole.UserRole + 1)
