@@ -66,11 +66,6 @@ class AppPicker(QtWidgets.QWidget):
 
         # --- Search bar ---
         self.search_input = QtWidgets.QLineEdit()
-        # 🌟 FIX: Ensure the search input is properly sized horizontally
-        self.search_input.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Fixed
-        )
         self.search_input.setPlaceholderText("Search applications…")
         self.search_input.textChanged.connect(self.filter_list)
         self.search_input.returnPressed.connect(self.launch_selected)
@@ -86,7 +81,7 @@ class AppPicker(QtWidgets.QWidget):
         self.list_view = QtWidgets.QListView()
         self.list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        self.list_view.setUniformItemSizes(True) # Kept for consistency
+        self.list_view.setUniformItemSizes(True)
 
         # Disable scrollbars fully
         self.list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
