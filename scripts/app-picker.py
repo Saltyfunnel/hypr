@@ -313,7 +313,7 @@ class AppPicker(QtWidgets.QWidget):
         else:
             QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
 
-    # --- Model population (Reverted to working state) ---
+    # --- Model population (Reverted to stable state) ---
     def populate_model(self):
         self.model.clear()
         for app in sorted(self.applications, key=lambda a: a["Name"]):
