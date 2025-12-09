@@ -15,7 +15,7 @@ ICON_SIZE = 30
 TERMINAL = "kitty"
 FONT_NAME = "Fira Code"
 FONT_SIZE = 10
-# --- RESET TO STANDARD SIZE ---
+# --- WINDOW SIZE (420px wide) ---
 WINDOW_WIDTH = 420 
 WINDOW_HEIGHT = 400
 # ----------------------
@@ -66,14 +66,47 @@ class AppPicker(QtWidgets.QWidget):
         # 6. Center and Show
         self._center_window()
         self.show()
+        
+        # 7. --- NATIVE LIVE PYWAL WATCHER SETUP ---
+        self._setup_pywal_watcher()
+
+
+    # --- Qt-Native Live Pywal Update Logic ---
+
+    def _setup_pywal_watcher(self):
+        """Sets up the QFileSystemWatcher to detect changes to colors.json."""
+        self.pywal_path = str(Path.home() / ".cache/wal/colors.json")
+        self.watcher = QtCore.QFileSystemWatcher([self.pywal_path])
+        
+        # Connect the signal (fileChanged) to the slot (update_colors_live)
+        # Note: The watcher needs to be kept alive as an instance attribute (self.watcher)
+        self.watcher.fileChanged.connect(self.update_colors_live)
+
+    def update_colors_live(self):
+        """Called when colors.json is changed by Pywal."""
+        print(f"Pywal colors file modified. Updating theme...")
+        
+        # 1. Reread the colors
+        self.BG, self.FG, self.ACCENT = self._get_pywal_colors()
+        
+        # 2. Recalculate transparent background
+        self._calculate_translucent_bg()
+
+        # 3. Re-apply the styles
+        self._apply_styles() 
+        
+        # 4. Refresh the logo color (since it depends on self.FG)
+        arch_icon = self._get_themed_logo("archlinux-logo", self.FG)
+        if self.search_input.actions():
+             self.search_input.actions()[0].setIcon(arch_icon)
+
 
     # --- UI Component Creation ---
 
     def _create_search_input(self):
         search_input = QtWidgets.QLineEdit()
-        # --- NEW SHORTER PLACEHOLDER ---
+        # --- SHORTER PLACEHOLDER to prevent cutoff ---
         search_input.setPlaceholderText("Search apps...") 
-        # -------------------------------
         search_input.textChanged.connect(self.filter_list)
         search_input.returnPressed.connect(self.launch_selected)
         search_input.keyPressEvent = self._search_key_press_event
@@ -233,24 +266,32 @@ class AppPicker(QtWidgets.QWidget):
         else:
             QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
 
-    # --- Styling and Pywal (Simplified) ---
+    # --- Styling and Pywal (Robust) ---
 
     def _get_pywal_colors(self):
         wal = Path.home() / ".cache/wal/colors.json"
-        BG, FG, ACCENT = "#1d1f21", "#c5c8c6", "#5e81ac"
-        if not wal.exists(): return BG, FG, ACCENT
+        # Default colors (dracula-like)
+        BG_DEFAULT, FG_DEFAULT, ACCENT_DEFAULT = "#282a36", "#f8f8f2", "#bd93f9"
+        
+        BG, FG, ACCENT = BG_DEFAULT, FG_DEFAULT, ACCENT_DEFAULT
+        
+        if not wal.exists(): 
+            return BG, FG, ACCENT
+        
         try:
             data = json.loads(wal.read_text())
             BG = data["special"]["background"]
             FG = data["special"]["foreground"]
-            ACCENT = data["colors"].get("color4") or ACCENT
+            # Use color6 (magenta/purple) as a reliable accent fallback if color4 isn't set.
+            ACCENT = data["colors"].get("color4") or data["colors"].get("color6") or ACCENT_DEFAULT
             return BG, FG, ACCENT
         except Exception:
-            return BG, FG, ACCENT
+            return BG_DEFAULT, FG_DEFAULT, ACCENT_DEFAULT
     
     def _calculate_translucent_bg(self):
+        # Ensure alpha transparency is set for the background color
         base = QtGui.QColor(self.BG)
-        base.setAlpha(220)
+        base.setAlpha(220) # 86% opacity
         self.rgba_bg = base.name(QtGui.QColor.NameFormat.HexArgb)
 
     def _apply_styles(self):
@@ -262,8 +303,8 @@ class AppPicker(QtWidgets.QWidget):
             QLineEdit {{
                 border: 2px solid {self.ACCENT};
                 border-radius: 6px;
-                /* Reset padding to standard for QAction/Logo positioning */
-                padding: 5px 10px; 
+                /* Standard padding for QAction placement */
+                padding: 5px 10px 5px 28px; 
                 color: {self.FG};
                 background-color: {self.BG};
             }}
@@ -281,7 +322,9 @@ class AppPicker(QtWidgets.QWidget):
                 margin: 2px 4px;
             }}
             QListView::item:selected {{
-                background: {self.ACCENT}60;
+                /* Use solid hex color for selection to avoid alpha issues */
+                background: {self.ACCENT}; 
+                color: {self.BG}; /* Change text color for selected item to background for contrast */
             }}
         """)
         
