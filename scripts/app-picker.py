@@ -11,159 +11,259 @@ APP_DIRS = [
     Path.home() / ".local/share/applications",
     Path("/usr/share/applications"),
 ]
-OPACITY = 210
-ICON_SIZE = QtCore.QSize(30, 30)
-
-EXCLUDE_KEYWORDS = [
-    "ssh", "server", "avahi", "browser", "helper",
-    "setup", "settings daemon", "gnome-session", "kde-",
-    "xfce-", "gimp", "about xfce"
-]
-
+ICON_SIZE = 30 
+TERMINAL = "kitty"
 FONT_NAME = "Fira Code"
 FONT_SIZE = 10
-TERMINAL = "kitty"  # Customize your preferred terminal
+# --- RESET TO STANDARD SIZE ---
+WINDOW_WIDTH = 420 
+WINDOW_HEIGHT = 400
+# ----------------------
 
+# Keywords to exclude applications (case-insensitive)
+EXCLUDE_KEYWORDS = [
+    "ssh", "server", "avahi", "helper", "setup", 
+    "settings daemon", "gnome-session", "kde-", "xfce-"
+]
 
 class AppPicker(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-
-        self.setWindowTitle("Pick an Application")
-        self.setWindowFlag(QtCore.Qt.WindowType.WindowStaysOnTopHint)
-        self.setWindowFlag(QtCore.Qt.WindowType.Tool)
-        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
-
-        # --- Blur background (KDE/GNOME/wlroots-supporting) ---
-        try:
-            self.setWindowFlag(QtCore.Qt.WindowType.FramelessWindowHint)
-            self.setProperty("KDEBlurBehindEnabled", True)
-            self.setProperty("blur", True)
-        except Exception:
-            pass
-
-        # Load applications
-        self.applications = self.find_applications()
-        if not self.applications:
-            QtWidgets.QMessageBox.warning(self, "Error", "No applications found.")
-            sys.exit(1)
-
-        # Load theme colors
-        self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
-        self.SHOW_APP_ICONS = True
-
-        # --- Translucent background mixing ---
-        LIGHTEN = 2
-        base = QtGui.QColor(self.BG)
-        white = QtGui.QColor("#ffffff")
-        mix = LIGHTEN / 100
-        r = int(base.red() * (1 - mix) + white.red() * mix)
-        g = int(base.green() * (1 - mix) + white.green() * mix)
-        b = int(base.blue() * (1 - mix) + white.blue() * mix)
-        final = QtGui.QColor(r, g, b)
-        final.setAlpha(OPACITY)
-        self.rgba_bg = f"rgba({r},{g},{b},{final.alpha()})"
-
-        # --- Search bar ---
-        self.search_input = QtWidgets.QLineEdit()
-        self.search_input.setPlaceholderText("Search applications…")
-        self.search_input.textChanged.connect(self.filter_list)
-        self.search_input.returnPressed.connect(self.launch_selected)
-        self.search_input.keyPressEvent = self.search_key_press_event
-
-        arch_icon = self.get_themed_logo("archlinux-logo", self.FG)
-        self.search_input.addAction(
-            QtGui.QAction(arch_icon, "", self.search_input),
-            QtWidgets.QLineEdit.ActionPosition.LeadingPosition
+        
+        # 1. Basic Window Setup
+        self.setWindowTitle("App Launcher")
+        
+        # --- ESSENTIAL FIX: Set fixed size to prevent stretching ---
+        self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        
+        # Use simple floating flags that worked before (Frameless + Tool)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.FramelessWindowHint | 
+            QtCore.Qt.WindowType.Tool
         )
-
-       # --- List view ---
-        self.list_view = QtWidgets.QListView()
-        self.list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.list_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-
-        # Disable scrollbars fully
-        self.list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.list_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
-        self.list_view.doubleClicked.connect(self.launch_selected)
-        self.list_view.doubleClicked.connect(self.launch_selected)
-
-        # Model of all apps
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+        # 2. Data Loading and UI Setup
+        self.BG, self.FG, self.ACCENT = self._get_pywal_colors()
+        self.applications = self._find_applications()
+        
+        # 3. Create Widgets
+        self.search_input = self._create_search_input()
+        self.list_view = self._create_list_view()
         self.model = QtGui.QStandardItemModel()
         self.populate_model()
-
-        # Initially show main model
         self.list_view.setModel(self.model)
 
-        # --- Frame ---
-        self.main_frame = QtWidgets.QFrame()
-        inner = QtWidgets.QVBoxLayout(self.main_frame)
-        inner.addWidget(self.search_input)
-        inner.addWidget(self.list_view)
-        inner.setContentsMargins(12, 12, 12, 12)
+        # 4. Layout
+        self._setup_layout()
 
-        # Drop shadow
-        shadow = QtWidgets.QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(40)
-        shadow.setOffset(0, 4)
-        shadow.setColor(QtGui.QColor(0, 0, 0, 160))
-        self.main_frame.setGraphicsEffect(shadow)
-
-        # Outer container
-        outer = QtWidgets.QVBoxLayout(self)
-        outer.addWidget(self.main_frame)
-        outer.setContentsMargins(0, 0, 0, 0)
-
-        self.resize(450, 500)
+        # 5. Styling and Focus
+        self._calculate_translucent_bg()
+        self._apply_styles()
         self.search_input.setFocus()
-
-        if self.model.rowCount() > 0:
-            self.list_view.setCurrentIndex(self.model.index(0, 0))
-
-        # Periodically re-read pywal colors
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.update_pywal_colors)
-        self.timer.start(2000)
-
-        self.apply_styles()
-        self.animate_open()
+        self.list_view.setCurrentIndex(self.model.index(0, 0))
+        
+        # 6. Center and Show
+        self._center_window()
         self.show()
 
-    # --- Animations ---
-    def animate_open(self):
-        self.setWindowOpacity(0.0)
+    # --- UI Component Creation ---
 
-        fade = QtCore.QPropertyAnimation(self, b"windowOpacity")
-        fade.setDuration(120)
-        fade.setStartValue(0.0)
-        fade.setEndValue(1.0)
-        fade.start()
-        self.fade_anim = fade
+    def _create_search_input(self):
+        search_input = QtWidgets.QLineEdit()
+        # --- NEW SHORTER PLACEHOLDER ---
+        search_input.setPlaceholderText("Search apps...") 
+        # -------------------------------
+        search_input.textChanged.connect(self.filter_list)
+        search_input.returnPressed.connect(self.launch_selected)
+        search_input.keyPressEvent = self._search_key_press_event
+        
+        # Set max width to prevent stretching (420 - 40 = 380px)
+        search_input.setMaximumWidth(WINDOW_WIDTH - 40)
+        
+        # Re-adding the Arch logo
+        arch_icon = self._get_themed_logo("archlinux-logo", self.FG)
+        search_input.addAction(
+            QtGui.QAction(arch_icon, "", search_input),
+            QtWidgets.QLineEdit.ActionPosition.LeadingPosition
+        )
+        
+        return search_input
 
-        geo = self.geometry()
-        scale = QtCore.QPropertyAnimation(self, b"geometry")
-        scale.setDuration(120)
-        scale.setStartValue(QtCore.QRect(
-            geo.x()+20, geo.y()+20,
-            geo.width()-40, geo.height()-40
-        ))
-        scale.setEndValue(geo)
-        scale.start()
-        self.scale_anim = scale
+    def _create_list_view(self):
+        list_view = QtWidgets.QListView()
+        list_view.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        list_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        list_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        list_view.doubleClicked.connect(self.launch_selected)
+        return list_view
+    
+    def _setup_layout(self):
+        # Use a simple QFrame for the main window content
+        main_frame = QtWidgets.QFrame()
+        layout = QtWidgets.QVBoxLayout(main_frame)
+        
+        # Center the search input using alignment
+        layout.addWidget(self.search_input, alignment=QtCore.Qt.AlignmentFlag.AlignHCenter) 
+        layout.addWidget(self.list_view)
+        
+        # Standard margins 
+        layout.setContentsMargins(10, 10, 10, 10) 
+        
+        # Set the main layout of the QWidget
+        outer_layout = QtWidgets.QVBoxLayout(self)
+        outer_layout.addWidget(main_frame)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
 
-    # --- Styles ---
-    def apply_styles(self):
+    # --- Layout and Position ---
+
+    def _center_window(self):
+        screen_geometry = QtWidgets.QApplication.primaryScreen().geometry()
+        x = (screen_geometry.width() - self.width()) // 2
+        y = (screen_geometry.height() - self.height()) // 2
+        self.move(x, y)
+
+    # --- Data and App Logic (Unchanged) ---
+
+    def _parse_desktop_file(self, path):
+        parser = configparser.ConfigParser(interpolation=None)
+        try:
+            parser.read(path, encoding="utf-8")
+        except Exception:
+            return None
+
+        if "Desktop Entry" not in parser: return None
+        entry = parser["Desktop Entry"]
+
+        if entry.get("Type") != "Application": return None
+        if entry.getboolean("NoDisplay", fallback=False): return None
+
+        name = entry.get("Name")
+        exec_cmd = entry.get("Exec", "").split("%", 1)[0].strip()
+        icon = entry.get("Icon")
+        terminal = entry.getboolean("Terminal", fallback=False)
+
+        if not name or not exec_cmd: return None
+        return {"Name": name, "Exec": exec_cmd, "Icon": icon, "Terminal": terminal}
+
+    def _find_applications(self):
+        apps, names = [], set()
+        for app_dir in APP_DIRS:
+            if not app_dir.exists(): continue
+            for file in app_dir.glob("*.desktop"):
+                info = self._parse_desktop_file(file)
+                if not info: continue
+                lower_name = info["Name"].lower()
+                if any(k in lower_name for k in EXCLUDE_KEYWORDS): continue
+                if info["Name"] not in names:
+                    apps.append(info)
+                    names.add(info["Name"])
+        return apps
+        
+    def _recolor_icon(self, icon, color_hex):
+        pixmap = icon.pixmap(QtCore.QSize(18, 18))
+        painter = QtGui.QPainter(pixmap)
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceIn)
+        painter.fillRect(pixmap.rect(), QtGui.QColor(color_hex))
+        painter.end()
+        return QtGui.QIcon(pixmap)
+        
+    def _get_themed_logo(self, icon_name, color_hex):
+        icon = QtGui.QIcon.fromTheme(icon_name)
+        if icon.isNull():
+            icon = QtGui.QIcon.fromTheme("system-search")
+        return self._recolor_icon(icon, color_hex)
+
+    def _get_app_icon(self, icon_name):
+        icon = QtGui.QIcon.fromTheme(icon_name)
+        if icon.isNull():
+            return QtGui.QIcon.fromTheme("application-default")
+        return icon
+
+    def populate_model(self):
+        self.model.clear()
+        for app in sorted(self.applications, key=lambda a: a["Name"]):
+            item = QtGui.QStandardItem(app["Name"])
+            item.setIcon(self._get_app_icon(app.get("Icon", "")))
+            item.setData(app["Exec"], QtCore.Qt.ItemDataRole.UserRole)
+            item.setData(app["Terminal"], QtCore.Qt.ItemDataRole.UserRole + 1)
+            self.model.appendRow(item)
+
+    def filter_list(self, text):
+        proxy = QtCore.QSortFilterProxyModel(self)
+        proxy.setSourceModel(self.model)
+        proxy.setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
+        proxy.setFilterRegularExpression(f".*{QtCore.QRegularExpression.escape(text.strip())}.*")
+        self.list_view.setModel(proxy)
+        if proxy.rowCount() > 0:
+            self.list_view.setCurrentIndex(proxy.index(0, 0))
+
+    def launch_selected(self):
+        index = self.list_view.currentIndex()
+        if not index.isValid(): return
+
+        model = self.list_view.model()
+        cmd = model.data(index, QtCore.Qt.ItemDataRole.UserRole)
+        needs_terminal = bool(model.data(index, QtCore.Qt.ItemDataRole.UserRole + 1))
+
+        if needs_terminal:
+            subprocess.Popen([TERMINAL, "-e", "bash", "-l", "-c", cmd])
+        else:
+            subprocess.Popen(cmd, shell=True)
+
+        QtWidgets.QApplication.quit()
+
+    def _search_key_press_event(self, event):
+        key = event.key()
+        if key in (QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down):
+            model = self.list_view.model()
+            current = self.list_view.currentIndex()
+            count = model.rowCount()
+            if count == 0: return
+
+            row = current.row() + (1 if key == QtCore.Qt.Key.Key_Down else -1)
+            row = max(0, min(row, count - 1))
+
+            idx = model.index(row, 0)
+            self.list_view.setCurrentIndex(idx)
+            self.list_view.scrollTo(idx)
+
+        elif key == QtCore.Qt.Key.Key_Escape:
+            QtWidgets.QApplication.quit()
+        else:
+            QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
+
+    # --- Styling and Pywal (Simplified) ---
+
+    def _get_pywal_colors(self):
+        wal = Path.home() / ".cache/wal/colors.json"
+        BG, FG, ACCENT = "#1d1f21", "#c5c8c6", "#5e81ac"
+        if not wal.exists(): return BG, FG, ACCENT
+        try:
+            data = json.loads(wal.read_text())
+            BG = data["special"]["background"]
+            FG = data["special"]["foreground"]
+            ACCENT = data["colors"].get("color4") or ACCENT
+            return BG, FG, ACCENT
+        except Exception:
+            return BG, FG, ACCENT
+    
+    def _calculate_translucent_bg(self):
+        base = QtGui.QColor(self.BG)
+        base.setAlpha(220)
+        self.rgba_bg = base.name(QtGui.QColor.NameFormat.HexArgb)
+
+    def _apply_styles(self):
         font = QtGui.QFont(FONT_NAME, FONT_SIZE)
         self.setFont(font)
-        self.search_input.setFont(font)
-        self.list_view.setFont(font)
-
+        
+        # Apply styles directly to the widgets
         self.search_input.setStyleSheet(f"""
             QLineEdit {{
                 border: 2px solid {self.ACCENT};
                 border-radius: 6px;
-                padding: 5px 10px;
+                /* Reset padding to standard for QAction/Logo positioning */
+                padding: 5px 10px; 
                 color: {self.FG};
                 background-color: {self.BG};
             }}
@@ -181,212 +281,20 @@ class AppPicker(QtWidgets.QWidget):
                 margin: 2px 4px;
             }}
             QListView::item:selected {{
-                background: rgba(255,255,255,0.10);
-                border: 1px solid {self.ACCENT};
-            }}
-            QListView::item:hover {{
-                background: rgba(255,255,255,0.05);
+                background: {self.ACCENT}60;
             }}
         """)
-
-        self.main_frame.setStyleSheet(f"""
-            QFrame {{
+        
+        # Style for the main window frame (important for border/blur)
+        self.setStyleSheet(f"""
+            QWidget {{
                 background-color: {self.rgba_bg};
                 border: 1px solid {self.ACCENT};
                 border-radius: 12px;
-                backdrop-filter: blur(20px);
             }}
         """)
 
-    def update_pywal_colors(self):
-        self.BG, self.FG, self.ACCENT = self.get_pywal_colors()
-        self.apply_styles()
-
-    # --- Icons ---
-    def recolor_icon(self, icon, color_hex):
-        pixmap = icon.pixmap(QtCore.QSize(18, 18))
-        painter = QtGui.QPainter(pixmap)
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceIn)
-        painter.fillRect(pixmap.rect(), QtGui.QColor(color_hex))
-        painter.end()
-        return QtGui.QIcon(pixmap)
-
-    def get_themed_logo(self, icon_name, color_hex):
-        icon = QtGui.QIcon.fromTheme(icon_name)
-        if icon.isNull():
-            icon = QtGui.QIcon.fromTheme("system-search")
-        return self.recolor_icon(icon, color_hex)
-
-    def round_icon(self, icon):
-        size = 30
-        pix = icon.pixmap(size, size)
-        rounded = QtGui.QPixmap(size, size)
-        rounded.fill(QtCore.Qt.GlobalColor.transparent)
-
-        painter = QtGui.QPainter(rounded)
-        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
-        path = QtGui.QPainterPath()
-        path.addEllipse(0, 0, size, size)
-        painter.setClipPath(path)
-        painter.drawPixmap(0, 0, pix)
-        painter.end()
-        return QtGui.QIcon(rounded)
-
-    def get_app_icon(self, icon_name):
-        symbolic = QtGui.QIcon.fromTheme(icon_name + "-symbolic")
-        if not symbolic.isNull():
-            return self.round_icon(symbolic)
-
-        normal = QtGui.QIcon.fromTheme(icon_name)
-        if not normal.isNull():
-            return self.round_icon(normal)
-
-        if Path(icon_name).exists():
-            return self.round_icon(QtGui.QIcon(icon_name))
-
-        return self.round_icon(QtGui.QIcon.fromTheme("application-default"))
-
-    # --- Keyboard navigation ---
-    def search_key_press_event(self, event):
-        key = event.key()
-        if key in (QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down):
-            model = self.list_view.model()
-            current = self.list_view.currentIndex()
-            count = model.rowCount()
-            if count == 0:
-                return
-
-            if not current.isValid():
-                row = 0
-            else:
-                row = current.row() + (1 if key == QtCore.Qt.Key.Key_Down else -1)
-                row = max(0, min(row, count - 1))
-
-            idx = model.index(row, 0)
-            self.list_view.setCurrentIndex(idx)
-            self.list_view.scrollTo(idx)
-
-        elif key == QtCore.Qt.Key.Key_Escape:
-            QtWidgets.QApplication.quit()
-        else:
-            QtWidgets.QLineEdit.keyPressEvent(self.search_input, event)
-
-    # --- Model population ---
-    def populate_model(self):
-        self.model.clear()
-        for app in sorted(self.applications, key=lambda a: a["Name"]):
-            item = QtGui.QStandardItem(app["Name"])
-            if self.SHOW_APP_ICONS:
-                item.setIcon(self.get_app_icon(app.get("Icon", "")))
-            item.setData(app["Exec"], QtCore.Qt.ItemDataRole.UserRole)
-            item.setData(app["Terminal"], QtCore.Qt.ItemDataRole.UserRole + 1)
-            self.model.appendRow(item)
-
-    # --- **Substring Search** (no fuzzy) ---
-    def filter_list(self, text):
-        proxy = QtCore.QSortFilterProxyModel(self)
-        proxy.setSourceModel(self.model)
-        proxy.setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
-
-        if text.strip():
-            escaped = QtCore.QRegularExpression.escape(text)
-            proxy.setFilterRegularExpression(f".*{escaped}.*")
-
-        self.list_view.setModel(proxy)
-
-        if proxy.rowCount() > 0:
-            self.list_view.setCurrentIndex(proxy.index(0, 0))
-
-    # --- Launch selected app ---
-    def launch_selected(self):
-        index = self.list_view.currentIndex()
-        if not index.isValid():
-            return
-
-        model = self.list_view.model()
-        cmd = model.data(index, QtCore.Qt.ItemDataRole.UserRole)
-        needs_terminal = bool(model.data(index, QtCore.Qt.ItemDataRole.UserRole + 1))
-
-        if needs_terminal:
-            subprocess.Popen([TERMINAL, "--hold", "-e", "bash", "-l", "-c", cmd])
-        else:
-            subprocess.Popen(cmd, shell=True)
-
-        QtWidgets.QApplication.quit()
-
-    # --- Desktop file parser ---
-    def parse_desktop_file(self, path):
-        parser = configparser.ConfigParser(interpolation=None)
-        try:
-            parser.read(path, encoding="utf-8")
-        except Exception:
-            return None
-
-        if "Desktop Entry" not in parser:
-            return None
-
-        entry = parser["Desktop Entry"]
-
-        if entry.get("Type") != "Application":
-            return None
-        if entry.getboolean("NoDisplay", fallback=False):
-            return None
-
-        name = entry.get("Name")
-        exec_cmd = entry.get("Exec", "").split("%", 1)[0].strip()
-        icon = entry.get("Icon")
-        terminal = entry.getboolean("Terminal", fallback=False)
-
-        if not name or not exec_cmd:
-            return None
-
-        return {"Name": name, "Exec": exec_cmd, "Icon": icon, "Terminal": terminal}
-
-    # --- Collect applications ---
-    def find_applications(self):
-        apps, names = [], set()
-
-        for app_dir in APP_DIRS:
-            if not app_dir.exists():
-                continue
-
-            for file in app_dir.glob("*.desktop"):
-                info = self.parse_desktop_file(file)
-                if not info:
-                    continue
-
-                lower_name = info["Name"].lower()
-                if any(k in lower_name for k in EXCLUDE_KEYWORDS):
-                    continue
-
-                if info["Name"] not in names:
-                    apps.append(info)
-                    names.add(info["Name"])
-
-        return apps
-
-    def get_pywal_colors(self):
-        wal = Path.home() / ".cache/wal/colors.json"
-        BG = "#1d1f21"
-        FG = "#c5c8c6"
-        ACCENT = "#5e81ac"
-
-        if not wal.exists():
-            return BG, FG, ACCENT
-
-        try:
-            data = json.loads(wal.read_text())
-            BG = data["special"]["background"]
-            FG = data["special"]["foreground"]
-            ACCENT = (
-                data["colors"].get("color12")
-                or data["colors"].get("color4")
-                or ACCENT
-            )
-            return BG, FG, ACCENT
-        except Exception:
-            return BG, FG, ACCENT
-
+# --- Main Execution ---
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
