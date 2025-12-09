@@ -123,7 +123,6 @@ for pkg in "${AUR_PACKAGES[@]}"; do
     else
         run_command "sudo -u $USER_NAME yay -S --noconfirm $pkg" "Install $pkg from AUR"
     fi
-done
 
 # ----------------------------
 # Shell Setup (Bash)
