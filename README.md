@@ -1,22 +1,22 @@
-☕ Saltyfunnel’s Hyprland Config
+☕ Saltyfunnel’s Hyprland Config – Made by a Noob Who’s Slowly Becoming Less of One (Somehow)
 
-(Lovingly duct-taped together by me, technically typed by a committee of AIs)
-🧠 What This Repo Really Is: A Monument to My Failure
+Welcome to my Hyprland rice.
+Before you go any further, let me be painfully honest:
 
-Let's be clear: I am a total Linux noob. This is not configuration; it's digital spite. This entire Hyprland setup is a battlefield where I, the completely unqualified user, fought a grueling, multi-round battle against three different Large Language Models (LLMs) to make my desktop look like something I saw on Reddit.
+I had absolutely no idea what I was doing when I started this.
+Like… negative idea.
+The kind of noob who breaks things by looking at them.
+But over time (and with a frankly embarrassing amount of AI assistance), I’ve crawled my way into being a “semi-functional beginner who occasionally understands things.”
 
-It was assembled using:
+So yeah — this repo is a mix of:
 
-    5% My brain (mostly for the copy/paste part)
+accidental successes
 
-    25% Stubborn, rage-filled googling
+configs I copied but now kind of understand
 
-    70% Screaming at ChatGPT, Claude, and Gemini until one of them finally gave in.
+my own trial-and-error disasters
 
-The result is a desktop that looks clean and minimal... but is held together by the tears of my sanity and countless chat history logs.
-
-If it runs: The AI won the argument, and I give them full credit. If it doesn’t: I deny knowing anything about Linux, I was never here.
-
+AI filling in the brain cells I didn’t have that day
 ## 🖼️ Screenshots
 
 ### **The Pywal Dynamic**
