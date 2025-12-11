@@ -20,10 +20,7 @@ AI filling in the brain cells I didn’t have that day
 ## 🖼️ Screenshots
 
 ### **The Pywal Dynamic**
-A demonstration of how the **`setwall.sh`** script automatically changes the system's color scheme (Waybar, Terminal, and Pickers) to match the wallpaper, showcasing the fluid nature of the config.
-
 #### **Example 1: Tiled Windows and Waybar**
-This shows the clean default layout with Hyprland tiling, the Waybar, and the dynamically generated color scheme.
 <img src="screenshots/screenshot_2025-12-11_21-39-49.png" alt="Tiled Windows and Dynamic Theme" width="800"/>
 
 #### **Example 2: Theme Change Example (Wallpaper 1)**
