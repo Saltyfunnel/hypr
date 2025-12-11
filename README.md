@@ -25,7 +25,7 @@ A simple, minimal aesthetic generated from a monochrome wallpaper.
 
 ### **The Custom Picker**
 A shot of the homemade PyQt6 Wallpaper Picker in action, which sends the chosen image to the Pywal theme generation script.
-<img src="https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-41-22.jpg" alt="Custom Wallpaper Picker GUI" width="400"/>
+<img src="screenshots/screenshot_2025-12-11_21-41-22.png" alt="Custom Wallpaper Picker GUI" width="400"/>
 
 ## 🧠 What This Repo *Really* Is
 
