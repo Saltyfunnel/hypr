@@ -19,8 +19,6 @@ my own trial-and-error disasters
 AI filling in the brain cells I didn’t have that day
 ## 🖼️ Screenshots
 
-### **The Pywal Dynamic**
-#### **Example 1: Tiled Windows and Waybar**
 <img src="screenshots/screenshot_2025-12-11_21-39-49.png" alt="Tiled Windows and Dynamic Theme" width="800"/>
 
 #### **Example 2: Theme Change Example (Wallpaper 1)**
