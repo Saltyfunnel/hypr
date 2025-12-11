@@ -2,6 +2,21 @@
 
 *(Lovingly duct-taped together by me, technically typed by ChatGPT)*
 
+
+## 🧠 What This Repo *Really* Is
+
+This is not a professional Hyprland configuration.
+This is a museum exhibit of “I saw this in a screenshot and wanted it too,” built using:
+
+* 10% effort
+* 30% stubborn googling
+* 60% hoping AI knows what it’s doing
+
+The result is a setup that *looks* clean and minimal… as long as you don’t read the scripts or ask how anything works.
+
+If it runs: credit the robots.
+If it doesn’t: I was never here, I deny everything.
+
 ## 🖼️ Screenshots
 
 ### **The Pywal Dynamic**
@@ -27,19 +42,6 @@ A simple, minimal aesthetic generated from a monochrome wallpaper.
 A shot of the homemade PyQt6 Wallpaper Picker in action, which sends the chosen image to the Pywal theme generation script.
 <img src="screenshots/screenshot_2025-12-11_21-41-22.png" alt="Custom Wallpaper Picker GUI" width="400"/>
 
-## 🧠 What This Repo *Really* Is
-
-This is not a professional Hyprland configuration.
-This is a museum exhibit of “I saw this in a screenshot and wanted it too,” built using:
-
-* 10% effort
-* 30% stubborn googling
-* 60% hoping AI knows what it’s doing
-
-The result is a setup that *looks* clean and minimal… as long as you don’t read the scripts or ask how anything works.
-
-If it runs: credit the robots.
-If it doesn’t: I was never here, I deny everything.
 
 ## 💡 Startup Notes (a.k.a. How to Ruin Your Day Early)
 
