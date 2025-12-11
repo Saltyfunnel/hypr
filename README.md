@@ -13,7 +13,7 @@ This shows the clean default layout with Hyprland tiling, the Waybar, and the dy
 
 #### **Example 2: Theme Change Example (Wallpaper 1)**
 A view demonstrating a complete color shift based on a high-contrast wallpaper.
-<img src="https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-41-11.jpg" alt="Pywal Theme Shift Example 1" width="400"/>
+<img src="screenshots/screenshot_2025-12-11_21-40-07.png" alt="Pywal Theme Shift Example 1" width="400"/>
 
 #### **Example 3: Theme Change Example (Wallpaper 2)**
 Another example of the full system color palette adjusting to a different background image.
