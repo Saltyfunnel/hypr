@@ -40,12 +40,17 @@ A shot of the homemade PyQt6 Wallpaper Picker in action, which sends the chosen 
 <img src="screenshots/screenshot_2025-12-11_21-41-22.png" alt="Custom Wallpaper Picker GUI" width="800"/>
 
 
-## 💡 Startup Notes (a.k.a. How to Ruin Your Day Early)
+💡 Startup Notes (a.k.a. How to Ruin Your Day Early)
 
-In `hyprland.conf` there’s a line that runs `setwall.sh` on launch to generate a theme automatically.
+On the very first launch after installation, you might see a small Hyprland error. This is normal! It just means the auto-theming script hasn't picked a wallpaper yet.
 
-I commented it out because I value mental health.
-If you want chaos and color changes the moment you log in, just remove the `#`.
+The Fix (Quick & Permanent):
+
+    Press the keybind SUPER + w to launch the custom wallpaper chooser.
+
+    Select any wallpaper from the list.
+
+Choosing a wallpaper will run the theming script, resolve the initial error, and start your colorful, dynamic desktop.
 
 It’s your funeral now.
 
