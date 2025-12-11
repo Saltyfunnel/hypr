@@ -9,7 +9,7 @@ A demonstration of how the **`setwall.sh`** script automatically changes the sys
 
 #### **Example 1: Tiled Windows and Waybar**
 This shows the clean default layout with Hyprland tiling, the Waybar, and the dynamically generated color scheme.
-![Tiled Windows and Dynamic Theme](https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-40-36.jpg)
+[![Tiled Windows and Dynamic Theme](https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-40-36.jpg)](https://github.com/Saltyfunnel/hypr/blob/main/screenshots/screenshot_2025-12-11_21-39-49.png)
 
 #### **Example 2: Theme Change Example (Wallpaper 1)**
 A view demonstrating a complete color shift based on a high-contrast wallpaper.
