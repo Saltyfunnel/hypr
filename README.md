@@ -11,7 +11,7 @@
 <img src="screenshots/screenshot_2025-12-11_21-41-22.png" alt="Custom Wallpaper Picker GUI" width="800"/>
 
 
-💡 Startup Notes (a.k.a. How to Ruin Your Day Early)
+💡 Startup Notes
 
 On the very first launch after installation, you might see a small Hyprland error. This is normal! It just means the auto-theming script hasn't picked a wallpaper yet.
 
@@ -21,58 +21,7 @@ The Fix (Quick & Permanent):
 
     Select any wallpaper from the list.
 
-Choosing a wallpaper will run the theming script, resolve the initial error, and start your colorful, dynamic desktop.
-
-## 🧩 The Stack (AKA “Things I Installed And Pray Don’t Update”)
-
-| Tool           | Description                                                                     |
-| -------------- | ------------------------------------------------------------------------------- |
-| Hyprland       | The compositor, the only thing here that isn't held together by string and luck |
-| swww           | The wallpaper thingy                                                            |
-| mako           | For notifications when everything breaks                                        |
-| python-pywal16 | The color generator controlling the mood swings                                 |
-| PyQt6          | Used for custom GUI pickers nobody asked for                                    |
-| Waybar         | The bar that changes themes more often than some people change underwear        |
-| Yazi           | File manager that also gets re-themed because why not                           |
-
-## 🛠 The Scripts (Where the Crimes Are Committed)
-
-Everything lives in `~/.config/scripts/` because that felt right at the time.
-
-### 1. `install.sh`
-
-An Arch Linux setup script that:
-
-* Installs dependencies
-* Copies configs
-* Asks the user to run it with `sudo`, which is always safe and never dangerous at all
-
-Please read it before running. Or don’t. I’m not your mom.
-
-### 2. `setwall.sh`
-
-The “core logic,” if you can call it that. It:
-
-* Picks a wallpaper (or grabs a random one because chaos)
-* Runs pywal to generate a palette
-* Force-rewrites configs for Waybar, Yazi, and Mako
-* Reloads them and hopes nothing crashes
-
-It’s basically a color-themed Rube Goldberg machine.
-
-### 3. `wallpaper-picker.py` & `app-picker.py`
-
-Two PyQt6 scripts replacing good, working tools with homemade knockoffs that match the theme:
-
-* **Wallpaper Picker**: Browse wallpapers and send the chosen one into the theme grinder
-* **App Picker**: A Pywal-themed launcher with “please work” energy
-
-## ⌨️ Keybinds
-
-| Shortcut          | What It Does                      | Script              |
-| ----------------- | --------------------------------- | ------------------- |
-| SUPER + w         | Launch wallpaper picker           | wallpaper-picker.py |
-| SUPER + d         | Launch app picker                 | app-picker.py       |
+Choosing a wallpaper will run the theming script, resolve the initial error.
 
 
 ## ⚠️ Installation
@@ -90,17 +39,3 @@ cd scripts
 sudo sh install.sh
 ```
 
-If something breaks, you now own all the pieces.
-
-## 🙌 Credits
-
-* **ChatGPT / Claude / Gemini** — The real developers
-* **pywal devs** — Turning questionable color ideas into vibes
-* **r/unixporn** — The inspiration for bad decisions at 3AM
-
-## 🔥 Final Thoughts
-
-This repo isn’t about elite Linux mastery.
-It’s about proving that with enough AI help, confidence, and blind ambition, anyone can make a desktop that looks like a professional spent weeks on it.
-
-Just… maybe don’t ask me what half the scripts are doing.
