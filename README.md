@@ -27,15 +27,12 @@ This shows the clean default layout with Hyprland tiling, the Waybar, and the dy
 <img src="screenshots/screenshot_2025-12-11_21-39-49.png" alt="Tiled Windows and Dynamic Theme" width="400"/>
 
 #### **Example 2: Theme Change Example (Wallpaper 1)**
-A view demonstrating a complete color shift based on a high-contrast wallpaper.
 <img src="screenshots/screenshot_2025-12-11_21-40-07.png" alt="Pywal Theme Shift Example 1" width="400"/>
 
 #### **Example 3: Theme Change Example (Wallpaper 2)**
-Another example of the full system color palette adjusting to a different background image.
 <img src="screenshots/screenshot_2025-12-11_21-40-36.png" alt="Pywal Theme Shift Example 2" width="400"/>
 
 #### **Example 4: Theme Change Example (Wallpaper 3)**
-A simple, minimal aesthetic generated from a monochrome wallpaper.
 <img src="screenshots/screenshot_2025-12-11_21-41-11.png" alt="Minimal Theme Shift Example" width="400"/>
 
 ### **The Custom Picker**
