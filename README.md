@@ -11,6 +11,19 @@
 <img src="screenshots/screenshot_2025-12-11_21-41-22.png" alt="Custom Wallpaper Picker GUI" width="800"/>
 
 
+## ⚠️ Installation
+
+
+Only tested with min Arch.
+
+```bash
+git clone https://github.com/Saltyfunnel/hypr
+cd hypr
+chmod +x scripts/*.sh
+cd scripts
+sudo sh install.sh
+```
+
 💡 Startup Notes
 
 On the very first launch after installation, you might see a small Hyprland error. This is normal! It just means the auto-theming script hasn't picked a wallpaper yet.
@@ -24,16 +37,4 @@ The Fix (Quick & Permanent):
 Choosing a wallpaper will run the theming script, resolve the initial error.
 
 
-## ⚠️ Installation
-
-
-Only tested with min Arch.
-
-```bash
-git clone https://github.com/Saltyfunnel/hypr
-cd hypr
-chmod +x scripts/*.sh
-cd scripts
-sudo sh install.sh
-```
 
