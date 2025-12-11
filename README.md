@@ -91,8 +91,8 @@ Two PyQt6 scripts replacing good, working tools with homemade knockoffs that mat
 | Shortcut          | What It Does                      | Script              |
 | ----------------- | --------------------------------- | ------------------- |
 | SUPER + w         | Launch wallpaper picker           | wallpaper-picker.py |
-| SUPER + Space     | Launch app picker                 | app-picker.py       |
-| SUPER + Shift + s | Screenshot with mako notification | Helper script       |
+| SUPER + d         | Launch app picker                 | app-picker.py       |
+
 
 ## ⚠️ Installation
 
