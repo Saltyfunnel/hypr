@@ -26,8 +26,6 @@ Choosing a wallpaper will run the theming script, resolve the initial error.
 
 ## ⚠️ Installation
 
-If you’re not on Arch, just stop now.
-If you *are* on Arch… still maybe think about your life choices.
 
 Only tested with min Arch.
 
