@@ -21,7 +21,7 @@ Another example of the full system color palette adjusting to a different backgr
 
 #### **Example 4: Theme Change Example (Wallpaper 3)**
 A simple, minimal aesthetic generated from a monochrome wallpaper.
-<img src="https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-40-07.jpg" alt="Minimal Theme Shift Example" width="400"/>
+<img src="screenshots/screenshot_2025-12-11_21-41-11.png" alt="Minimal Theme Shift Example" width="400"/>
 
 ### **The Custom Picker**
 A shot of the homemade PyQt6 Wallpaper Picker in action, which sends the chosen image to the Pywal theme generation script.
