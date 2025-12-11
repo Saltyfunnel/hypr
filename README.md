@@ -1,4 +1,4 @@
-##☕ Saltyfunnel’s Hyprland Config – Made by a Noob Who’s Slowly Becoming Less of One (Somehow)
+## ☕ Saltyfunnel’s Hyprland Config – Made by a Noob Who’s Slowly Becoming Less of One (Somehow)
 
 Welcome to my Hyprland rice.
 Before you go any further, let me be painfully honest:
