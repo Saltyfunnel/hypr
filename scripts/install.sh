@@ -123,6 +123,7 @@ for pkg in "${AUR_PACKAGES[@]}"; do
     else
         run_command "sudo -u $USER_NAME yay -S --noconfirm $pkg" "Install $pkg from AUR"
     fi
+done # Closing the loop for AUR packages here
 
 # ----------------------------
 # Shell Setup (Bash)
@@ -194,7 +195,6 @@ if [[ -d "$YAZI_CONFIG_SRC" ]]; then
 else
     print_warning "Source directory not found: $YAZI_CONFIG_SRC. Skipping Yazi config copy."
 fi
-done
 
 # Fastfetch config
 FASTFETCH_SRC="$REPO_ROOT/configs/fastfetch/config.jsonc"
@@ -209,6 +209,22 @@ if [[ -f "$STARSHIP_SRC" ]]; then
     sudo -u "$USER_NAME" cp "$STARSHIP_SRC" "$CONFIG_DIR/starship.toml"
     print_success "✅ Copied starship.toml"
 fi
+
+# --- NEW: Btop config (to set color_theme = "TTY") ---
+BTOP_CONFIG_SRC="$REPO_ROOT/configs/btop/btop.conf"
+BTOP_CONFIG_DEST="$CONFIG_DIR/btop/btop.conf"
+
+if [[ -f "$BTOP_CONFIG_SRC" ]]; then
+    # Ensure the destination directory exists
+    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/btop"
+    
+    # Copy the pre-configured file from your repo
+    sudo -u "$USER_NAME" cp "$BTOP_CONFIG_SRC" "$BTOP_CONFIG_DEST"
+    print_success "✅ Copied btop/btop.conf and set TTY theme for pywal support"
+else
+    print_warning "Source file not found: $BTOP_CONFIG_SRC. Skipping Btop config copy."
+fi
+# -----------------------------------------------------
 
 # ----------------------------
 # Copy Pywal Templates
@@ -303,7 +319,7 @@ echo -e "║         Pywal Template System Setup Complete! 🎨          ║"
 echo -e "╚════════════════════════════════════════════════════════════╝"
 echo ""
 echo "📁 Configuration Structure:"
-echo "   • Static configs: ~/.config/{hypr,waybar,yazi,fastfetch}/"
+echo "   • Static configs: ~/.config/{hypr,waybar,yazi,btop,fastfetch}/"
 echo "   • Pywal templates: ~/.config/wal/templates/"
 echo "   • Generated configs: ~/.cache/wal/ (symlinked)"
 echo ""
