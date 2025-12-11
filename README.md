@@ -98,6 +98,8 @@ Two PyQt6 scripts replacing good, working tools with homemade knockoffs that mat
 If you’re not on Arch, just stop now.
 If you *are* on Arch… still maybe think about your life choices.
 
+Only tested with min Arch.
+
 ```bash
 git clone https://github.com/Saltyfunnel/hypr
 cd hypr
