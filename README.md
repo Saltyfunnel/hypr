@@ -24,20 +24,20 @@ A demonstration of how the **`setwall.sh`** script automatically changes the sys
 
 #### **Example 1: Tiled Windows and Waybar**
 This shows the clean default layout with Hyprland tiling, the Waybar, and the dynamically generated color scheme.
-<img src="screenshots/screenshot_2025-12-11_21-39-49.png" alt="Tiled Windows and Dynamic Theme" width="400"/>
+<img src="screenshots/screenshot_2025-12-11_21-39-49.png" alt="Tiled Windows and Dynamic Theme" width="800"/>
 
 #### **Example 2: Theme Change Example (Wallpaper 1)**
-<img src="screenshots/screenshot_2025-12-11_21-40-07.png" alt="Pywal Theme Shift Example 1" width="400"/>
+<img src="screenshots/screenshot_2025-12-11_21-40-07.png" alt="Pywal Theme Shift Example 1" width="800"/>
 
 #### **Example 3: Theme Change Example (Wallpaper 2)**
-<img src="screenshots/screenshot_2025-12-11_21-40-36.png" alt="Pywal Theme Shift Example 2" width="400"/>
+<img src="screenshots/screenshot_2025-12-11_21-40-36.png" alt="Pywal Theme Shift Example 2" width="800"/>
 
 #### **Example 4: Theme Change Example (Wallpaper 3)**
-<img src="screenshots/screenshot_2025-12-11_21-41-11.png" alt="Minimal Theme Shift Example" width="400"/>
+<img src="screenshots/screenshot_2025-12-11_21-41-11.png" alt="Minimal Theme Shift Example" width="800"/>
 
 ### **The Custom Picker**
 A shot of the homemade PyQt6 Wallpaper Picker in action, which sends the chosen image to the Pywal theme generation script.
-<img src="screenshots/screenshot_2025-12-11_21-41-22.png" alt="Custom Wallpaper Picker GUI" width="400"/>
+<img src="screenshots/screenshot_2025-12-11_21-41-22.png" alt="Custom Wallpaper Picker GUI" width="800"/>
 
 
 ## 💡 Startup Notes (a.k.a. How to Ruin Your Day Early)
