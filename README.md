@@ -1,21 +1,21 @@
-# ☕ Saltyfunnel’s Hyprland Config
+☕ Saltyfunnel’s Hyprland Config
 
-*(Lovingly duct-taped together by me, technically typed by ChatGPT)*
+(Lovingly duct-taped together by me, technically typed by a committee of AIs)
+🧠 What This Repo Really Is: A Monument to My Failure
 
+Let's be clear: I am a total Linux noob. This is not configuration; it's digital spite. This entire Hyprland setup is a battlefield where I, the completely unqualified user, fought a grueling, multi-round battle against three different Large Language Models (LLMs) to make my desktop look like something I saw on Reddit.
 
-## 🧠 What This Repo *Really* Is
+It was assembled using:
 
-This is not a professional Hyprland configuration.
-This is a museum exhibit of “I saw this in a screenshot and wanted it too,” built using:
+    5% My brain (mostly for the copy/paste part)
 
-* 10% effort
-* 30% stubborn googling
-* 60% hoping AI knows what it’s doing
+    25% Stubborn, rage-filled googling
 
-The result is a setup that *looks* clean and minimal… as long as you don’t read the scripts or ask how anything works.
+    70% Screaming at ChatGPT, Claude, and Gemini until one of them finally gave in.
 
-If it runs: credit the robots.
-If it doesn’t: I was never here, I deny everything.
+The result is a desktop that looks clean and minimal... but is held together by the tears of my sanity and countless chat history logs.
+
+If it runs: The AI won the argument, and I give them full credit. If it doesn’t: I deny knowing anything about Linux, I was never here.
 
 ## 🖼️ Screenshots
 
@@ -51,8 +51,6 @@ The Fix (Quick & Permanent):
     Select any wallpaper from the list.
 
 Choosing a wallpaper will run the theming script, resolve the initial error, and start your colorful, dynamic desktop.
-
-It’s your funeral now.
 
 ## 🧩 The Stack (AKA “Things I Installed And Pray Don’t Update”)
 
