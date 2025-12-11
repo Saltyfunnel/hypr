@@ -9,23 +9,24 @@ A demonstration of how the **`setwall.sh`** script automatically changes the sys
 
 #### **Example 1: Tiled Windows and Waybar**
 This shows the clean default layout with Hyprland tiling, the Waybar, and the dynamically generated color scheme.
-[![Tiled Windows and Dynamic Theme](https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-40-36.jpg)](https://github.com/Saltyfunnel/hypr/blob/main/screenshots/screenshot_2025-12-11_21-39-49.png)
+<img src="https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-40-36.jpg" alt="Tiled Windows and Dynamic Theme" width="400"/>
 
 #### **Example 2: Theme Change Example (Wallpaper 1)**
 A view demonstrating a complete color shift based on a high-contrast wallpaper.
-![Pywal Theme Shift Example 1](https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-41-11.jpg)
+<img src="https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-41-11.jpg" alt="Pywal Theme Shift Example 1" width="400"/>
 
 #### **Example 3: Theme Change Example (Wallpaper 2)**
 Another example of the full system color palette adjusting to a different background image.
-![Pywal Theme Shift Example 2](https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-39-49.jpg)
+<img src="https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-39-49.jpg" alt="Pywal Theme Shift Example 2" width="400"/>
 
 #### **Example 4: Theme Change Example (Wallpaper 3)**
 A simple, minimal aesthetic generated from a monochrome wallpaper.
-![Minimal Theme Shift Example](https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-40-07.jpg)
+<img src="https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-40-07.jpg" alt="Minimal Theme Shift Example" width="400"/>
 
 ### **The Custom Picker**
 A shot of the homemade PyQt6 Wallpaper Picker in action, which sends the chosen image to the Pywal theme generation script.
-![Custom Wallpaper Picker GUI](https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-41-22.jpg)
+<img src="https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-41-22.jpg" alt="Custom Wallpaper Picker GUI" width="400"/>
+
 ## 🧠 What This Repo *Really* Is
 
 This is not a professional Hyprland configuration.
