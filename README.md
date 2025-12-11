@@ -17,7 +17,7 @@ A view demonstrating a complete color shift based on a high-contrast wallpaper.
 
 #### **Example 3: Theme Change Example (Wallpaper 2)**
 Another example of the full system color palette adjusting to a different background image.
-<img src="https://raw.githubusercontent.com/Saltyfunnel/hypr/main/screenshots/screenshot_2025-12-11_21-39-49.jpg" alt="Pywal Theme Shift Example 2" width="400"/>
+<img src="screenshots/screenshot_2025-12-11_21-40-36.png" alt="Pywal Theme Shift Example 2" width="400"/>
 
 #### **Example 4: Theme Change Example (Wallpaper 3)**
 A simple, minimal aesthetic generated from a monochrome wallpaper.
