@@ -1,22 +1,4 @@
-## ☕ Saltyfunnels Hyprland Config – Made by a Noob
-Welcome to my Hyprland rice.
-Before you go any further, let me be painfully honest:
-
-I had absolutely no idea what I was doing when I started this.
-Like… negative idea.
-The kind of noob who breaks things by looking at them.
-But over time (and with a frankly embarrassing amount of AI assistance), I’ve crawled my way into being a “semi-functional beginner who occasionally understands things.”
-
-So yeah — this repo is a mix of:
-
-accidental successes
-
-configs I copied but now kind of understand
-
-my own trial-and-error disasters
-
-AI filling in the brain cells I didn’t have that day
-## 🖼️ Screenshots
+ ## 🖼️ Screenshots
 
 <img src="screenshots/screenshot_2025-12-11_21-39-49.png" alt="Tiled Windows and Dynamic Theme" width="800"/>
 
