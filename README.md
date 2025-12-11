@@ -2,6 +2,31 @@
 
 *(Lovingly duct-taped together by me, technically typed by ChatGPT)*
 
+## 🖼️ Screenshots
+
+### **The Pywal Dynamic**
+A demonstration of how the **`setwall.sh`** script automatically changes the system's color scheme (Waybar, Terminal, and Pickers) to match the wallpaper, showcasing the fluid nature of the config.
+
+#### **Example 1: Tiled Windows and Waybar**
+This shows the clean default layout with Hyprland tiling, the Waybar, and the dynamically generated color scheme.
+![Tiled Windows and Dynamic Theme](screenshots/screenshot_2025-12-11_21-40-36.jpg)
+
+#### **Example 2: Theme Change Example (Wallpaper 1)**
+A view demonstrating a complete color shift based on a high-contrast wallpaper.
+![Pywal Theme Shift Example 1](screenshots/screenshot_2025-12-11_21-41-11.jpg)
+
+#### **Example 3: Theme Change Example (Wallpaper 2)**
+Another example of the full system color palette adjusting to a different background image.
+![Pywal Theme Shift Example 2](screenshots/screenshot_2025-12-11_21-39-49.jpg)
+
+#### **Example 4: Theme Change Example (Wallpaper 3)**
+A simple, minimal aesthetic generated from a monochrome wallpaper.
+![Minimal Theme Shift Example](screenshots/screenshot_2025-12-11_21-40-07.jpg)
+
+### **The Custom Picker**
+A shot of the homemade PyQt6 Wallpaper Picker in action, which sends the chosen image to the Pywal theme generation script.
+![Custom Wallpaper Picker GUI](screenshots/screenshot_2025-12-11_21-41-22.jpg)
+
 ## 🧠 What This Repo *Really* Is
 
 This is not a professional Hyprland configuration.
