@@ -215,15 +215,26 @@ fi
 # ----------------------------
 print_header "Copying Pywal templates"
 
-# Copy ALL templates from repo
+# --- NEW: Copy Kitty Template Explicitly ---
+# We copy kitty.conf from its source location to the Pywal templates directory.
+KITTY_TEMPLATE_SRC="$REPO_ROOT/configs/kitty/kitty.conf"
+KITTY_TEMPLATE_DEST="$WAL_TEMPLATES/kitty.conf"
+
+if [[ -f "$KITTY_TEMPLATE_SRC" ]]; then
+    sudo -u "$USER_NAME" cp "$KITTY_TEMPLATE_SRC" "$KITTY_TEMPLATE_DEST"
+    print_success "✅ Copied kitty.conf as Pywal template"
+fi
+# -------------------------------------------
+
+# Copy ALL templates from repo (Your existing block starts here)
 TEMPLATE_SOURCE="$REPO_ROOT/configs/wal/templates"
 if [[ -d "$TEMPLATE_SOURCE" ]]; then
     sudo -u "$USER_NAME" cp -r "$TEMPLATE_SOURCE"/* "$WAL_TEMPLATES/"
-    print_success "✅ Copied all pywal templates"
+    print_success "✅ Copied all other pywal templates"
     
     # List what was copied
     echo "Templates installed:"
-    ls -1 "$WAL_TEMPLATES" | sed 's/^/   - /'
+    ls -1 "$WAL_TEMPLATES" | sed 's/^/    - /'
 else
     print_error "Template directory not found: $TEMPLATE_SOURCE"
 fi
