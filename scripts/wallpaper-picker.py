@@ -5,7 +5,6 @@ from PyQt6 import QtWidgets, QtGui, QtCore
 
 # --- CONFIGURATION (COMPACT SIZE AND HIGH DENSITY) ---
 WALLPAPER_DIR = Path.home() / "Pictures/Wallpapers"
-# --- ADJUSTED SIZE: Much smaller thumbnails to eliminate overlap and shrink window ---
 THUMB_SIZE = (200, 150) 
 THUMBS_PER_ROW = 5
 MAX_VISIBLE_ROWS = 3 
@@ -15,17 +14,15 @@ GRID_SPACING = 10
 # Constants for seamless zoom calculation
 SCALE_FACTOR = 1.1 
 SHADOW_MARGIN = 10 
-# Recalculate WRAPPER dimensions based on the new THUMB_SIZE
 WRAPPER_WIDTH = int(THUMB_SIZE[0] * SCALE_FACTOR) + SHADOW_MARGIN * 2
 WRAPPER_HEIGHT = int(THUMB_SIZE[1] * SCALE_FACTOR) + SHADOW_MARGIN * 2
 
-# --- Animated Wrapper Class (Retained) ---
+# --- Animated Wrapper Class ---
 class AnimatedThumbnail(QtWidgets.QWidget):
     def __init__(self, button, parent=None):
         super().__init__(parent)
         self.button = button
         
-        # Fixed size ensures the wrapper fits the zoomed thumbnail + shadow
         self.setFixedSize(WRAPPER_WIDTH, WRAPPER_HEIGHT) 
         
         btn_x = int((WRAPPER_WIDTH - THUMB_SIZE[0]) / 2)
@@ -43,12 +40,6 @@ class AnimatedThumbnail(QtWidgets.QWidget):
         self.button.setParent(self) 
 
     def enterEvent(self, event):
-        self.setStyleSheet(f"""
-            QWidget {{
-                box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4); 
-            }}
-        """)
-
         if not self.is_animating:
             self.is_animating = True
             new_width = int(THUMB_SIZE[0] * SCALE_FACTOR)
@@ -65,8 +56,6 @@ class AnimatedThumbnail(QtWidgets.QWidget):
         super().enterEvent(event)
 
     def leaveEvent(self, event):
-        self.setStyleSheet("") 
-
         if not self.is_animating:
             self.is_animating = True
             self.animation.setDuration(150)
@@ -85,7 +74,6 @@ class WallpaperPicker(QtWidgets.QWidget):
         self.setWindowFlag(QtCore.Qt.WindowType.WindowStaysOnTopHint)
         self.setWindowFlag(QtCore.Qt.WindowType.Tool)
         self.setWindowFlag(QtCore.Qt.WindowType.FramelessWindowHint) 
-        
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_OpaquePaintEvent) 
 
         self.wallpapers = list(WALLPAPER_DIR.glob("*.[pj][pn]g"))
@@ -93,41 +81,45 @@ class WallpaperPicker(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Error", f"No wallpapers found in {WALLPAPER_DIR}")
             sys.exit(1)
 
+        # Get Pywal colors
         self.BG, self.FG, self.BORDER = self.get_pywal_colors()
         bg_color = QtGui.QColor(self.BG)
         bg_color.setAlpha(OPACITY)
         rgba_bg = f"rgba({bg_color.red()},{bg_color.green()},{bg_color.blue()},{bg_color.alpha()})"
-        self.setStyleSheet(f"background-color: {rgba_bg};") 
+        
+        # Apply style to main window
+        self.setStyleSheet(f"background-color: {rgba_bg}; border-radius: 10px;") 
 
+        # Scroll Area Setup
         scroll = QtWidgets.QScrollArea()
         scroll.setWidgetResizable(True)
+        # Hide scrollbars
         scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        
         scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame) 
-        scroll.setStyleSheet(f"background-color: {rgba_bg}; QScrollBar:vertical {{ width: 0px; }}")
+        scroll.setStyleSheet("background-color: transparent;")
 
         container = QtWidgets.QWidget()
-        container.setStyleSheet(f"background-color: {rgba_bg};")
+        container.setStyleSheet("background-color: transparent;")
         grid = QtWidgets.QGridLayout(container)
-        # Grid spacing is zero, the wrapper size takes care of internal spacing
         grid.setSpacing(0)
         grid.setContentsMargins(0, 0, 0, 0) 
 
+        # Build Grid
         row, col = 0, 0
         for wp in self.wallpapers:
-            pixmap = QtGui.QPixmap(str(wp)).scaled(*THUMB_SIZE, QtCore.Qt.AspectRatioMode.KeepAspectRatio,
-                                                  QtCore.Qt.TransformationMode.SmoothTransformation)
+            pixmap = QtGui.QPixmap(str(wp)).scaled(
+                THUMB_SIZE[0], THUMB_SIZE[1], 
+                QtCore.Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                QtCore.Qt.TransformationMode.SmoothTransformation
+            )
             
             btn = QtWidgets.QPushButton()
             btn.setIcon(QtGui.QIcon(pixmap))
-            btn.setIconSize(pixmap.size())
+            btn.setIconSize(QtCore.QSize(*THUMB_SIZE))
             btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
             btn.setFixedSize(THUMB_SIZE[0], THUMB_SIZE[1]) 
-            btn.setStyleSheet(f"""
-                QPushButton {{ border: none; border-radius: 5px; padding: 4px; background-color: #00000000; }}
-                QPushButton:hover {{ border: none; }}
-            """)
+            btn.setStyleSheet("QPushButton { border: none; border-radius: 5px; background-color: transparent; }")
             
             thumb_wrapper = AnimatedThumbnail(btn)
             btn.clicked.connect(lambda checked=False, w=wp: self.select_wallpaper(w))
@@ -138,32 +130,26 @@ class WallpaperPicker(QtWidgets.QWidget):
                 col = 0
                 row += 1
 
-        # Calculate the final intended height and width
-        intended_height = WRAPPER_HEIGHT * MAX_VISIBLE_ROWS 
-        container_min_width = WRAPPER_WIDTH * THUMBS_PER_ROW 
+        # --- DYNAMIC SIZING CALCULATIONS ---
+        num_wallpapers = len(self.wallpapers)
+        # Calculate how many rows are needed
+        actual_rows = (num_wallpapers + THUMBS_PER_ROW - 1) // THUMBS_PER_ROW
+        # Use actual rows, but don't exceed MAX_VISIBLE_ROWS
+        visible_rows = min(actual_rows, MAX_VISIBLE_ROWS)
+
+        # Window dimensions
+        final_width = (WRAPPER_WIDTH * THUMBS_PER_ROW) + (GRID_SPACING * 2)
+        final_height = (WRAPPER_HEIGHT * visible_rows) + (GRID_SPACING * 2)
 
         container.setLayout(grid)
-        container.setMinimumWidth(container_min_width)
-        container.setMaximumHeight(intended_height) 
-
         scroll.setWidget(container)
+
         layout = QtWidgets.QVBoxLayout(self)
-        
-        # Re-introduce the spacing as margins to pad the whole grid
         layout.setContentsMargins(GRID_SPACING, GRID_SPACING, GRID_SPACING, GRID_SPACING) 
-        layout.setSpacing(GRID_SPACING)  
-        
         layout.addWidget(scroll)
 
-        # Calculate the FINAL window size including the outer margins
-        final_width = container_min_width + GRID_SPACING * 2
-        final_height = intended_height + GRID_SPACING * 2
-
-        # Lock the final window size
+        # Lock the window size based on our calculations
         self.setFixedSize(final_width, final_height)
-
-        # Tell the vertical layout to expand the QScrollArea to fill the window.
-        layout.setStretch(0, 1)
 
         # Fade-In Animation
         self.setWindowOpacity(0.0) 
@@ -180,29 +166,32 @@ class WallpaperPicker(QtWidgets.QWidget):
         colors = {}
         try:
             with open(wal_cache) as f:
-                for i in range(16):
-                    f.seek(0)
-                    line_name = f"color{i}"
-                    for l in f:
-                        if line_name in l:
-                            colors[f"color{i}"] = l.split(":")[1].strip().rstrip(";")
-                            break
+                for line in f:
+                    if ":" in line and "color" in line:
+                        parts = line.split(":")
+                        key = parts[0].strip().replace("--", "")
+                        val = parts[1].strip().rstrip(";")
+                        colors[key] = val
         except FileNotFoundError:
             return "#1d1f21", "#c5c8c6", "#5f819d"
+        
         BG = colors.get("color0", "#1d1f21")
         FG = colors.get("color7", "#c5c8c6")
         BORDER = colors.get("color4", "#5f819d")
         return BG, FG, BORDER
 
     def select_wallpaper(self, wp):
-        subprocess.run([str(Path.home() / ".config/scripts/setwall.sh"), str(wp)])
+        # Executes your setwall script
+        try:
+            subprocess.run([str(Path.home() / ".config/scripts/setwall.sh"), str(wp)])
+        except Exception as e:
+            print(f"Error running script: {e}")
         QtWidgets.QApplication.quit()
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key.Key_Escape:
             QtWidgets.QApplication.quit()
         super().keyPressEvent(event)
-
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
