@@ -1,5 +1,5 @@
 #!/bin/bash
-# Minimal Hyprland Installer with PROPER pywal16 template support
+# Minimal Hyprland Installer - 2026 Optimized (Nvidia + Yazi Fixes)
 set -euo pipefail
 
 # ----------------------------
@@ -34,7 +34,6 @@ WAL_CACHE="$USER_HOME/.cache/wal"
 # ----------------------------
 [[ "$EUID" -eq 0 ]] || print_error "Run as root (sudo $0)"
 command -v pacman &>/dev/null || print_error "pacman not found"
-command -v systemctl &>/dev/null || print_error "systemctl not found"
 
 # ----------------------------
 # System Update & Drivers (NVIDIA FIX)
@@ -45,14 +44,12 @@ run_command "pacman -Syyu --noconfirm" "System update"
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
 
 if echo "$GPU_INFO" | grep -qi nvidia; then
-    # Install the new 2026 driver targets + matching headers
     run_command "pacman -S --noconfirm nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" "Install NVIDIA Open Drivers"
     
-    # Enable Early KMS (Required for Hyprland to boot)
+    # Enable Early KMS
     sed -i 's/^MODULES=(/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm /' /etc/mkinitcpio.conf
     run_command "mkinitcpio -P" "Rebuilding Initramfs"
     
-    # Update GRUB modeset if applicable
     if [ -f /etc/default/grub ]; then
         sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="nvidia_drm.modeset=1 /' /etc/default/grub
         run_command "grub-mkconfig -o /boot/grub/grub.cfg" "Updating GRUB"
@@ -62,19 +59,24 @@ elif echo "$GPU_INFO" | grep -qi amd; then
 fi
 
 # ----------------------------
-# Core Packages
+# Core Packages (Added Yazi Deps)
 # ----------------------------
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
+    # Core Desktop
     hyprland waybar swww mako grim slurp kitty nano wget jq btop
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
-    gvfs udiskie udisks2 chafa firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
+    gvfs udiskie udisks2 firefox fastfetch starship mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
+    
+    # Yazi & Image Preview Stack (CRITICAL)
+    yazi ffmpegthumbnailer poppler imagemagick chafa
+    
+    # Fonts
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
 
-run_command "systemctl enable --now polkit.service" "Enable polkit"
 run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth"
 
 # ----------------------------
@@ -90,7 +92,7 @@ fi
 run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16 localsend-bin" "AUR Packages"
 
 # ----------------------------
-# Shell Setup (Bash)
+# Shell Setup
 # ----------------------------
 print_header "Shell Setup"
 run_command "chsh -s $(command -v bash) $USER_NAME" "Set Bash"
@@ -98,7 +100,6 @@ run_command "chsh -s $(command -v bash) $USER_NAME" "Set Bash"
 BASHRC_SRC="$REPO_ROOT/configs/.bashrc"
 BASHRC_DEST="$USER_HOME/.bashrc"
 
-# This block was failing because it only writes the hooks if the file is MISSING
 if [[ -f "$BASHRC_SRC" ]]; then
     sudo -u "$USER_NAME" cp "$BASHRC_SRC" "$BASHRC_DEST"
 else
@@ -110,10 +111,15 @@ EOF
 fi
 
 # ----------------------------
-# Config & Directories (Original Logic)
+# Config & Directories
 # ----------------------------
+print_header "Applying Configs"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts} "$WAL_TEMPLATES" "$WAL_CACHE"
 
+# Clean old Yazi state to prevent thumbnail ghosting
+sudo -u "$USER_NAME" rm -rf "$USER_HOME/.cache/yazi" "$USER_HOME/.local/state/yazi"
+
+# Copy configs
 [[ -f "$REPO_ROOT/configs/hypr/hyprland.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/hypr/hyprland.conf" "$CONFIG_DIR/hypr/hyprland.conf"
 [[ -f "$REPO_ROOT/configs/waybar/config" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/waybar/config" "$CONFIG_DIR/waybar/config"
 [[ -d "$REPO_ROOT/configs/yazi" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/yazi"/* "$CONFIG_DIR/yazi/"
@@ -121,7 +127,7 @@ sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,ma
 [[ -f "$REPO_ROOT/configs/starship/starship.toml" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/starship/starship.toml" "$CONFIG_DIR/starship.toml"
 [[ -f "$REPO_ROOT/configs/btop/btop.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/btop/btop.conf" "$CONFIG_DIR/btop/btop.conf"
 
-# Pywal Templates
+# Kitty & Pywal
 [[ -f "$REPO_ROOT/configs/kitty/kitty.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/kitty/kitty.conf" "$WAL_TEMPLATES/kitty.conf"
 [[ -d "$REPO_ROOT/configs/wal/templates" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/wal/templates"/* "$WAL_TEMPLATES/"
 
@@ -131,10 +137,11 @@ sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
 
-# Scripts & Wallpapers
+# Scripts
 [[ -d "$SCRIPTS_SRC" ]] && sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/" && sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
+
+# Wallpapers
 [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]] && sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures" && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 
 systemctl enable sddm.service
-print_success "Done. Reboot now."
-
+print_success "Installation Complete. Reboot recommended."
