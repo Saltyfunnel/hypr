@@ -1,5 +1,5 @@
 #!/bin/bash
-# Minimal Hyprland Installer - 2026 Optimized (Nvidia + Yazi Fixes)
+# Minimal Hyprland Installer - 2026 Optimized (Nvidia + Yazi + Plugins)
 set -euo pipefail
 
 # ----------------------------
@@ -59,17 +59,17 @@ elif echo "$GPU_INFO" | grep -qi amd; then
 fi
 
 # ----------------------------
-# Core Packages (Added Yazi Deps)
+# Core Packages
 # ----------------------------
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
-    # Core Desktop
+    # Desktop Environment
     hyprland waybar swww mako grim slurp kitty nano wget jq btop
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
     gvfs udiskie udisks2 firefox fastfetch starship mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
     
-    # Yazi & Image Preview Stack (CRITICAL)
+    # Yazi & Image Preview Stack
     yazi ffmpegthumbnailer poppler imagemagick chafa
     
     # Fonts
@@ -137,11 +137,27 @@ sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
 
-# Scripts
+# Scripts & Permissions
 [[ -d "$SCRIPTS_SRC" ]] && sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/" && sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
 
 # Wallpapers
 [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]] && sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures" && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 
+# ----------------------------
+# Yazi Plugin Setup (THE RECYCLE BIN FIX)
+# ----------------------------
+print_header "Installing Yazi Plugins"
+# Ensure the user owns their config directory before running 'ya'
+run_command "chown -R $USER_NAME:$USER_NAME $CONFIG_DIR/yazi" "Fix Yazi Folder Ownership"
+# Install latest compatible recycle-bin via official package manager
+sudo -u "$USER_NAME" ya pack -a yazi-rs/plugins:recycle-bin
+
+# Generate a clean init.lua that won't crash the engine
+cat <<EOF | sudo -u "$USER_NAME" tee "$CONFIG_DIR/yazi/init.lua" >/dev/null
+require("recycle-bin"):setup({
+    container = "system", -- Uses trash-cli
+})
+EOF
+
 systemctl enable sddm.service
-print_success "Installation Complete. Reboot recommended."
+print_success "Done. Yazi with Recycle-Bin and Image Previews is ready. Reboot now."
