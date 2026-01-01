@@ -1,124 +1,72 @@
-# --------------------------
-#     Yazi - Beginner Setup
-#     Enhanced for Daily Use
-# --------------------------
+# ---------------------------------------------------------
+# YAZI CONFIG - REPO VERSION (2026)
+# ---------------------------------------------------------
 
-[theme]
-use = "~/.config/yazi/theme.toml"
-
-[mgr]
-ratio           = [ 1, 3, 4 ]       # Preview pane ratio (Parent:Current:Preview)
-sort_by         = "natural"
-sort_sensitive  = false
-sort_reverse    = false
-sort_dir_first  = true
-linemode        = "permissions"     # ⬅️ CHANGED: Default view shows file permissions (Fundamental for Linux)
-show_hidden     = true              # ⬅️ CHANGED: Show .dotfiles by default (Crucial for configuration)
-show_symlink    = true
-scrolloff       = 3                 # ⬅️ CHANGED: Smoother scrolling, keeps cursor 3 lines from edge
-title_format    = "Yazi: {cwd}/{file}" # ⬅️ CHANGED: Show current directory AND the selected file in the title bar
-mouse_events    = [ "click", "scroll" ]
-
-# --------------------------
-# Preview
-# --------------------------
+[manager]
+ratio          = [ 1, 3, 4 ]
+sort_by        = "natural"
+sort_sensitive = false
+sort_dir_first = true
+linemode       = "permissions"
+show_hidden    = true
+show_symlink   = true
 
 [preview]
-wrap            = "yes"             # Text lines will wrap automatically (much easier to read large text files)
-tab_size        = 2
-max_width       = 1200
-max_height      = 1200
-image_delay     = 0                 # Load images instantly if your terminal supports it
+max_width       = 1500
+max_height      = 1500
 image_filter    = "lanczos3"
 image_quality   = 90
 sixel_fraction  = 15
-ueberzug_scale  = 1
-ueberzug_offset = [0, 0, 0, 0]
-# --------------------------
-# Keybinds
-# --------------------------
 
-keybinds = "~/.config/yazi/keybind.toml"
+[preview.image]
+enable = true
+backend = "kitty"
 
-# --------------------------
-# Openers (Keep this section - it's great!)
-# --------------------------
+[preview.video]
+enable = true
+backend = "ffmpeg"
+
+[preview.pdf]
+enable = true
+backend = "pdftoppm"
+
+# ----------------------------
+# OPENERS
+# ----------------------------
 
 [opener]
-
 edit = [
-  { run = 'nano "$@"', block = true, desc = "Nano", for = "unix" }, # Standard terminal editor
-  { run = 'code "$@"', orphan = true, desc = "VS Code", for = "unix" } # VS Code GUI
+  { run = '${EDITOR:-nano} "$@"', block = true, desc = "Edit" }
 ]
-
 image = [
-  { run = 'imv "$@"', orphan = true, desc = "imv", for = "unix" },
-  { run = 'nsxiv "$@"', orphan = true, desc = "nsxiv", for = "unix" }
-]
-
+  { run = 'imv "$@"', orphan = true, desc = "imv" }
+  ]
 play = [
-  { run = 'mpv "$@"', orphan = true, desc = "mpv", for = "unix" }
+  { run = 'mpv "$@"', orphan = true, desc = "mpv" }
 ]
-
-pdf = [
-  { run = 'zathura "$@"', orphan = true, desc = "Zathura", for = "unix" },
-  { run = 'evince "$@"', orphan = true, desc = "Evince", for = "unix" }
-]
-
-open = [
-  { run = 'xdg-open "$1"', desc = "System default", for = "linux" }
-]
-
-reveal = [
-  { run = 'xdg-open "$(dirname "$1")"', desc = "Reveal", for = "linux" }
-]
-
-extract = [
-  { run = 'ya pub extract --list "$@"', desc = "Extract here", for = "unix" }
-]
-
-# --------------------------
-# Open rules (Keep this section - it's perfectly configured)
-# --------------------------
 
 [open]
 rules = [
-  { name = "*/", use = [ "open", "reveal" ] },
-  { mime = "text/*", use = [ "edit", "reveal" ] },
-  { name = "*.toml", use = [ "edit", "reveal" ] },
-  { name = "*.conf", use = [ "edit", "reveal" ] },
-  { name = "*.sh",    use = [ "edit", "reveal" ] },
-  { mime = "image/*", use = [ "image", "reveal" ] },
-  { mime = "video/*", use = [ "play", "reveal" ] },
-  { mime = "audio/*", use = [ "play", "reveal" ] },
-  { mime = "application/pdf", use = [ "pdf", "reveal" ] },
-  { mime = "application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma}", use = [ "extract", "reveal" ] },
-  { name = "*", use = [ "open", "reveal" ] }
+  { name = "*/", use = [ "edit" ] },
+  { mime = "text/*", use = [ "edit" ] },
+  { mime = "image/*", use = [ "image" ] },
+  { mime = "video/*", use = [ "play" ] },
+  { mime = "application/pdf", use = [ "play" ] }
 ]
 
-# --------------------------
-# Tasks
-# --------------------------
-
-[tasks]
-micro_workers = 10
-macro_workers = 10
-image_alloc   = 536870912     # 512MB cache (Increase this to 1073741824 for 1GB if you handle large media libraries)
-
-# --------------------------
-# Plugins (Keep this section - the defaults are excellent)
-# --------------------------
+# ----------------------------
+# PLUGINS & PREVIEWERS
+# ----------------------------
 
 [plugin]
-
 fetchers = [
-  { id = "mime", name = "*", run = "mime", if = "!mime", prio = "high" }
+  { id = "mime", name = "*", run = "mime", prio = "high" }
 ]
 
 preloaders = [
-  { mime = "image/*", run = "image", prio = "high" },
-  { mime = "video/*", run = "video", prio = "high" },
-  { mime = "application/pdf", run = "pdf", prio = "normal" }
+  { mime = "image/*", run = "image" },
+  { mime = "video/*", run = "video" },
+  { mime = "application/pdf", run = "pdf" }
 ]
 
 previewers = [
@@ -126,23 +74,13 @@ previewers = [
   { mime = "text/*", run = "code" },
   { mime = "image/*", run = "image" },
   { mime = "video/*", run = "video" },
-  { mime = "audio/*", run = "file" },
   { mime = "application/pdf", run = "pdf" },
   { name = "*", run = "file" }
 ]
 
-# --------------------------
-# Input UI (Keep this section - fine as is)
-# --------------------------
-
 [input]
 cursor_blink = true
-
-# --------------------------
-# Confirm boxes (Keep this section - fine as is)
-# --------------------------
 
 [confirm]
 trash_title  = "Move {n} files to trash?"
 delete_title = "PERMANENTLY DELETE {n} FILES?"
-quit_title   = "Quit Yazi?"
