@@ -1,10 +1,14 @@
 #!/bin/bash
-# ~/.config/scripts/start_yazi.sh
+# ~/.config/scripts/startyazi.sh
 
-# Load Pywal colors into terminal
+# 1. Load Pywal colors into the terminal session
 if [[ -f "$HOME/.cache/wal/sequences" ]]; then
     cat "$HOME/.cache/wal/sequences"
 fi
 
-# Launch Yazi
-yazi
+# 2. Force the Terminal variable
+# This tells Yazi "You are definitely in Kitty, use the graphics protocol!"
+export TERM=xterm-kitty
+
+# 3. Launch Yazi
+yazi "$@"
