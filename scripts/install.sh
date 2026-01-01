@@ -1,35 +1,22 @@
+
 #!/bin/bash
 # Minimal Hyprland Installer with PROPER pywal16 template support
-# This version only copies static configs and templates - no redundant files!
+# Updated for Jan 2026 NVIDIA Driver Changes (590+ / Legacy Support)
 set -euo pipefail
 
 # ----------------------------
 # Helper functions
 # ----------------------------
-print_header() {
-    echo -e "\n--- \e[1m\e[34m$1\e[0m ---"
-}
-
-print_success() {
-    echo -e "\e[32m$1\e[0m"
-}
-
-print_warning() {
-    echo -e "\e[33mWarning: $1\e[0m" >&2
-}
-
-print_error() {
-    echo -e "\e[31mError: $1\e[0m" >&2
-    exit 1
-}
+print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
+print_success() { echo -e "\e[32m$1\e[0m"; }
+print_warning() { echo -e "\e[33mWarning: $1\e[0m" >&2; }
+print_error() { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 
 run_command() {
     local cmd="$1"
     local desc="$2"
     echo -e "\nRunning: $desc"
-    if ! eval "$cmd"; then
-        print_error "Failed: $desc"
-    fi
+    if ! eval "$cmd"; then print_error "Failed: $desc"; fi
     print_success "✅ Success: $desc"
 }
 
@@ -39,11 +26,8 @@ run_command() {
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
-
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPTS_SRC="$REPO_ROOT/scripts"
-
-# Pywal template directories
 WAL_TEMPLATES="$CONFIG_DIR/wal/templates"
 WAL_CACHE="$USER_HOME/.cache/wal"
 
@@ -56,25 +40,51 @@ command -v systemctl &>/dev/null || print_error "systemctl not found"
 print_success "✅ Environment checks passed"
 
 # ----------------------------
-# System Update
+# System Update & Kernel Headers (CRITICAL FOR NVIDIA)
 # ----------------------------
-print_header "Updating system"
+print_header "Updating system and detecting kernel"
 run_command "pacman -Syyu --noconfirm" "System update"
 
+KERNEL_TYPE=$(uname -r)
+if [[ "$KERNEL_TYPE" == *"lts"* ]]; then
+    run_command "pacman -S --noconfirm --needed linux-lts-headers" "LTS Headers"
+elif [[ "$KERNEL_TYPE" == *"zen"* ]]; then
+    run_command "pacman -S --noconfirm --needed linux-zen-headers" "Zen Headers"
+else
+    run_command "pacman -S --noconfirm --needed linux-headers" "Standard Headers"
+fi
+
 # ----------------------------
-# GPU Drivers
+# GPU Drivers (The 2026 NVIDIA Fix)
 # ----------------------------
 print_header "Detecting GPU"
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
+INSTALL_NVIDIA_LEGACY=false
 
 if echo "$GPU_INFO" | grep -qi nvidia; then
-    run_command "pacman -S --noconfirm nvidia nvidia-utils" "Install NVIDIA drivers"
+    CARD_MODEL=$(lspci | grep -i nvidia | grep -Ei "GTX|RTX|Quadro" || true)
+    
+    # Check for Pascal (10xx), Maxwell (900), or older
+    if echo "$CARD_MODEL" | grep -qiE "GTX (4|5|6|7|9|10)"; then
+        print_warning "Legacy GPU detected. Will install via AUR (Step 2)."
+        INSTALL_NVIDIA_LEGACY=true
+    else
+        run_command "pacman -S --noconfirm nvidia-open-dkms nvidia-utils lib32-nvidia-utils libva-nvidia-driver" "Modern NVIDIA Drivers"
+    fi
+
+    # Enable KMS
+    sed -i 's/^MODULES=(/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm /' /etc/mkinitcpio.conf
+    run_command "mkinitcpio -P" "Rebuilding Initramfs"
+
+    # Update GRUB if present
+    if [ -f /etc/default/grub ]; then
+        if ! grep -q "nvidia_drm.modeset=1" /etc/default/grub; then
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="nvidia_drm.modeset=1 /' /etc/default/grub
+            run_command "grub-mkconfig -o /boot/grub/grub.cfg" "Updating GRUB"
+        fi
+    fi
 elif echo "$GPU_INFO" | grep -qi amd; then
-    run_command "pacman -S --noconfirm xf86-video-amdgpu mesa vulkan-radeon" "Install AMD drivers"
-elif echo "$GPU_INFO" | grep -qi intel; then
-    run_command "pacman -S --noconfirm mesa vulkan-intel" "Install Intel drivers"
-else
-    print_warning "No supported GPU detected. Skipping driver installation."
+    run_command "pacman -S --noconfirm xf86-video-amdgpu mesa vulkan-radeon" "AMD drivers"
 fi
 
 # ----------------------------
@@ -83,263 +93,82 @@ fi
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww mako grim slurp kitty nano wget jq btop
-    sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
-    gvfs udiskie udisks2 chafa firefox yazi fastfetch starship mpv gnome-disk-utility pavucontrol
+    sddm polkit-kde-agent curl bluez bluez-utils blueman python-pyqt6 python-pillow
+    gvfs udiskie udisks2 chafa firefox yazi fastfetch starship mpv pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
-    ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
+    ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
 
 # Enable essential services
-run_command "systemctl enable --now polkit.service" "Enable polkit"
-run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth service"
+run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth"
 
 # ----------------------------
-# Install Yay (AUR Helper)
+# Install Yay & Legacy Drivers
 # ----------------------------
-print_header "Installing Yay"
-if command -v yay &>/dev/null; then
-    print_success "Yay already installed"
-else
+print_header "Installing Yay & AUR Packages"
+if ! command -v yay &>/dev/null; then
     run_command "pacman -S --noconfirm --needed git base-devel" "Install git + base-devel"
-    run_command "rm -rf /tmp/yay" "Remove old yay folder"
-    run_command "git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay"
-    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay" "Set permissions for yay build"
-    run_command "cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Build and install yay"
-    run_command "rm -rf /tmp/yay" "Clean up temporary yay files"
+    run_command "rm -rf /tmp/yay && git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay"
+    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay && cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Install yay"
 fi
 
-# ----------------------------
-# Install AUR Packages
-# ----------------------------
-print_header "Installing AUR packages"
-AUR_PACKAGES=(
-    python-pywal16
-    localsend-bin
-)
-for pkg in "${AUR_PACKAGES[@]}"; do
-    if yay -Qs "^$pkg$" &>/dev/null; then
-        print_success "✅ $pkg is already installed"
-    else
-        run_command "sudo -u $USER_NAME yay -S --noconfirm $pkg" "Install $pkg from AUR"
-    fi
-done # Closing the loop for AUR packages here
-
-# ----------------------------
-# Shell Setup (Bash)
-# ----------------------------
-print_header "Shell Setup"
-run_command "chsh -s $(command -v bash) $USER_NAME" "Set Bash as default shell"
-
-BASHRC_SRC="$REPO_ROOT/configs/.bashrc"
-BASHRC_DEST="$USER_HOME/.bashrc"
-
-if [[ -f "$BASHRC_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$BASHRC_SRC" "$BASHRC_DEST"
-    print_success ".bashrc copied from repo"
-else
-    print_warning "No .bashrc found in repo, creating a minimal one"
-    cat <<'EOF' | sudo -u "$USER_NAME" tee "$BASHRC_DEST" >/dev/null
-# Restore Pywal colors and clear terminal
-wal -R -q 2>/dev/null && clear
-
-# Initialize Starship prompt
-eval "$(starship init bash)"
-
-# Run fastfetch after login
-fastfetch
-EOF
-    print_success "Minimal .bashrc created with wal + fastfetch + starship"
+if [ "$INSTALL_NVIDIA_LEGACY" = true ]; then
+    run_command "sudo -u $USER_NAME yay -S --noconfirm nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils" "Legacy NVIDIA"
 fi
+
+run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16 localsend-bin" "AUR extras"
 
 # ----------------------------
 # Setup Directory Structure
 # ----------------------------
 print_header "Creating config directories"
-sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts}
-sudo -u "$USER_NAME" mkdir -p "$WAL_TEMPLATES"
-sudo -u "$USER_NAME" mkdir -p "$WAL_CACHE"
-sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures/Screenshots"
-print_success "Directory structure created"
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts,btop}
+sudo -u "$USER_NAME" mkdir -p "$WAL_TEMPLATES" "$WAL_CACHE" "$USER_HOME/Pictures/Screenshots"
 
 # ----------------------------
-# Copy Static Configs (no colors!)
+# Copy Static Configs
 # ----------------------------
 print_header "Copying static configuration files"
 
-# Hyprland main config (keybinds, window rules, etc)
-HYPR_CONFIG_SRC="$REPO_ROOT/configs/hypr/hyprland.conf"
-if [[ -f "$HYPR_CONFIG_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$HYPR_CONFIG_SRC" "$CONFIG_DIR/hypr/hyprland.conf"
-    print_success "✅ Copied hyprland.conf"
-fi
-
-# Waybar config (modules and layout only, no colors)
-WAYBAR_CONFIG_SRC="$REPO_ROOT/configs/waybar/config"
-if [[ -f "$WAYBAR_CONFIG_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$WAYBAR_CONFIG_SRC" "$CONFIG_DIR/waybar/config"
-    print_success "✅ Copied waybar/config"
-fi
-
-# Copy ALL Yazi configuration files (including yazi.toml, keymap.toml, theme.toml, AND init.lua)
-YAZI_CONFIG_SRC="$REPO_ROOT/configs/yazi"
-YAZI_CONFIG_DEST="$CONFIG_DIR/yazi"
-
-if [[ -d "$YAZI_CONFIG_SRC" ]]; then
-    # Ensure the destination directory exists
-    sudo -u "$USER_NAME" mkdir -p "$YAZI_CONFIG_DEST"
-    
-    # Use cp -r (recursive copy) and tell it to copy everything inside the source directory
-    sudo -u "$USER_NAME" cp -r "$YAZI_CONFIG_SRC"/* "$YAZI_CONFIG_DEST/"
-    print_success "✅ Copied all files from configs/yazi/ to $YAZI_CONFIG_DEST"
-else
-    print_warning "Source directory not found: $YAZI_CONFIG_SRC. Skipping Yazi config copy."
-fi
-
-# Fastfetch config
-FASTFETCH_SRC="$REPO_ROOT/configs/fastfetch/config.jsonc"
-if [[ -f "$FASTFETCH_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$FASTFETCH_SRC" "$CONFIG_DIR/fastfetch/config.jsonc"
-    print_success "✅ Copied fastfetch/config.jsonc"
-fi
-
-# Starship config
-STARSHIP_SRC="$REPO_ROOT/configs/starship/starship.toml"
-if [[ -f "$STARSHIP_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$STARSHIP_SRC" "$CONFIG_DIR/starship.toml"
-    print_success "✅ Copied starship.toml"
-fi
-
-# --- NEW: Btop config (to set color_theme = "TTY") ---
-BTOP_CONFIG_SRC="$REPO_ROOT/configs/btop/btop.conf"
-BTOP_CONFIG_DEST="$CONFIG_DIR/btop/btop.conf"
-
-if [[ -f "$BTOP_CONFIG_SRC" ]]; then
-    # Ensure the destination directory exists
-    sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/btop"
-    
-    # Copy the pre-configured file from your repo
-    sudo -u "$USER_NAME" cp "$BTOP_CONFIG_SRC" "$BTOP_CONFIG_DEST"
-    print_success "✅ Copied btop/btop.conf and set TTY theme for pywal support"
-else
-    print_warning "Source file not found: $BTOP_CONFIG_SRC. Skipping Btop config copy."
-fi
-# -----------------------------------------------------
+[[ -f "$REPO_ROOT/configs/hypr/hyprland.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/hypr/hyprland.conf" "$CONFIG_DIR/hypr/hyprland.conf"
+[[ -f "$REPO_ROOT/configs/waybar/config" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/waybar/config" "$CONFIG_DIR/waybar/config"
+[[ -d "$REPO_ROOT/configs/yazi" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/yazi"/* "$CONFIG_DIR/yazi/"
+[[ -f "$REPO_ROOT/configs/fastfetch/config.jsonc" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/fastfetch/config.jsonc" "$CONFIG_DIR/fastfetch/config.jsonc"
+[[ -f "$REPO_ROOT/configs/starship/starship.toml" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/starship/starship.toml" "$CONFIG_DIR/starship.toml"
+[[ -f "$REPO_ROOT/configs/btop/btop.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/btop/btop.conf" "$CONFIG_DIR/btop/btop.conf"
 
 # ----------------------------
 # Copy Pywal Templates
 # ----------------------------
 print_header "Copying Pywal templates"
-
-# --- NEW: Copy Kitty Template Explicitly ---
-# We copy kitty.conf from its source location to the Pywal templates directory.
-KITTY_TEMPLATE_SRC="$REPO_ROOT/configs/kitty/kitty.conf"
-KITTY_TEMPLATE_DEST="$WAL_TEMPLATES/kitty.conf"
-
-if [[ -f "$KITTY_TEMPLATE_SRC" ]]; then
-    sudo -u "$USER_NAME" cp "$KITTY_TEMPLATE_SRC" "$KITTY_TEMPLATE_DEST"
-    print_success "✅ Copied kitty.conf as Pywal template"
-fi
-# -------------------------------------------
-
-# Copy ALL templates from repo (Your existing block starts here)
-TEMPLATE_SOURCE="$REPO_ROOT/configs/wal/templates"
-if [[ -d "$TEMPLATE_SOURCE" ]]; then
-    sudo -u "$USER_NAME" cp -r "$TEMPLATE_SOURCE"/* "$WAL_TEMPLATES/"
-    print_success "✅ Copied all other pywal templates"
-    
-    # List what was copied
-    echo "Templates installed:"
-    ls -1 "$WAL_TEMPLATES" | sed 's/^/    - /'
-else
-    print_error "Template directory not found: $TEMPLATE_SOURCE"
-fi
+[[ -f "$REPO_ROOT/configs/kitty/kitty.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/kitty/kitty.conf" "$WAL_TEMPLATES/kitty.conf"
+[[ -d "$REPO_ROOT/configs/wal/templates" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/wal/templates"/* "$WAL_TEMPLATES/"
 
 # ----------------------------
 # Create Symlinks to Pywal Cache
 # ----------------------------
-print_header "Creating symlinks to pywal cache"
-
-# Waybar CSS symlink
+print_header "Creating symlinks"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
-print_success "✅ Waybar: style.css → ~/.cache/wal/waybar-style.css"
-
-# Mako config symlink
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
-print_success "✅ Mako: config → ~/.cache/wal/mako-config"
-
-# Kitty config symlink
-sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/kitty"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
-print_success "✅ Kitty: kitty.conf → ~/.cache/wal/kitty.conf"
-
-# Hyprland colors symlink
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
-print_success "✅ Hyprland: colors-hyprland.conf → ~/.cache/wal/colors-hyprland.conf"
 
 # ----------------------------
-# Copy Scripts
+# Copy Scripts & Wallpapers
 # ----------------------------
-print_header "Copying user scripts"
 if [[ -d "$SCRIPTS_SRC" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/*.sh "$CONFIG_DIR/scripts/" 2>/dev/null || true
-    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/*.py "$CONFIG_DIR/scripts/" 2>/dev/null || true
-    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*.sh
-    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*.py 2>/dev/null || true
-    print_success "✅ User scripts copied and made executable"
+    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/*.{sh,py} "$CONFIG_DIR/scripts/" 2>/dev/null || true
+    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
 fi
 
-# Screenshot script is now in the repo's scripts/ folder
-# It will be copied with the other scripts above
-print_success "✅ Screenshot script copied with other user scripts"
-
-# ----------------------------
-# Copy Wallpapers
-# ----------------------------
-print_header "Copying Wallpapers"
-WALLPAPER_SRC="$REPO_ROOT/Pictures/Wallpapers"
-if [[ -d "$WALLPAPER_SRC" ]]; then
+if [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]]; then
     sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures"
-    sudo -u "$USER_NAME" cp -rf "$WALLPAPER_SRC" "$USER_HOME/Pictures/"
-    print_success "✅ Wallpapers copied"
+    sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 fi
 
 # ----------------------------
 # Enable SDDM
 # ----------------------------
-print_header "Setting up SDDM"
-run_command "systemctl enable sddm.service" "Enable SDDM login manager"
-
-# ----------------------------
-# Final message
-# ----------------------------
-print_success "\n✅ Installation complete!"
-echo -e "\n╔════════════════════════════════════════════════════════════╗"
-echo -e "║         Pywal Template System Setup Complete! 🎨          ║"
-echo -e "╚════════════════════════════════════════════════════════════╝"
-echo ""
-echo "📁 Configuration Structure:"
-echo "   • Static configs: ~/.config/{hypr,waybar,yazi,btop,fastfetch}/"
-echo "   • Pywal templates: ~/.config/wal/templates/"
-echo "   • Generated configs: ~/.cache/wal/ (symlinked)"
-echo ""
-echo "🎨 How the theming works:"
-echo "   1. Templates contain color variables: {color1}, {background}, etc."
-echo "   2. Run: setwall.sh <wallpaper>"
-echo "   3. Pywal generates colors from wallpaper"
-echo "   4. Templates are processed with new colors"
-echo "   5. Symlinked configs update automatically"
-echo "   6. Services reload with new theme"
-echo ""
-echo "🚀 Next Steps:"
-echo "   1. Reboot or log out"
-echo "   2. Select 'Hyprland' in SDDM"
-echo "   3. Pick a wallpaper with: Super+W"
-echo ""
-echo "📖 Keybinds:"
-echo "   • Super+W = Wallpaper picker"
-echo "   • Super+D = App launcher"
-echo "   • Super+Return = Terminal"
-echo "   • Super+F = File manager (Yazi)"
-echo ""
-print_success "Enjoy your themed Hyprland setup! 🎉"
+systemctl enable sddm.service
+print_success "\n✅ Installation complete! Please reboot."
