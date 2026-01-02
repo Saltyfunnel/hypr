@@ -144,26 +144,25 @@ sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/
 [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]] && sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures" && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 
 # ----------------------------
-# Yazi Plugin Setup (2026 Optimized)
+# Yazi Plugin Setup (2026 Failsafe)
 # ----------------------------
 print_header "Installing Yazi Plugins"
 
-# Ensure the directory exists and is owned by the user
+# 1. Ensure directories exist
+PLUGIN_DEST="$CONFIG_DIR/yazi/plugins/recycle-bin.yazi"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/yazi/plugins"
-run_command "chown -R $USER_NAME:$USER_NAME $CONFIG_DIR/yazi" "Fix Yazi Folder Ownership"
 
-# Use 'ya pkg' (The 2026 Package Manager)
-if sudo -u "$USER_NAME" command -v ya &>/dev/null; then
-    # 1. Add the plugin using the new pkg command
-    run_command "sudo -u $USER_NAME ya pkg add uhs-robert/recycle-bin.yazi" "Install Recycle Bin Plugin"
-    
-    # 2. Force an update to ensure files are pulled
-    sudo -u "$USER_NAME" ya pkg update
-else
-    print_warning "'ya' binary not found. Skipping plugin auto-install."
+# 2. Manual Clone (Bypasses 'ya pkg' inconsistencies in scripts)
+if [ ! -d "$PLUGIN_DEST" ]; then
+    run_command "rm -rf /tmp/rb-plugin && git clone https://github.com/uhs-robert/recycle-bin.yazi.git /tmp/rb-plugin" "Cloning Recycle Bin"
+    sudo -u "$USER_NAME" cp -r /tmp/rb-plugin/* "$PLUGIN_DEST/"
 fi
 
-# Generate the 2026-compliant init.lua
+# 3. Ownership Fix (Crucial)
+run_command "chown -R $USER_NAME:$USER_NAME $CONFIG_DIR/yazi" "Fixing Permissions"
+
+# 4. Generate the 2026-compliant init.lua
+# Note: We use the plugin name without the .yazi suffix for the 'require' call
 sudo -u "$USER_NAME" bash -c "cat <<EOF > $CONFIG_DIR/yazi/init.lua
 require(\"recycle-bin\"):setup()
 EOF"
