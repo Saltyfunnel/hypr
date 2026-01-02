@@ -1,57 +1,26 @@
 "$schema" = "https://yazi-rs.github.io/schemas/keymap.json"
 
-[manager]
-
+[mgr]
 keymap = [
-    { on = "<Esc>", run = "escape", desc = "Exit visual mode, clear selected, or cancel search" },
-    { on = "q", run = "quit", desc = "Quit the process" },
-    { on = "<C-z>", run = "suspend", desc = "Suspend the process" },
-
-    # Hopping
-    { on = "k", run = "arrow -1", desc = "Move cursor up" },
-    { on = "j", run = "arrow 1", desc = "Move cursor down" },
-    { on = [ "g", "g" ], run = "arrow top", desc = "Move cursor to the top" },
-    { on = "G", run = "arrow bottom", desc = "Move cursor to the bottom" },
+    { on = "<Esc>", run = "escape", desc = "Exit visual mode" },
+    { on = "q",     run = "quit",   desc = "Quit" },
 
     # Navigation
-    { on = "h", run = "leave", desc = "Go back to the parent directory" },
-    { on = "l", run = "enter", desc = "Enter the child directory" },
-    { on = "H", run = "back", desc = "Go back to the previous directory" },
-    { on = "L", run = "forward", desc = "Go forward to the next directory" },
+    { on = "k", run = "arrow -1", desc = "Move up" },
+    { on = "j", run = "arrow 1",  desc = "Move down" },
+    { on = "h", run = "leave",    desc = "Parent dir" },
+    { on = "l", run = "enter",    desc = "Child dir" },
 
-    # Selection
-    { on = "<Space>", run = [ "toggle", "arrow 1" ], desc = "Toggle selection" },
-    { on = "v", run = "visual_mode", desc = "Enter visual mode" },
-    { on = "V", run = "visual_mode --unset", desc = "Enter visual mode (unset)" },
-
-    # Operation
-    { on = "o", run = "open", desc = "Open selected files" },
-    { on = "y", run = "yank", desc = "Copy" },
+    # Operations
+    { on = "y", run = "yank",       desc = "Copy" },
     { on = "x", run = "yank --cut", desc = "Cut" },
-    { on = "p", run = "paste", desc = "Paste" },
-    { on = "r", run = "rename --cursor=before_ext", desc = "Rename" },
-    { on = "a", run = "create", desc = "Create file/dir" },
-    
-    # Trash Logic
-    { on = "d", run = "remove", desc = "Move to Trash" },
+    { on = "p", run = "paste",      desc = "Paste" },
     { on = "D", run = "remove --permanently", desc = "Delete Permanently" },
-
-    # Search & Filter
-    { on = "f", run = "filter --smart", desc = "Filter files" },
-    { on = "/", run = "find --smart", desc = "Find next" },
-    { on = "n", run = "find_arrow", desc = "Next found" },
-    { on = "N", run = "find_arrow --previous", desc = "Previous found" },
-
-    # Tabs
-    { on = "t", run = "tab_create --current", desc = "New tab" },
-    { on = "[", run = "tab_switch -1 --relative", desc = "Prev tab" },
-    { on = "]", run = "tab_switch 1 --relative", desc = "Next tab" },
-
-    # Help
-    { on = "~", run = "help", desc = "Open help" },
+    { on = "a", run = "create",     desc = "Create" },
+    { on = "r", run = "rename",     desc = "Rename" },
 ]
 
-# This is where your Recycle Bin plugin lives
 prepend_keymap = [
-    { on = [ "R", "b" ], run = "plugin recycle-bin", desc = "Open Recycle Bin" },
+    { on = "d", run = "plugin recycle-bin", desc = "Trash" },
+    { on = [ "R", "b" ], run = "plugin recycle-bin", desc = "Recycle Bin" },
 ]
