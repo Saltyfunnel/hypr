@@ -69,7 +69,7 @@ PACMAN_PACKAGES=(
     gvfs udiskie udisks2 firefox fastfetch starship mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
     
-    # Yazi & Image Preview Stack
+    # Yazi & Image Preview Stack (ya comes with yazi)
     yazi ffmpegthumbnailer poppler imagemagick chafa
     
     # Fonts
@@ -103,11 +103,11 @@ BASHRC_DEST="$USER_HOME/.bashrc"
 if [[ -f "$BASHRC_SRC" ]]; then
     sudo -u "$USER_NAME" cp "$BASHRC_SRC" "$BASHRC_DEST"
 else
-    cat <<'EOF' | sudo -u "$USER_NAME" tee "$BASHRC_DEST" >/dev/null
+    sudo -u "$USER_NAME" bash -c "cat <<'EOF' > $BASHRC_DEST
 wal -R -q 2>/dev/null && clear
-eval "$(starship init bash)"
+eval \"\$(starship init bash)\"
 fastfetch
-EOF
+EOF"
 fi
 
 # ----------------------------
@@ -116,7 +116,7 @@ fi
 print_header "Applying Configs"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts} "$WAL_TEMPLATES" "$WAL_CACHE"
 
-# Clean old Yazi state to prevent thumbnail ghosting
+# Clean old Yazi state
 sudo -u "$USER_NAME" rm -rf "$USER_HOME/.cache/yazi" "$USER_HOME/.local/state/yazi"
 
 # Copy configs
@@ -144,20 +144,28 @@ sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/
 [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]] && sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures" && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 
 # ----------------------------
-# Yazi Plugin Setup (THE RECYCLE BIN FIX)
+# Yazi Plugin Setup
 # ----------------------------
 print_header "Installing Yazi Plugins"
-# Ensure the user owns their config directory before running 'ya'
 run_command "chown -R $USER_NAME:$USER_NAME $CONFIG_DIR/yazi" "Fix Yazi Folder Ownership"
-# Install latest compatible recycle-bin via official package manager
-sudo -u "$USER_NAME" ya pack -a yazi-rs/plugins:recycle-bin
 
-# Generate a clean init.lua that won't crash the engine
-cat <<EOF | sudo -u "$USER_NAME" tee "$CONFIG_DIR/yazi/init.lua" >/dev/null
-require("recycle-bin"):setup({
-    container = "system", -- Uses trash-cli
+# Use 'ya' to install plugins (Package manager for Yazi)
+if sudo -u "$USER_NAME" command -v ya &>/dev/null; then
+    run_command "sudo -u $USER_NAME ya pack -a yazi-rs/plugins:recycle-bin" "Install Recycle Bin Plugin"
+else
+    print_warning "'ya' binary not found. You may need to relog or install Yazi manually."
+fi
+
+# Generate init.lua
+sudo -u "$USER_NAME" bash -c "cat <<EOF > $CONFIG_DIR/yazi/init.lua
+require(\"recycle-bin\"):setup({
+    container = \"system\", -- Uses trash-cli
 })
-EOF
+EOF"
 
+# ----------------------------
+# Finalization
+# ----------------------------
 systemctl enable sddm.service
 print_success "Done. Yazi with Recycle-Bin and Image Previews is ready. Reboot now."
+
