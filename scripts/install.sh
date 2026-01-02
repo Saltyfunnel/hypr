@@ -144,36 +144,28 @@ sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/
 [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]] && sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures" && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 
 # ----------------------------
-# Yazi Plugin Setup (2026 Bulletproof)
+# Yazi Configuration (Clean Copy)
 # ----------------------------
-print_header "Installing Yazi Plugins"
+print_header "Applying Yazi Configs"
 
-# 1. Define Paths
-PLUGIN_DIR="$CONFIG_DIR/yazi/plugins"
-RB_DEST="$PLUGIN_DIR/recycle-bin.yazi"
+# 1. Kill any existing state that causes the input hang
+sudo -u "$USER_NAME" rm -rf "$USER_HOME/.cache/yazi" "$USER_HOME/.local/state/yazi"
 
-# 2. Force Create Plugin Directory as the User
-sudo -u "$USER_NAME" mkdir -p "$RB_DEST"
+# 2. Ensure directory exists
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/yazi"
 
-# 3. Download and Move
-if [ ! -f "$RB_DEST/init.lua" ]; then
-    run_command "rm -rf /tmp/rb-plugin && git clone https://github.com/uhs-robert/recycle-bin.yazi.git /tmp/rb-plugin" "Cloning Recycle Bin"
-    
-    # Copy using -T to treat destination as a directory and ensure content lands inside
-    sudo -u "$USER_NAME" cp -r /tmp/rb-plugin/. "$RB_DEST/"
+# 3. Copy your repo configs exactly
+if [[ -d "$REPO_ROOT/configs/yazi" ]]; then
+    sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/yazi"/* "$CONFIG_DIR/yazi/"
+    print_success "✅ Yazi configs applied from repo"
 fi
 
 # 4. Final Permissions Check
-run_command "chown -R $USER_NAME:$USER_NAME $CONFIG_DIR/yazi" "Fixing Permissions"
-
-# 5. Generate init.lua
-sudo -u "$USER_NAME" bash -c "cat <<EOF > $CONFIG_DIR/yazi/init.lua
-require(\"recycle-bin\"):setup()
-EOF"
+run_command "chown -R $USER_NAME:$USER_NAME $CONFIG_DIR/yazi" "Fixing Yazi Permissions"
 
 # ----------------------------
 # Finalization
 # ----------------------------
 systemctl enable sddm.service
-print_success "Done. Yazi with Recycle-Bin and Image Previews is ready. Reboot now."
+print_success "Done. Reboot now."
 
