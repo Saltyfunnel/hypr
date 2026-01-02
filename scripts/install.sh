@@ -144,25 +144,29 @@ sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/
 [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]] && sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures" && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 
 # ----------------------------
-# Yazi Plugin Setup (2026 Failsafe)
+# Yazi Plugin Setup (2026 Bulletproof)
 # ----------------------------
 print_header "Installing Yazi Plugins"
 
-# 1. Ensure directories exist
-PLUGIN_DEST="$CONFIG_DIR/yazi/plugins/recycle-bin.yazi"
-sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/yazi/plugins"
+# 1. Define Paths
+PLUGIN_DIR="$CONFIG_DIR/yazi/plugins"
+RB_DEST="$PLUGIN_DIR/recycle-bin.yazi"
 
-# 2. Manual Clone (Bypasses 'ya pkg' inconsistencies in scripts)
-if [ ! -d "$PLUGIN_DEST" ]; then
+# 2. Force Create Plugin Directory as the User
+sudo -u "$USER_NAME" mkdir -p "$RB_DEST"
+
+# 3. Download and Move
+if [ ! -f "$RB_DEST/init.lua" ]; then
     run_command "rm -rf /tmp/rb-plugin && git clone https://github.com/uhs-robert/recycle-bin.yazi.git /tmp/rb-plugin" "Cloning Recycle Bin"
-    sudo -u "$USER_NAME" cp -r /tmp/rb-plugin/* "$PLUGIN_DEST/"
+    
+    # Copy using -T to treat destination as a directory and ensure content lands inside
+    sudo -u "$USER_NAME" cp -r /tmp/rb-plugin/. "$RB_DEST/"
 fi
 
-# 3. Ownership Fix (Crucial)
+# 4. Final Permissions Check
 run_command "chown -R $USER_NAME:$USER_NAME $CONFIG_DIR/yazi" "Fixing Permissions"
 
-# 4. Generate the 2026-compliant init.lua
-# Note: We use the plugin name without the .yazi suffix for the 'require' call
+# 5. Generate init.lua
 sudo -u "$USER_NAME" bash -c "cat <<EOF > $CONFIG_DIR/yazi/init.lua
 require(\"recycle-bin\"):setup()
 EOF"
