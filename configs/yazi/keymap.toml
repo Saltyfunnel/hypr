@@ -1,26 +1,28 @@
-"$schema" = "https://yazi-rs.github.io/schemas/keymap.json"
-
 [mgr]
 keymap = [
-    { on = "<Esc>", run = "escape", desc = "Exit visual mode" },
-    { on = "q",     run = "quit",   desc = "Quit" },
+	{ on = "<Esc>", run = "escape", desc = "Exit visual mode" },
+	{ on = "q",     run = "quit",   desc = "Quit" },
 
-    # Navigation
-    { on = "k", run = "arrow -1", desc = "Move up" },
-    { on = "j", run = "arrow 1",  desc = "Move down" },
-    { on = "h", run = "leave",    desc = "Parent dir" },
-    { on = "l", run = "enter",    desc = "Child dir" },
+	# Navigation
+	{ on = "k", run = "arrow -1", desc = "Move up" },
+	{ on = "j", run = "arrow 1",  desc = "Move down" },
+	{ on = "h", run = "leave",    desc = "Parent dir" },
+	{ on = "l", run = "enter",    desc = "Child dir" },
 
-    # Operations
-    { on = "y", run = "yank",       desc = "Copy" },
-    { on = "x", run = "yank --cut", desc = "Cut" },
-    { on = "p", run = "paste",      desc = "Paste" },
-    { on = "D", run = "remove --permanently", desc = "Delete Permanently" },
-    { on = "a", run = "create",     desc = "Create" },
-    { on = "r", run = "rename",     desc = "Rename" },
+	# Selection and Tabs
+	{ on = "<Space>", run = [ "toggle", "arrow 1" ], desc = "Select" },
+	{ on = "t",       run = "tab_create --current",   desc = "New tab" },
+
+	# Operations
+	{ on = "y", run = "yank",       desc = "Copy" },
+	{ on = "p", run = "paste",      desc = "Paste" },
+	{ on = "x", run = "yank --cut", desc = "Cut" },
+	{ on = "a", run = "create",     desc = "Create" },
+	{ on = "r", run = "rename",     desc = "Rename" },
+	{ on = "D", run = "remove --permanently", desc = "Delete forever" },
 ]
 
 prepend_keymap = [
-    { on = "d", run = "plugin recycle-bin", desc = "Trash" },
-    { on = [ "R", "b" ], run = "plugin recycle-bin", desc = "Recycle Bin" },
+	{ on = "d", run = "plugin recycle-bin", desc = "Move to Trash" },
+	{ on = [ "R", "b" ], run = "plugin recycle-bin", desc = "Recycle Bin" },
 ]
