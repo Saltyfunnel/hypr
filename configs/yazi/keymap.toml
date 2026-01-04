@@ -1,4 +1,4 @@
-[mgr]
+[manager]
 keymap = [
 	{ on = "<Esc>", run = "escape", desc = "Exit visual mode" },
 	{ on = "q",     run = "quit",   desc = "Quit" },
@@ -22,7 +22,3 @@ keymap = [
 	{ on = "D", run = "remove --permanently", desc = "Delete forever" },
 ]
 
-prepend_keymap = [
-	{ on = "d", run = "plugin recycle-bin", desc = "Move to Trash" },
-	{ on = [ "R", "b" ], run = "plugin recycle-bin", desc = "Recycle Bin" },
-]
