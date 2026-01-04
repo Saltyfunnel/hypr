@@ -11,7 +11,7 @@
  
  ## 🖼️ Screenshots
 
-<img src="screenshots/screenshot_2025-12-11_21-39-49.png" alt="Tiled Windows and Dynamic Theme" width="800"/>
+<img src="screenshots/screenshot_2026-01-04_17-44-43.png" alt="Tiled Windows and Dynamic Theme" width="800"/>
 
 <img src="screenshots/screenshot_2025-12-11_21-39-49.png" alt="Tiled Windows and Dynamic Theme" width="800"/>
 
