@@ -1,3 +1,14 @@
+
+ ## 🚀 Key Features
+
+    Custom Wallpaper Picker: A native .py GUI to browse and set wallpapers on the fly.
+
+    Integrated App Launcher: A lightweight Python-based picker to launch your favorite applications.
+
+    Simple File Manager: A streamlined .py script for quick file navigation and management.
+
+    Dynamic Theming: Full integration with pywal to sync your system colors with your chosen wallpaper.
+ 
  ## 🖼️ Screenshots
 
 <img src="screenshots/screenshot_2025-12-11_21-39-49.png" alt="Tiled Windows and Dynamic Theme" width="800"/>
