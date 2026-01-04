@@ -26,19 +26,25 @@ def get_wal():
 class HorizonFM(Gtk.Window):
     def __init__(self):
         super().__init__(title="Horizon FM")
-        self.set_default_size(1200, 750)
+        self.set_default_size(1100, 700)
         self.cwd = Path.home()
         self.c = get_wal()
         
         self.clipboard_files = []
         self.clipboard_mode = None 
 
+        # Enable transparency support
+        screen = self.get_screen()
+        visual = screen.get_rgba_visual()
+        if visual:
+            self.set_visual(visual)
+
         self.main_layout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.add(self.main_layout)
 
         # Sidebar
         self.side_strip = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
-        self.side_strip.set_size_request(65, -1)
+        self.side_strip.set_size_request(60, -1)
         self.main_layout.pack_start(self.side_strip, False, False, 0)
 
         # Paned
@@ -48,17 +54,20 @@ class HorizonFM(Gtk.Window):
         # List Area
         self.list_scroll = Gtk.ScrolledWindow()
         self.listbox = Gtk.ListBox()
+        # RE-ENABLED MULTIPLE SELECTION
         self.listbox.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         self.list_scroll.add(self.listbox)
         self.paned.pack1(self.list_scroll, True, False)
 
         # Preview Area
         self.preview_eb = Gtk.EventBox()
+        self.preview_eb.set_name("preview_pane")
         self.preview_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.preview_box.set_size_request(280, -1) 
         self.preview_eb.add(self.preview_box)
         
         self.preview_image = Gtk.Image()
-        self.preview_text = Gtk.TextView(editable=False, cursor_visible=False, left_margin=20, top_margin=20)
+        self.preview_text = Gtk.TextView(editable=False, cursor_visible=False, left_margin=15, top_margin=15)
         self.preview_text.set_wrap_mode(Gtk.WrapMode.WORD)
         
         self.preview_stack = Gtk.Stack()
@@ -80,67 +89,74 @@ class HorizonFM(Gtk.Window):
         self.setup_sidebar()
         self.refresh()
 
+    def hex_to_rgba(self, hex_val, alpha):
+        h = hex_val.lstrip('#')
+        rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+        return f"rgba({rgb[0]},{rgb[1]},{rgb[2]},{alpha})"
+
     def apply_theme(self):
         if not self.c: return
         bg, fg, acc = self.c["bg"], self.c["fg"], self.c["acc"]
+        bg_alpha = self.hex_to_rgba(bg, 0.6)
         
-        rgba_bg = Gdk.RGBA()
-        rgba_bg.parse(bg)
-        rgba_fg = Gdk.RGBA()
-        rgba_fg.parse(fg)
-        
-        for w in [self, self.main_layout, self.side_strip, self.paned, 
-                  self.list_scroll, self.listbox, self.preview_eb, 
-                  self.preview_box, self.preview_text]:
-            w.override_background_color(Gtk.StateFlags.NORMAL, rgba_bg)
-            w.override_color(Gtk.StateFlags.NORMAL, rgba_fg)
-
         css = f"""
-        row {{ background-color: transparent; color: {fg}; }}
-        row:selected {{ background-color: {acc}; color: {bg}; border-radius: 4px; }}
-        menu {{ background-color: {bg}; color: {fg}; border: 1px solid {fg}; border-radius: 8px; padding: 5px; }}
-        menuitem {{ padding: 8px 12px; border-radius: 4px; }}
+        window, box, scrolledwindow, list, textview, viewport {{ 
+            background-color: {bg}; 
+            color: {fg}; 
+            border: none;
+        }}
+        row {{ 
+            background-color: transparent; 
+            color: {fg};
+        }}
+        row:selected {{ 
+            background-color: {acc}; 
+            color: {bg}; 
+        }}
+        #preview_pane, #preview_pane textview, #preview_pane textview text {{ 
+            background-color: {bg_alpha}; 
+        }}
+        paned > separator {{ 
+            background-color: {fg}; 
+            min-width: 1px; 
+            opacity: 0.1; 
+        }}
+        menu {{ 
+            background-color: {bg}; 
+            border: 1px solid {fg}; 
+            border-radius: 6px; 
+        }}
+        menuitem {{ color: {fg}; padding: 4px 10px; }}
         menuitem:hover {{ background-color: {acc}; color: {bg}; }}
-        separator {{ background-color: {fg}; opacity: 0.2; margin: 4px 0; }}
         """
+        
         provider = Gtk.CssProvider()
         provider.load_from_data(css.encode())
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), provider, 800)
 
     def setup_sidebar(self):
-        places = [
-            ("user-home-symbolic", Path.home()), 
-            ("folder-download-symbolic", Path.home()/"Downloads"), 
-            ("folder-pictures-symbolic", Path.home()/"Pictures"), 
-            ("user-trash-symbolic", "trash:///")
-        ]
+        places = [("user-home-symbolic", Path.home()), ("folder-download-symbolic", Path.home()/"Downloads"), ("user-trash-symbolic", "trash:///")]
         for icon, path in places:
-            eb = Gtk.EventBox() # Wrap in EventBox to catch right-clicks on the icon
+            eb = Gtk.EventBox()
             btn = Gtk.Button.new_from_icon_name(icon, Gtk.IconSize.DND)
             btn.set_relief(Gtk.ReliefStyle.NONE)
             btn.connect("clicked", lambda _, p=path: self.nav_to(p))
             eb.add(btn)
-            
             if icon == "user-trash-symbolic":
                 eb.connect("button-press-event", self.on_trash_icon_click)
                 self.side_strip.pack_end(eb, False, False, 20)
-            else:
-                self.side_strip.pack_start(eb, False, False, 10)
+            else: self.side_strip.pack_start(eb, False, False, 10)
 
     def on_trash_icon_click(self, widget, event):
-        if event.button == 3: # Right Click
+        if event.button == 3:
             menu = Gtk.Menu()
             m_empty = Gtk.MenuItem(label="Empty Trash")
-            m_empty.connect("activate", lambda _: self.empty_trash())
+            m_empty.connect("activate", lambda _: subprocess.run(["gio", "trash", "--empty"]))
             menu.append(m_empty)
             menu.show_all()
             menu.popup_at_pointer(event)
             return True
         return False
-
-    def empty_trash(self):
-        subprocess.run(["gio", "trash", "--empty"])
-        self.refresh()
 
     def nav_to(self, path):
         self.cwd = "trash:///" if str(path).startswith("trash") else Path(path)
@@ -163,7 +179,7 @@ class HorizonFM(Gtk.Window):
     def add_row(self, name, path):
         row = Gtk.ListBoxRow()
         row.path = path
-        box = Gtk.Box(spacing=15, margin=10)
+        box = Gtk.Box(spacing=15, margin=8)
         is_dir = Path(path).is_dir() if not str(path).startswith("trash") else False
         icon = "folder-symbolic" if is_dir else "text-x-generic-symbolic"
         if name == "..": icon = "go-up-symbolic"
@@ -175,17 +191,16 @@ class HorizonFM(Gtk.Window):
         self.listbox.add(row)
 
     def on_select(self, lb):
-        rows = lb.get_selected_rows()
-        if not rows: return
-        p = rows[0].path
-        if str(p).startswith("trash"): 
-            self.preview_text.get_buffer().set_text("\n  Trash Item\n  Cannot preview.")
-            self.preview_stack.set_visible_child_name("text")
-            return
-        if Path(p).suffix.lower() in (".png", ".jpg", ".jpeg"):
-            pix = GdkPixbuf.Pixbuf.new_from_file_at_scale(str(p), 400, 500, True)
-            self.preview_image.set_from_pixbuf(pix)
-            self.preview_stack.set_visible_child_name("image")
+        selected = lb.get_selected_rows()
+        if not selected: return
+        p = selected[0].path
+        if str(p).startswith("trash"): return
+        if Path(p).suffix.lower() in (".png", ".jpg", ".jpeg", ".webp"):
+            try:
+                pix = GdkPixbuf.Pixbuf.new_from_file_at_scale(str(p), 260, 400, True)
+                self.preview_image.set_from_pixbuf(pix)
+                self.preview_stack.set_visible_child_name("image")
+            except: pass
         else:
             try:
                 with open(p, 'r', errors='ignore') as f:
@@ -196,64 +211,44 @@ class HorizonFM(Gtk.Window):
     def on_button_press(self, widget, event):
         row = self.listbox.get_row_at_y(event.y)
         if event.button == 3: # Right Click
-            if row: self.listbox.select_row(row)
-            else: self.listbox.unselect_all()
-            self.show_context_menu(event, row)
+            if row and row not in self.listbox.get_selected_rows():
+                self.listbox.unselect_all()
+                self.listbox.select_row(row)
+            self.show_context_menu(event)
             return True
         elif not row:
             self.listbox.unselect_all()
         return False
 
-    def show_context_menu(self, event, row):
+    def show_context_menu(self, event):
         menu = Gtk.Menu()
-        is_trash_folder = str(self.cwd).startswith("trash")
+        selected_rows = self.listbox.get_selected_rows()
         
-        if row:
-            paths = [r.path for r in self.listbox.get_selected_rows()]
-            m_open = Gtk.MenuItem(label="Open")
-            m_open.connect("activate", lambda _: self.on_open(None, row))
+        if selected_rows:
+            paths = [r.path for r in selected_rows]
+            m_open = Gtk.MenuItem(label=f"Open ({len(paths)})" if len(paths) > 1 else "Open")
+            m_open.connect("activate", lambda _: [self.on_open(None, r) for r in selected_rows])
             menu.append(m_open)
             
-            if not is_trash_folder:
-                menu.append(Gtk.SeparatorMenuItem())
-                m_copy = Gtk.MenuItem(label="Copy")
-                m_copy.connect("activate", lambda _: self.set_clipboard(paths, "copy"))
-                menu.append(m_copy)
-                m_cut = Gtk.MenuItem(label="Cut")
-                m_cut.connect("activate", lambda _: self.set_clipboard(paths, "cut"))
-                menu.append(m_cut)
-                m_trash = Gtk.MenuItem(label="Move to Trash")
-                m_trash.connect("activate", lambda _: [self.move_to_trash(p) for p in paths])
-                menu.append(m_trash)
-        else:
-            if is_trash_folder:
-                m_empty = Gtk.MenuItem(label="Empty Trash")
-                m_empty.connect("activate", lambda _: self.empty_trash())
-                menu.append(m_empty)
-            else:
-                m_fold = Gtk.MenuItem(label="New Folder")
-                m_fold.connect("activate", lambda _: self.create_item("dir"))
-                menu.append(m_fold)
-                m_file = Gtk.MenuItem(label="New File")
-                m_file.connect("activate", lambda _: self.create_item("file"))
-                menu.append(m_file)
-                menu.append(Gtk.SeparatorMenuItem())
-                m_paste = Gtk.MenuItem(label=f"Paste ({len(self.clipboard_files)} items)")
-                m_paste.set_sensitive(len(self.clipboard_files) > 0)
-                m_paste.connect("activate", lambda _: self.paste_files())
-                menu.append(m_paste)
+            m_copy = Gtk.MenuItem(label="Copy")
+            m_copy.connect("activate", lambda _: self.set_clipboard(paths, "copy"))
+            menu.append(m_copy)
+
+            m_cut = Gtk.MenuItem(label="Cut")
+            m_cut.connect("activate", lambda _: self.set_clipboard(paths, "cut"))
+            menu.append(m_cut)
+            
+            m_trash = Gtk.MenuItem(label="Move to Trash")
+            m_trash.connect("activate", lambda _: [subprocess.run(["gio", "trash", str(p)]) for p in paths])
+            menu.append(m_trash)
+        
+        m_paste = Gtk.MenuItem(label=f"Paste ({len(self.clipboard_files)} items)")
+        m_paste.set_sensitive(len(self.clipboard_files) > 0)
+        m_paste.connect("activate", lambda _: self.paste_files())
+        menu.append(m_paste)
 
         menu.show_all()
         menu.popup_at_pointer(event)
-
-    def create_item(self, type):
-        name = "new_folder" if type == "dir" else "new_file.txt"
-        target = Path(self.cwd) / name
-        try:
-            if type == "dir": target.mkdir(exist_ok=True)
-            else: target.touch()
-            self.refresh()
-        except: pass
 
     def set_clipboard(self, paths, mode):
         self.clipboard_files = paths
@@ -262,19 +257,13 @@ class HorizonFM(Gtk.Window):
     def paste_files(self):
         for src in self.clipboard_files:
             try:
-                src_path = Path(src)
-                dst_path = Path(self.cwd) / src_path.name
+                src_p, dst_p = Path(src), Path(self.cwd) / Path(src).name
                 if self.clipboard_mode == "copy":
-                    if src_path.is_dir(): shutil.copytree(src_path, dst_path)
-                    else: shutil.copy2(src_path, dst_path)
-                else: shutil.move(str(src_path), str(dst_path))
+                    if src_p.is_dir(): shutil.copytree(src_p, dst_p)
+                    else: shutil.copy2(src_p, dst_p)
+                else: shutil.move(str(src_p), str(dst_p))
             except: pass
         if self.clipboard_mode == "cut": self.clipboard_files = []
-        self.refresh()
-
-    def move_to_trash(self, path):
-        try: subprocess.run(["gio", "trash", str(path)])
-        except: pass
         self.refresh()
 
     def on_open(self, _, row):
@@ -285,12 +274,14 @@ class HorizonFM(Gtk.Window):
     def on_key(self, _, event):
         key = Gdk.keyval_name(event.keyval)
         ctrl = event.state & Gdk.ModifierType.CONTROL_MASK
-        selected = self.listbox.get_selected_rows()
+        sel = self.listbox.get_selected_rows()
         if key == "BackSpace": self.nav_to(self.cwd.parent)
-        elif ctrl and key == "c" and selected: self.set_clipboard([r.path for r in selected], "copy")
-        elif ctrl and key == "x" and selected: self.set_clipboard([r.path for r in selected], "cut")
+        elif ctrl and key == "c" and sel: self.set_clipboard([r.path for r in sel], "copy")
+        elif ctrl and key == "x" and sel: self.set_clipboard([r.path for r in sel], "cut")
         elif ctrl and key == "v": self.paste_files()
-        elif key == "Delete" and selected: [self.move_to_trash(r.path) for r in selected]
+        elif key == "Delete" and sel: 
+            for r in sel: subprocess.run(["gio", "trash", str(r.path)])
+            self.refresh()
 
 if __name__ == "__main__":
     win = HorizonFM()
