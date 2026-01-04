@@ -3,10 +3,12 @@ import gi
 import json
 import subprocess
 import shutil
+import threading
+import os
 from pathlib import Path
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GdkPixbuf, Gio
+from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib
 
 # --- CONFIG ---
 WAL_COLORS = Path.home() / ".cache/wal/colors.json"
@@ -26,7 +28,7 @@ def get_wal():
 class HorizonFM(Gtk.Window):
     def __init__(self):
         super().__init__(title="Horizon FM")
-        self.set_default_size(1100, 700)
+        self.set_default_size(1100, 750)
         self.cwd = Path.home()
         self.c = get_wal()
         
@@ -37,17 +39,19 @@ class HorizonFM(Gtk.Window):
         visual = screen.get_rgba_visual()
         if visual: self.set_visual(visual)
 
-        self.main_layout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.add(self.main_layout)
+        self.outer_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(self.outer_vbox)
 
-        # Sidebar Container
+        self.main_layout = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.outer_vbox.pack_start(self.main_layout, True, True, 0)
+
+        # Sidebar
         self.side_strip = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         self.side_strip.set_size_request(60, -1)
         self.main_layout.pack_start(self.side_strip, False, False, 0)
 
         self.static_sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.drive_sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        
         self.side_strip.pack_start(self.static_sidebar, False, False, 10)
         self.side_strip.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 5)
         self.side_strip.pack_start(self.drive_sidebar, False, False, 0)
@@ -81,6 +85,17 @@ class HorizonFM(Gtk.Window):
         self.preview_box.pack_start(self.preview_stack, True, True, 0)
         self.paned.pack2(self.preview_eb, False, False)
 
+        # Status Bar
+        self.status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10, margin=5)
+        self.status_label = Gtk.Label(label="", xalign=0)
+        self.progress_bar = Gtk.ProgressBar()
+        self.progress_bar.set_hexpand(True)
+        self.status_bar.pack_start(self.status_label, False, False, 5)
+        self.status_bar.pack_start(self.progress_bar, True, True, 5)
+        self.outer_vbox.pack_end(self.status_bar, False, False, 0)
+        self.status_bar.hide()
+
+        # Volume Monitor
         self.monitor = Gio.VolumeMonitor.get()
         self.monitor.connect("mount-added", lambda *_: self.update_drives())
         self.monitor.connect("mount-removed", lambda *_: self.update_drives())
@@ -104,6 +119,8 @@ class HorizonFM(Gtk.Window):
         row {{ background-color: transparent; color: {fg}; }}
         row:selected {{ background-color: {acc}; color: {bg}; }}
         #preview_pane, #preview_pane textview, #preview_pane textview text {{ background-color: {bg_alpha}; }}
+        progressbar trough {{ background-color: rgba(255,255,255,0.1); border-radius: 4px; border: none; min-height: 8px; }}
+        progressbar progress {{ background-color: {acc}; border-radius: 4px; border: none; }}
         separator {{ background-color: {fg}; opacity: 0.1; }}
         menu {{ background-color: {bg}; border: 1px solid {fg}; border-radius: 6px; }}
         menuitem {{ color: {fg}; padding: 4px 10px; }}
@@ -120,40 +137,66 @@ class HorizonFM(Gtk.Window):
 
     def setup_static_sidebar(self):
         places = [("user-home-symbolic", Path.home()), ("folder-download-symbolic", Path.home()/"Downloads")]
-        for icon, path in places:
-            btn = Gtk.Button.new_from_icon_name(icon, Gtk.IconSize.DND)
+        for icon_name, path in places:
+            btn = Gtk.Button.new_from_icon_name(icon_name, Gtk.IconSize.DND)
             btn.set_relief(Gtk.ReliefStyle.NONE)
             btn.connect("clicked", lambda _, p=path: self.nav_to(p))
             self.static_sidebar.pack_start(btn, False, False, 0)
         
-        t_btn = Gtk.Button.new_from_icon_name("user-trash-symbolic", Gtk.IconSize.DND)
-        t_btn.set_relief(Gtk.ReliefStyle.NONE)
-        t_btn.connect("clicked", lambda _: self.nav_to("trash:///"))
-        self.side_strip.pack_end(t_btn, False, False, 20)
+        trash_eb = Gtk.EventBox()
+        trash_btn = Gtk.Button.new_from_icon_name("user-trash-symbolic", Gtk.IconSize.DND)
+        trash_btn.set_relief(Gtk.ReliefStyle.NONE)
+        trash_btn.set_can_focus(False)
+        trash_btn.connect("clicked", lambda _: self.nav_to("trash:///"))
+        trash_eb.add(trash_btn)
+        trash_eb.connect("button-press-event", self.on_trash_right_click)
+        self.side_strip.pack_end(trash_eb, False, False, 20)
+
+    def on_trash_right_click(self, widget, event):
+        if event.button == 3:
+            menu = Gtk.Menu()
+            item = Gtk.MenuItem(label="Empty Trash")
+            item.connect("activate", lambda _: [subprocess.run(["gio", "trash", "--empty"]), self.refresh()])
+            menu.append(item)
+            menu.show_all()
+            menu.popup_at_pointer(event)
+            return True
+        return False
 
     def update_drives(self):
-        for child in self.drive_sidebar.get_children():
-            self.drive_sidebar.remove(child)
-        
+        """Dynamic Icon Lookup based on System Mounts"""
+        for child in self.drive_sidebar.get_children(): self.drive_sidebar.remove(child)
         mounts = self.monitor.get_mounts()
         for m in mounts:
             root = m.get_root().get_path()
             if root:
-                # NEW ICON LOGIC: Try specific USB first, fallback to generic drive
-                icon_names = ["drive-removable-media-usb-symbolic", "media-removable-symbolic", "drive-removable-media-symbolic", "usb-stick-symbolic"]
-                icon = None
-                theme = Gtk.IconTheme.get_default()
-                for name in icon_names:
-                    if theme.has_icon(name):
-                        icon = name
-                        break
+                # Ask the system what icon this mount uses
+                g_icon = m.get_icon() # Returns a GIcon object
                 
-                btn = Gtk.Button.new_from_icon_name(icon or "drive-harddisk-symbolic", Gtk.IconSize.DND)
+                eb = Gtk.EventBox()
+                # Create image directly from the GIcon (system's preferred icon)
+                img = Gtk.Image.new_from_gicon(g_icon, Gtk.IconSize.DND)
+                btn = Gtk.Button()
+                btn.add(img)
                 btn.set_relief(Gtk.ReliefStyle.NONE)
                 btn.set_tooltip_text(m.get_name())
                 btn.connect("clicked", lambda _, p=root: self.nav_to(p))
-                self.drive_sidebar.pack_start(btn, False, False, 0)
+                eb.add(btn)
+                eb.connect("button-press-event", lambda w, e, mount=m: self.on_drive_right_click(w, e, mount))
+                
+                self.drive_sidebar.pack_start(eb, False, False, 0)
         self.drive_sidebar.show_all()
+
+    def on_drive_right_click(self, widget, event, mount):
+        if event.button == 3:
+            menu = Gtk.Menu()
+            item = Gtk.MenuItem(label=f"Eject {mount.get_name()}")
+            item.connect("activate", lambda _: mount.eject_with_operation(Gio.MountUnmountFlags.NONE, None, None, None, None))
+            menu.append(item)
+            menu.show_all()
+            menu.popup_at_pointer(event)
+            return True
+        return False
 
     def nav_to(self, path):
         self.cwd = "trash:///" if str(path).startswith("trash") else Path(path)
@@ -205,6 +248,42 @@ class HorizonFM(Gtk.Window):
                 self.preview_stack.set_visible_child_name("text")
             except: pass
 
+    def update_progress(self, current, total, name):
+        percent = current / total if total > 0 else 0
+        GLib.idle_add(self.progress_bar.set_fraction, percent)
+        GLib.idle_add(self.status_label.set_text, f"Processing {name}...")
+
+    def file_op_worker(self, sources, destination, mode):
+        GLib.idle_add(self.status_bar.show)
+        for src in sources:
+            src_path = Path(src)
+            if mode == "trash":
+                subprocess.run(["gio", "trash", str(src_path)])
+            else:
+                dest_path = Path(destination) / src_path.name
+                if mode == "copy":
+                    if src_path.is_dir(): shutil.copytree(src_path, dest_path)
+                    else:
+                        total_size = os.path.getsize(src)
+                        copied = 0
+                        with open(src, 'rb') as fsrc, open(dest_path, 'wb') as fdst:
+                            while True:
+                                buf = fsrc.read(1024*1024)
+                                if not buf: break
+                                fdst.write(buf)
+                                copied += len(buf)
+                                self.update_progress(copied, total_size, src_path.name)
+                elif mode == "cut":
+                    shutil.move(str(src_path), str(dest_path))
+        
+        GLib.idle_add(self.status_bar.hide)
+        GLib.idle_add(self.refresh)
+
+    def start_op(self, sources, mode):
+        thread = threading.Thread(target=self.file_op_worker, args=(sources, self.cwd, mode))
+        thread.daemon = True
+        thread.start()
+
     def on_button_press(self, widget, event):
         row = self.listbox.get_row_at_y(event.y)
         if event.button == 3:
@@ -224,12 +303,16 @@ class HorizonFM(Gtk.Window):
             m_copy = Gtk.MenuItem(label="Copy")
             m_copy.connect("activate", lambda _: self.set_clipboard(paths, "copy"))
             menu.append(m_copy)
-            m_trash = Gtk.MenuItem(label="Trash")
-            m_trash.connect("activate", lambda _: [subprocess.run(["gio", "trash", str(p)]) for p in paths])
+            m_cut = Gtk.MenuItem(label="Cut")
+            m_cut.connect("activate", lambda _: self.set_clipboard(paths, "cut"))
+            menu.append(m_cut)
+            m_trash = Gtk.MenuItem(label="Move to Trash")
+            m_trash.connect("activate", lambda _: self.start_op(paths, "trash"))
             menu.append(m_trash)
+        
         m_paste = Gtk.MenuItem(label="Paste")
         m_paste.set_sensitive(len(self.clipboard_files) > 0)
-        m_paste.connect("activate", lambda _: self.paste_files())
+        m_paste.connect("activate", lambda _: self.start_op(self.clipboard_files, self.clipboard_mode))
         menu.append(m_paste)
         menu.show_all()
         menu.popup_at_pointer(event)
@@ -237,24 +320,17 @@ class HorizonFM(Gtk.Window):
     def set_clipboard(self, paths, mode):
         self.clipboard_files, self.clipboard_mode = paths, mode
 
-    def paste_files(self):
-        for src in self.clipboard_files:
-            try:
-                dst = Path(self.cwd) / Path(src).name
-                if self.clipboard_mode == "copy":
-                    if Path(src).is_dir(): shutil.copytree(src, dst)
-                    else: shutil.copy2(src, dst)
-                else: shutil.move(src, str(dst))
-            except: pass
-        self.refresh()
-
     def on_open(self, _, row):
         if str(row.path).startswith("trash"): return
         if Path(row.path).is_dir(): self.nav_to(row.path)
         else: subprocess.Popen(["xdg-open", str(row.path)])
 
     def on_key(self, _, event):
-        if Gdk.keyval_name(event.keyval) == "BackSpace": self.nav_to(self.cwd.parent)
+        key = Gdk.keyval_name(event.keyval)
+        sel = self.listbox.get_selected_rows()
+        if key == "BackSpace": self.nav_to(self.cwd.parent)
+        elif key == "Delete" and sel:
+            self.start_op([r.path for r in sel], "trash")
 
 if __name__ == "__main__":
     win = HorizonFM()
