@@ -89,7 +89,7 @@ if ! command -v yay &>/dev/null; then
     run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay && cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Install Yay"
 fi
 
-run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16 localsend-bin" "AUR Packages"
+run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16" "AUR Packages"
 
 # ----------------------------
 # Shell Setup
