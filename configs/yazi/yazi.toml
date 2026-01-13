@@ -14,23 +14,39 @@ image_filter    = "lanczos3"
 image_quality   = 90
 
 [opener]
-edit = [ { run = '${EDITOR:-nano} "$@"', block = true, desc = "Edit" } ]
-play = [ { run = 'mpv "$@"', orphan = true, desc = "mpv" } ]
+edit = [
+  { run = '${EDITOR:-nano} "$@"', block = true, desc = "Edit" }
+]
+
+play = [
+  { run = 'mpv "$@"', orphan = true, desc = "mpv" }
+]
+
+extract = [
+  { run = '7z x "$1" -o"${1%.*}"', desc = "Extract into folder" }
+]
 
 [open]
 rules = [
-    { name = "*/", use = [ "edit" ] },
-    { mime = "text/*", use = [ "edit" ] },
-    { mime = "image/*", use = [ "play" ] },
-    { mime = "video/*", use = [ "play" ] },
+  { name = "*/", use = [ "edit" ] },
+  { mime = "text/*", use = [ "edit" ] },
+  { mime = "image/*", use = [ "play" ] },
+  { mime = "video/*", use = [ "play" ] },
+
+  # Archives
+  { mime = "application/zip", use = [ "extract" ] },
+  { mime = "application/x-tar", use = [ "extract" ] },
+  { mime = "application/x-7z-compressed", use = [ "extract" ] },
+  { mime = "application/x-rar", use = [ "extract" ] },
+  { mime = "application/gzip", use = [ "extract" ] },
 ]
 
 [plugin]
 previewers = [
-    { name = "*/", run = "folder", sync = true },
-    { mime = "text/*", run = "code" },
-    { mime = "image/*", run = "image" },
-    { mime = "video/*", run = "video" },
-    { mime = "application/pdf", run = "pdf" },
-    { name = "*", run = "file" }
+  { name = "*/", run = "folder", sync = true },
+  { mime = "text/*", run = "code" },
+  { mime = "image/*", run = "image" },
+  { mime = "video/*", run = "video" },
+  { mime = "application/pdf", run = "pdf" },
+  { name = "*", run = "file" }
 ]
