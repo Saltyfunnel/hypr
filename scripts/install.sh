@@ -68,7 +68,7 @@ PACMAN_PACKAGES=(
     sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman python-pyqt6 python-pillow
     gvfs udiskie udisks2 firefox fastfetch starship mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
-    unzip p7zip tar gzip xz bzip2 unrar atool
+    unzip p7zip tar gzip xz bzip2 unrar atool imv
     
     # Yazi & Image Preview Stack (ya comes with yazi)
     yazi ffmpegthumbnailer poppler imagemagick chafa
