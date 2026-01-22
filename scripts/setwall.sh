@@ -31,7 +31,7 @@ swww img "$WALLPAPER" --transition-type any --transition-step 90 --transition-fp
 # ----------------------------
 # Generate pywal theme (auto-processes ALL templates)
 # ----------------------------
-wal -n -q -i "$WALLPAPER"
+wal -q -i "$WALLPAPER"
 
 # Wait for pywal to finish writing all files
 sleep 0.5
