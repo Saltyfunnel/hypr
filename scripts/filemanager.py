@@ -31,9 +31,8 @@ class HorizonFM(Gtk.Window):
         self.set_default_size(1100, 750)
         self.cwd = Path.home()
         self.c = get_wal()
-        
         self.clipboard_files = []
-        self.clipboard_mode = None 
+        self.clipboard_mode = None
 
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
@@ -66,24 +65,31 @@ class HorizonFM(Gtk.Window):
         self.list_scroll.add(self.listbox)
         self.paned.pack1(self.list_scroll, True, False)
 
-        # Preview
-        self.preview_eb = Gtk.EventBox()
-        self.preview_eb.set_name("preview_pane")
-        self.preview_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.preview_box.set_size_request(280, -1) 
-        self.preview_eb.add(self.preview_box)
-        
-        self.preview_image = Gtk.Image()
-        self.preview_text = Gtk.TextView(editable=False, cursor_visible=False, left_margin=15, top_margin=15)
-        self.preview_text.set_wrap_mode(Gtk.WrapMode.WORD)
-        
+        # --- PREVIEW PANEL ---
+        self.preview_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.preview_box.set_size_request(280, -1)
+
+        # Thumbnail with hover animation
+        self.preview_icon_event = Gtk.EventBox()
+        self.preview_icon = Gtk.Image()
+        self.preview_icon_event.add(self.preview_icon)
+        self.preview_icon_event.set_above_child(True)
+        self.preview_icon_event.connect("enter-notify-event", self.on_preview_hover)
+        self.preview_icon_event.connect("leave-notify-event", self.on_preview_leave)
+        self.preview_box.pack_start(self.preview_icon_event, False, False, 0)
+
+        # File/folder name
+        self.preview_name = Gtk.Label(label="", xalign=0)
+        self.preview_box.pack_start(self.preview_name, False, False, 0)
+
+        # Info text
+        self.preview_info = Gtk.Label(label="", xalign=0)
+        self.preview_info.set_line_wrap(True)
+        self.preview_box.pack_start(self.preview_info, False, False, 0)
+
         self.preview_stack = Gtk.Stack()
-        self.preview_stack.add_named(self.preview_image, "image")
-        text_scroll = Gtk.ScrolledWindow()
-        text_scroll.add(self.preview_text)
-        self.preview_stack.add_named(text_scroll, "text")
-        self.preview_box.pack_start(self.preview_stack, True, True, 0)
-        self.paned.pack2(self.preview_eb, False, False)
+        self.preview_stack.add_named(self.preview_box, "info")
+        self.paned.pack2(self.preview_stack, False, False)
 
         # Status Bar
         self.status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10, margin=5)
@@ -105,11 +111,47 @@ class HorizonFM(Gtk.Window):
         self.listbox.connect("button-press-event", self.on_button_press)
         self.connect("key-press-event", self.on_key)
 
+        # Apply theme & setup UI
         self.apply_theme()
         self.setup_static_sidebar()
         self.update_drives()
         self.refresh()
 
+        # Animation state
+        self._hover_scale = 1.0
+        self._hover_anim = None
+
+    # --- THUMBNAIL HOVER ANIMATION ---
+    def on_preview_hover(self, widget, event):
+        self.animate_hover(1.1)
+        return False
+
+    def on_preview_leave(self, widget, event):
+        self.animate_hover(1.0)
+        return False
+
+    def animate_hover(self, target_scale):
+        if self._hover_anim:
+            GLib.source_remove(self._hover_anim)
+        start_scale = self._hover_scale
+        steps = 5
+        duration = 100
+        delta = (target_scale - start_scale) / steps
+        interval = duration // steps
+
+        def step(count=0):
+            nonlocal start_scale
+            if count >= steps:
+                self._hover_scale = target_scale
+                self.preview_icon.set_size_request(int(200 * self._hover_scale), int(200 * self._hover_scale))
+                return False
+            self._hover_scale += delta
+            self.preview_icon.set_size_request(int(200 * self._hover_scale), int(200 * self._hover_scale))
+            return True
+
+        self._hover_anim = GLib.timeout_add(interval, lambda c=0: step(c) and step(c+1))
+
+    # --- THEMING ---
     def apply_theme(self):
         if not self.c: return
         bg, fg, acc = self.c["bg"], self.c["fg"], self.c["acc"]
@@ -118,7 +160,6 @@ class HorizonFM(Gtk.Window):
         window, box, scrolledwindow, list, textview, viewport {{ background-color: {bg}; color: {fg}; border: none; }}
         row {{ background-color: transparent; color: {fg}; }}
         row:selected {{ background-color: {acc}; color: {bg}; }}
-        #preview_pane, #preview_pane textview, #preview_pane textview text {{ background-color: {bg_alpha}; }}
         progressbar trough {{ background-color: rgba(255,255,255,0.1); border-radius: 4px; border: none; min-height: 8px; }}
         progressbar progress {{ background-color: {acc}; border-radius: 4px; border: none; }}
         separator {{ background-color: {fg}; opacity: 0.1; }}
@@ -135,6 +176,7 @@ class HorizonFM(Gtk.Window):
         rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
         return f"rgba({rgb[0]},{rgb[1]},{rgb[2]},{alpha})"
 
+    # --- STATIC SIDEBAR ---
     def setup_static_sidebar(self):
         places = [("user-home-symbolic", Path.home()), ("folder-download-symbolic", Path.home()/"Downloads")]
         for icon_name, path in places:
@@ -163,18 +205,15 @@ class HorizonFM(Gtk.Window):
             return True
         return False
 
+    # --- DRIVE UPDATE ---
     def update_drives(self):
-        """Dynamic Icon Lookup based on System Mounts"""
         for child in self.drive_sidebar.get_children(): self.drive_sidebar.remove(child)
         mounts = self.monitor.get_mounts()
         for m in mounts:
             root = m.get_root().get_path()
             if root:
-                # Ask the system what icon this mount uses
-                g_icon = m.get_icon() # Returns a GIcon object
-                
+                g_icon = m.get_icon()
                 eb = Gtk.EventBox()
-                # Create image directly from the GIcon (system's preferred icon)
                 img = Gtk.Image.new_from_gicon(g_icon, Gtk.IconSize.DND)
                 btn = Gtk.Button()
                 btn.add(img)
@@ -183,7 +222,6 @@ class HorizonFM(Gtk.Window):
                 btn.connect("clicked", lambda _, p=root: self.nav_to(p))
                 eb.add(btn)
                 eb.connect("button-press-event", lambda w, e, mount=m: self.on_drive_right_click(w, e, mount))
-                
                 self.drive_sidebar.pack_start(eb, False, False, 0)
         self.drive_sidebar.show_all()
 
@@ -198,6 +236,7 @@ class HorizonFM(Gtk.Window):
             return True
         return False
 
+    # --- NAVIGATION & REFRESH ---
     def nav_to(self, path):
         self.cwd = "trash:///" if str(path).startswith("trash") else Path(path)
         self.refresh()
@@ -234,20 +273,26 @@ class HorizonFM(Gtk.Window):
         selected = lb.get_selected_rows()
         if not selected: return
         p = selected[0].path
-        if str(p).startswith("trash") or Path(p).is_dir(): return
+        self.preview_name.set_text(Path(p).name if not str(p).startswith("trash") else str(p))
+        if str(p).startswith("trash") or Path(p).is_dir():
+            self.preview_icon.set_from_icon_name("folder-symbolic", Gtk.IconSize.DND)
+            self.preview_info.set_text("")
+            return
+
         if Path(p).suffix.lower() in (".png", ".jpg", ".jpeg", ".webp"):
             try:
-                pix = GdkPixbuf.Pixbuf.new_from_file_at_scale(str(p), 260, 400, True)
-                self.preview_image.set_from_pixbuf(pix)
-                self.preview_stack.set_visible_child_name("image")
+                pix = GdkPixbuf.Pixbuf.new_from_file_at_scale(str(p), 200, 200, True)
+                self.preview_icon.set_from_pixbuf(pix)
+                self.preview_info.set_text(f"{os.path.getsize(p)} bytes")
             except: pass
         else:
+            self.preview_icon.set_from_icon_name("text-x-generic-symbolic", Gtk.IconSize.DND)
             try:
                 with open(p, 'r', errors='ignore') as f:
-                    self.preview_text.get_buffer().set_text(f.read(1500))
-                self.preview_stack.set_visible_child_name("text")
+                    self.preview_info.set_text(f.read(300))
             except: pass
 
+    # --- FILE OPERATIONS ---
     def update_progress(self, current, total, name):
         percent = current / total if total > 0 else 0
         GLib.idle_add(self.progress_bar.set_fraction, percent)
@@ -275,7 +320,6 @@ class HorizonFM(Gtk.Window):
                                 self.update_progress(copied, total_size, src_path.name)
                 elif mode == "cut":
                     shutil.move(str(src_path), str(dest_path))
-        
         GLib.idle_add(self.status_bar.hide)
         GLib.idle_add(self.refresh)
 
@@ -309,7 +353,6 @@ class HorizonFM(Gtk.Window):
             m_trash = Gtk.MenuItem(label="Move to Trash")
             m_trash.connect("activate", lambda _: self.start_op(paths, "trash"))
             menu.append(m_trash)
-        
         m_paste = Gtk.MenuItem(label="Paste")
         m_paste.set_sensitive(len(self.clipboard_files) > 0)
         m_paste.connect("activate", lambda _: self.start_op(self.clipboard_files, self.clipboard_mode))
