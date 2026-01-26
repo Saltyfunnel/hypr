@@ -14,7 +14,6 @@ GRID_SPACING = 14
 BORDER_RADIUS = 12
 # ----------------------------------------
 
-
 class Thumbnail(QtWidgets.QLabel):
     def __init__(self, wp_path, click_callback, hover_color):
         super().__init__()
@@ -46,13 +45,13 @@ class Thumbnail(QtWidgets.QLabel):
             self.click_callback(self.wp_path)
         super().mousePressEvent(event)
 
-
 class WallpaperPicker(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-        # ----- Window (float in Hyprland) -----
+        # --- HYPRLAND v0.53 IDENTIFICATION ---
         self.setWindowTitle("WallpaperPicker")
+        
         self.setWindowFlags(
             QtCore.Qt.WindowType.Window |
             QtCore.Qt.WindowType.FramelessWindowHint
@@ -76,8 +75,6 @@ class WallpaperPicker(QtWidgets.QWidget):
 
         scroll = QtWidgets.QScrollArea()
         scroll.setWidgetResizable(True)
-
-        # 🔥 hide scrollbars completely
         scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
@@ -87,7 +84,6 @@ class WallpaperPicker(QtWidgets.QWidget):
         grid.setSpacing(GRID_SPACING)
         grid.setContentsMargins(0, 0, 0, 0)
 
-        # Thumbnails
         row = col = 0
         for wp in self.wallpapers:
             thumb = Thumbnail(wp, self.select_wallpaper, self.HOVER)
@@ -100,15 +96,10 @@ class WallpaperPicker(QtWidgets.QWidget):
         scroll.setWidget(container)
         layout.addWidget(scroll)
 
-        # ----- Window Size (3 visible rows) -----
         rows = min(VISIBLE_ROWS, row + 1)
-
         width = (THUMBS_PER_ROW * THUMB_SIZE[0]) + ((THUMBS_PER_ROW + 1) * GRID_SPACING)
         height = (rows * THUMB_SIZE[1]) + ((rows + 1) * GRID_SPACING)
-
         self.resize(width, height)
-
-    # --------- Helpers ---------
 
     def select_wallpaper(self, wp_path):
         subprocess.run([str(Path.home() / ".config/scripts/setwall.sh"), str(wp_path)])
@@ -142,11 +133,10 @@ class WallpaperPicker(QtWidgets.QWidget):
         if event.key() == QtCore.Qt.Key.Key_Escape:
             QtWidgets.QApplication.quit()
 
-
-# ---------------- MAIN ----------------
-
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    # This is crucial for Wayland identification
+    app.setDesktopFileName("WallpaperPicker")
     picker = WallpaperPicker()
     picker.show()
     sys.exit(app.exec())
