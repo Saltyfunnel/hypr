@@ -1,5 +1,5 @@
 #!/bin/bash
-# Full Hyprland Installer – 2026 AMD (The "Don't Miss Anything" Version)
+# Full Hyprland Installer – 2026 AMD (The "Everything" Version)
 set -euo pipefail
 
 # ----------------------------
@@ -7,6 +7,7 @@ set -euo pipefail
 # ----------------------------
 print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success() { echo -e "\e[32m$1\e[0m"; }
+print_warning() { echo -e "\e[33mWarning: $1\e[0m" >&2; }
 print_error() { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 
 run_command() {
@@ -46,7 +47,7 @@ PACMAN_PACKAGES=(
     # UI & Core
     hyprland waybar swww mako grim slurp kitty sddm code firefox
     # System Utils
-    polkit-kde-agent-1 bluez bluez-utils blueman pavucontrol fastfetch starship
+    bluez bluez-utils blueman pavucontrol fastfetch starship
     gvfs udiskie udisks2 gnome-disk-utility btop jq wget curl trash-cli
     # Dev & Python
     python-pyqt6 python-pillow base-devel git
@@ -58,10 +59,10 @@ PACMAN_PACKAGES=(
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-cascadia-code-nerd
 )
 
-# Attempt install (with Polkit fallback)
-if ! pacman -S --noconfirm --needed "${PACMAN_PACKAGES[@]}"; then
-    print_warning "Some packages failed. Retrying without polkit-kde-agent-1..."
-    pacman -S --noconfirm --needed "${PACMAN_PACKAGES[@]/polkit-kde-agent-1/polkit-kde-agent}"
+# Attempt install with Polkit handling
+if ! pacman -S --noconfirm --needed "${PACMAN_PACKAGES[@]}" polkit-kde-agent-1; then
+    print_warning "Retrying with alternative polkit agent name..."
+    pacman -S --noconfirm --needed "${PACMAN_PACKAGES[@]}" polkit-kde-agent
 fi
 
 # ----------------------------
@@ -85,7 +86,7 @@ print_header "Step 4: Copying Scripts & Templates"
 # Ensure all target directories exist
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,mako,scripts,wal/templates,fastfetch} "$WAL_CACHE"
 
-# A. Copy Pywal Templates (Crucial for styling)
+# A. Copy Pywal Templates
 if [[ -d "$REPO_ROOT/configs/wal/templates" ]]; then
     sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/wal/templates"/* "$WAL_TEMPLATES/"
     print_success "Templates copied to $WAL_TEMPLATES"
@@ -104,7 +105,7 @@ fi
 [[ -d "$REPO_ROOT/configs/yazi" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/yazi"/* "$CONFIG_DIR/yazi/"
 [[ -d "$REPO_ROOT/configs/kitty" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/kitty"/* "$CONFIG_DIR/kitty/"
 
-# D. Setup Symlinks (Points apps to Pywal's generated output)
+# D. Setup Symlinks
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
@@ -121,11 +122,11 @@ if [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]]; then
     sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 fi
 
-# Generate initial colors so Waybar doesn't crash
+# Run Wal once
 FIRST_WALL=$(find "$USER_HOME/Pictures/Wallpapers" -type f | head -n 1 || true)
 if [[ -n "$FIRST_WALL" ]]; then
     sudo -u "$USER_NAME" wal -i "$FIRST_WALL" -q
-    print_success "Pywal colors initialized from $FIRST_WALL"
+    print_success "Pywal colors initialized."
 fi
 
 # ----------------------------
@@ -133,6 +134,11 @@ fi
 # ----------------------------
 print_header "Step 6: Services"
 systemctl enable --now bluetooth.service || true
-systemctl enable sddm.service || (pacman -S --noconfirm sddm && systemctl enable sddm.service)
 
-print_success "🎉 Done! Your scripts, templates, and apps are ready. Reboot now."
+if [ -f /usr/lib/systemd/system/sddm.service ]; then
+    systemctl enable sddm.service
+else
+    pacman -S --noconfirm sddm && systemctl enable sddm.service
+fi
+
+print_success "🎉 Done! Scripts and templates are synced. Reboot now."
