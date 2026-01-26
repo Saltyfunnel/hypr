@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland Installer – 2026 AMD/NVIDIA + Pywal + Dotfiles
+# Hyprland Installer – 2026 AMD/NVIDIA + Pywal + Dotfiles (Fixed)
 set -euo pipefail
 
 # ----------------------------
@@ -49,7 +49,6 @@ if echo "$GPU_INFO" | grep -qi nvidia; then
     print_header "Detected NVIDIA GPU"
     run_command "pacman -S --noconfirm nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" "Install NVIDIA drivers"
 
-    # Write GPU config
     sudo -u "$USER_NAME" mkdir -p "$HYPR_CONFIG"
     cat <<EOF | sudo -u "$USER_NAME" tee "$GPU_CONF" >/dev/null
 # NVIDIA GPU – auto-generated
@@ -65,7 +64,6 @@ elif echo "$GPU_INFO" | grep -qi amd; then
     print_header "Detected AMD GPU"
     run_command "pacman -S --noconfirm mesa vulkan-radeon lib32-vulkan-radeon" "Install AMD drivers"
 
-    # Write GPU config
     sudo -u "$USER_NAME" mkdir -p "$HYPR_CONFIG"
     cat <<EOF | sudo -u "$USER_NAME" tee "$GPU_CONF" >/dev/null
 # AMD GPU – auto-generated
@@ -91,7 +89,9 @@ PACMAN_PACKAGES=(
     yazi ffmpegthumbnailer poppler imagemagick chafa
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
 )
-run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
+# Fixed: use @ instead of * for array expansion
+run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[@]}" "Install core packages"
+
 run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth"
 run_command "systemctl enable sddm.service" "Enable SDDM"
 
@@ -102,7 +102,8 @@ print_header "Installing Yay & AUR packages"
 if ! command -v yay &>/dev/null; then
     run_command "pacman -S --noconfirm --needed git base-devel" "Install base-devel tools"
     run_command "rm -rf /tmp/yay && git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay"
-    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay && cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Install yay"
+    # Fixed: wrap cd + makepkg in subshell
+    run_command "(cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm)" "Install yay"
 fi
 
 run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16" "Install Pywal16 from AUR"
@@ -150,7 +151,8 @@ sudo -u "$USER_NAME" rm -rf "$USER_HOME/.cache/yazi" "$USER_HOME/.local/state/ya
 [[ -f "$REPO_ROOT/configs/kitty/kitty.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/kitty/kitty.conf" "$WAL_TEMPLATES/kitty.conf"
 [[ -d "$REPO_ROOT/configs/wal/templates" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/wal/templates"/* "$WAL_TEMPLATES/"
 
-# Symlinks for Pywal
+# Symlinks for Pywal (ensure dirs exist first)
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{waybar,mako,kitty,hypr}
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
