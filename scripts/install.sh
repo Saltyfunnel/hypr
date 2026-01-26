@@ -1,5 +1,5 @@
 #!/bin/bash
-# Minimal Hyprland Installer - 2026 Optimized
+# Minimal Hyprland Installer - 2026 Unified (AMD/Nvidia + UI Fixes)
 set -euo pipefail
 
 # ----------------------------
@@ -7,7 +7,6 @@ set -euo pipefail
 # ----------------------------
 print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success() { echo -e "\e[32m$1\e[0m"; }
-print_warning() { echo -e "\e[33mWarning: $1\e[0m" >&2; }
 print_error() { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 
 run_command() {
@@ -15,7 +14,6 @@ run_command() {
     local desc="$2"
     echo -e "\nRunning: $desc"
     if ! eval "$cmd"; then print_error "Failed: $desc"; fi
-    print_success "✅ Success: $desc"
 }
 
 # ----------------------------
@@ -26,87 +24,71 @@ USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPTS_SRC="$REPO_ROOT/scripts"
-WAL_TEMPLATES="$CONFIG_DIR/wal/templates"
 WAL_CACHE="$USER_HOME/.cache/wal"
 
+[[ "$EUID" -eq 0 ]] || print_error "Run as root (sudo $0)"
+
 # ----------------------------
-# GPU Driver Detection
+# Drivers & Updates
 # ----------------------------
-print_header "Detecting GPU & Updating System"
+print_header "System & Drivers"
 run_command "pacman -Syu --noconfirm" "System update"
 
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
 if echo "$GPU_INFO" | grep -qi nvidia; then
-    run_command "pacman -S --noconfirm --needed nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" "NVIDIA Drivers"
+    run_command "pacman -S --noconfirm --needed nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" "NVIDIA"
 elif echo "$GPU_INFO" | grep -qi amd; then
-    run_command "pacman -S --noconfirm --needed xf86-video-amdgpu mesa vulkan-radeon lib32-vulkan-radeon linux-headers" "AMD Drivers"
+    run_command "pacman -S --noconfirm --needed xf86-video-amdgpu mesa vulkan-radeon lib32-vulkan-radeon linux-headers" "AMD"
 fi
 
 # ----------------------------
-# The Clean Package List
+# Packages
 # ----------------------------
-print_header "Installing Core Packages"
+print_header "Installing Apps"
+APPS="hyprland waybar swww mako grim slurp kitty nano wget jq btop sddm code curl bluez bluez-utils blueman python-pyqt6 python-pillow gvfs udiskie udisks2 firefox fastfetch starship gnome-disk-utility pavucontrol yazi ffmpegthumbnailer poppler imagemagick chafa imv unzip p7zip tar gzip xz bzip2 unrar trash-cli git base-devel ttf-jetbrains-mono-nerd ttf-iosevka-nerd"
 
-# Separated for reliability
-CORE_APPS="hyprland waybar swww mako grim slurp kitty nano wget jq btop sddm code curl bluez bluez-utils blueman python-pyqt6 python-pillow gvfs udiskie udisks2 firefox fastfetch starship gnome-disk-utility pavucontrol"
-PREVIEW_STACK="yazi ffmpegthumbnailer poppler imagemagick chafa imv"
-UTILS="unzip p7zip tar gzip xz bzip2 unrar trash-cli git base-devel"
-FONTS="ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-cascadia-code-nerd ttf-fira-code"
-
-# Install in chunks to avoid single-package failure stopping the whole script
-run_command "pacman -S --noconfirm --needed $CORE_APPS" "Installing Main Apps"
-run_command "pacman -S --noconfirm --needed $PREVIEW_STACK" "Installing Yazi Stack"
-run_command "pacman -S --noconfirm --needed $UTILS" "Installing Utilities"
-run_command "pacman -S --noconfirm --needed $FONTS" "Installing Fonts"
-
-# Polkit Handling (Package name varies)
-pacman -S --noconfirm --needed polkit-kde-agent-1 || pacman -S --noconfirm --needed polkit-kde-agent || print_warning "Polkit agent not found"
+run_command "pacman -S --noconfirm --needed $APPS" "Core Apps"
+pacman -S --noconfirm --needed polkit-kde-agent-1 || pacman -S --noconfirm --needed polkit-kde-agent || true
 
 # ----------------------------
-# AUR & Pywal
+# AUR (Yay & Pywal)
 # ----------------------------
-print_header "Installing Yay & Pywal"
+print_header "AUR Tools"
 if ! command -v yay &>/dev/null; then
-    run_command "rm -rf /tmp/yay && sudo -u $USER_NAME git clone https://aur.archlinux.org/yay.git /tmp/yay" "Cloning Yay"
+    run_command "rm -rf /tmp/yay && sudo -u $USER_NAME git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone Yay"
     (cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm)
 fi
 run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16" "Pywal16"
 
 # ----------------------------
-# Fastfetch / Starship / Bash Setup
+# Config & Shell (UPDATED FIXES)
 # ----------------------------
-print_header "Applying Shell Config"
-BASHRC_DEST="$USER_HOME/.bashrc"
-sudo -u "$USER_NAME" bash -c "cat <<'EOF' > $BASHRC_DEST
-# Auto-restore Pywal colors
-(wal -r -q &)
-# Starship
-eval \"\$(starship init bash)\"
-# Fastfetch (once per session)
-if [[ -z \$DISPLAY_FETCHED ]]; then
-    fastfetch
-    export DISPLAY_FETCHED=1
-fi
-alias v='yazi'
-EOF"
-
-# ----------------------------
-# Config & Directories
-# ----------------------------
-print_header "Applying Config Files"
+print_header "Configs & Visuals"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts,wal/templates} "$WAL_CACHE"
 
-# Copy Mako Template
-if [[ -f "$REPO_ROOT/configs/mako/config" ]]; then
-    sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/mako/config" "$WAL_TEMPLATES/mako-config"
+# UPDATED .bashrc logic (Fixes Deprecated Error + Fastfetch)
+sudo -u "$USER_NAME" bash -c "cat <<'EOF' > $USER_HOME/.bashrc
+# Restore Pywal Colors (The 2026 way)
+[[ -f ~/.cache/wal/sequences ]] && cat ~/.cache/wal/sequences
+
+# Starship Prompt
+if command -v starship >/dev/null; then
+    eval \"\$(starship init bash)\"
 fi
 
-# Copy Fastfetch & Starship
+# Fastfetch on launch
+if command -v fastfetch >/dev/null; then
+    fastfetch
+fi
+
+# Aliases
+alias v='yazi'
+alias ls='ls --color=auto'
+EOF"
+
+# Copy configs from Repo
 [[ -f "$REPO_ROOT/configs/fastfetch/config.jsonc" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/fastfetch/config.jsonc" "$CONFIG_DIR/fastfetch/config.jsonc"
 [[ -f "$REPO_ROOT/configs/starship/starship.toml" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/starship/starship.toml" "$CONFIG_DIR/starship.toml"
-
-# Kitty Template
-[[ -f "$REPO_ROOT/configs/kitty/kitty.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/kitty/kitty.conf" "$WAL_TEMPLATES/kitty.conf"
 
 # Symlinks
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
@@ -114,12 +96,14 @@ sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/st
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
 
-# Scripts
-[[ -d "$SCRIPTS_SRC" ]] && sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/" && sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
+# Scripts & Wallpapers
+[[ -d "$SCRIPTS_SRC" ]] && sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/"
+[[ -d "$REPO_ROOT/Pictures/Wallpapers" ]] && sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures" && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
+sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
 
 # ----------------------------
 # Finalization
 # ----------------------------
 systemctl enable sddm.service || true
 systemctl enable bluetooth.service || true
-print_success "Installer Complete. Reboot to apply changes."
+print_success "Install Done. Reboot now for a clean 2026 setup."
