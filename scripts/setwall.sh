@@ -1,59 +1,25 @@
 #!/bin/bash
-# setwall.sh - Proper pywal16 workflow
-set -euo pipefail
+# High-Performance Wallpaper Setter
 
-WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
-
-# ----------------------------
-# Start swww-daemon if needed
-# ----------------------------
-if ! pgrep -x "swww-daemon" >/dev/null; then
-    swww-daemon &
-    sleep 1
+if [ -z "$1" ]; then
+    exit 1
 fi
 
-# ----------------------------
-# Pick wallpaper
-# ----------------------------
-if [[ -z "${1-}" ]]; then
-    WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -iname "*.png" -o -iname "*.jpg" \) | shuf -n 1)
-else
-    WALLPAPER="$1"
-fi
+WALL="$1"
 
-[[ -z "$WALLPAPER" ]] && { echo "No wallpapers found in $WALLPAPER_DIR"; exit 1; }
+# 1. Update Colors
+wal -i "$WALL" -q
 
-# ----------------------------
-# Set wallpaper
-# ----------------------------
-swww img "$WALLPAPER" --transition-type any --transition-step 90 --transition-fps 60
+# 2. Update Wallpaper (AMD Fixes)
+swww img "$WALL" --transition-type grow --transition-fps 165 --transition-duration 1.5
 
-# ----------------------------
-# Generate pywal theme (auto-processes ALL templates)
-# ----------------------------
-wal -q -i "$WALLPAPER"
+# 3. RELIABLE WAYBAR RESTART
+# Instead of USR1, we kill and restart to ensure the new CSS is loaded properly
+killall waybar
+waybar &
 
-# Wait for pywal to finish writing all files
-sleep 0.5
+# 4. Refresh Mako
+makoctl reload
 
-# ----------------------------
-# Reload Hyprland to pick up new colors
-# ----------------------------
+# 5. Refresh Hyprland
 hyprctl reload
-
-# ----------------------------
-# Reload services to pick up new colors
-# ----------------------------
-# Waybar
-pkill -USR2 waybar 2>/dev/null || waybar &
-
-# Mako (needs restart to reload config)
-pkill mako 2>/dev/null
-mako &
-
-# ----------------------------
-# Done!
-# ----------------------------
-notify-send "Theme Updated" "Wallpaper and colors applied!" -u low
-
-echo "✅ Theme updated successfully!"
