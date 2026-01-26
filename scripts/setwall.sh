@@ -1,28 +1,31 @@
 #!/bin/bash
 # ~/.config/scripts/setwall.sh
+# DO NOT TOUCH - WORKING LOGIC (With Mako Notification Fix)
 
-# 1. Simple Pathing
 WALL="$1"
 
-# 2. The Original Pywal Command (The one that worked)
-# We use the standard wal -i which you had before.
+# 1. Standard Pywal
 wal -i "$WALL"
 
-# 3. Simple SWWW (No fancy AMD flags if they were causing the miss)
-# If it worked before, this is the syntax it used:
+# 2. Stable SWWW
 swww img "$WALL" --transition-type simple
 
-# 4. Refresh everything 
-# We wait 0.5s to make sure the cache files are actually WRITTEN
+# 3. The Sync Gap (Wait for files to write)
 sleep 0.5
 
-# Reload Waybar
-killall waybar
+# 4. Component Reset
+killall waybar 2>/dev/null
 waybar &
 
-# Reload Mako
-killall mako
-mako &
+# 5. Mako Restart & Notification
+killall mako 2>/dev/null
+sleep 0.3
+mako & 
+disown # This keeps mako running after the script exits
 
-# Reload Hyprland Borders
+# 6. Send the test notification
+# This will now trigger once mako is back up
+notify-send -i "$WALL" "Theme Updated" "Colors synced to $(basename "$WALL")"
+
+# 7. Hyprland Borders
 hyprctl reload
