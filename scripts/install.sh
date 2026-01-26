@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland Installer – 2026 AMD/NVIDIA + Pywal + Dotfiles (Production-ready)
+# Hyprland Installer – 2026 AMD/NVIDIA + Pywal + Full Dotfiles
 set -euo pipefail
 
 # ----------------------------
@@ -29,7 +29,6 @@ SCRIPTS_SRC="$REPO_ROOT/scripts"
 WAL_TEMPLATES="$CONFIG_DIR/wal/templates"
 WAL_CACHE="$USER_HOME/.cache/wal"
 HYPR_CONFIG="$CONFIG_DIR/hypr"
-GPU_CONF="$HYPR_CONFIG/gpu.conf"
 
 # ----------------------------
 # Checks
@@ -49,40 +48,21 @@ if echo "$GPU_INFO" | grep -qi nvidia; then
     print_header "Detected NVIDIA GPU"
     run_command "pacman -S --noconfirm nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" "Install NVIDIA drivers"
 
-    sudo -u "$USER_NAME" mkdir -p "$HYPR_CONFIG"
-    cat <<EOF | sudo -u "$USER_NAME" tee "$GPU_CONF" >/dev/null
-# NVIDIA GPU – auto-generated
-env = LIBVA_DRIVER_NAME,nvidia
-env = GBM_BACKEND,nvidia-drm
-env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-env = NVD_BACKEND,direct
-env = WLR_NO_HARDWARE_CURSORS,1
-env = WLR_RENDERER,vulkan
-EOF
-
 elif echo "$GPU_INFO" | grep -qi amd; then
     print_header "Detected AMD GPU"
     run_command "pacman -S --noconfirm mesa vulkan-radeon lib32-vulkan-radeon" "Install AMD drivers"
 
-    sudo -u "$USER_NAME" mkdir -p "$HYPR_CONFIG"
-    cat <<EOF | sudo -u "$USER_NAME" tee "$GPU_CONF" >/dev/null
-# AMD GPU – auto-generated
-env = WLR_RENDERER,vulkan
-EOF
-
 else
-    print_warning "Unknown GPU, using generic GPU.conf"
-    sudo -u "$USER_NAME" mkdir -p "$HYPR_CONFIG"
-    cp "$REPO_ROOT/configs/hypr/gpu.conf" "$GPU_CONF"
+    print_warning "Unknown GPU, skipping driver install"
 fi
 
 # ----------------------------
-# Core Packages (without SDDM)
+# Core Packages
 # ----------------------------
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww mako grim slurp kitty nano wget jq btop
-    polkit polkit-kde-agent-1 code curl bluez bluez-utils blueman python-pyqt6 python-pillow
+    sddm polkit polkit-kde-agent-1 code curl bluez bluez-utils blueman python-pyqt6 python-pillow
     gvfs udiskie udisks2 firefox fastfetch starship mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
     unzip p7zip tar gzip xz bzip2 unrar atool imv
@@ -91,12 +71,8 @@ PACMAN_PACKAGES=(
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[@]}" "Install core packages"
 
-# ----------------------------
-# Install SDDM explicitly & enable
-# ----------------------------
-run_command "pacman -S --noconfirm --needed sddm" "Install SDDM"
 run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth"
-run_command "systemctl enable --now sddm.service" "Enable SDDM"
+run_command "systemctl enable sddm.service" "Enable SDDM"
 
 # ----------------------------
 # Install Yay & AUR packages
