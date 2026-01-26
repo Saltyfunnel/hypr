@@ -1,5 +1,5 @@
 #!/bin/bash
-# Full Hyprland Installer – 2026 AMD (The "Everything" Version)
+# Full Hyprland Installer – 2026 AMD (Final Fix Version)
 set -euo pipefail
 
 # ----------------------------
@@ -42,26 +42,19 @@ run_command "pacman -S --noconfirm --needed mesa vulkan-radeon lib32-vulkan-rade
 # ----------------------------
 # 2. The Full Package Stack
 # ----------------------------
-print_header "Step 2: Installing All Apps (Pacman)"
+print_header "Step 2: Installing All Apps"
 PACMAN_PACKAGES=(
-    # UI & Core
     hyprland waybar swww mako grim slurp kitty sddm code firefox
-    # System Utils
     bluez bluez-utils blueman pavucontrol fastfetch starship
     gvfs udiskie udisks2 gnome-disk-utility btop jq wget curl trash-cli
-    # Dev & Python
     python-pyqt6 python-pillow base-devel git
-    # Archives
     unzip p7zip tar gzip xz bzip2 unrar
-    # Yazi & Previews
     yazi ffmpegthumbnailer poppler imagemagick chafa imv
-    # Fonts
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-cascadia-code-nerd
 )
 
-# Attempt install with Polkit handling
 if ! pacman -S --noconfirm --needed "${PACMAN_PACKAGES[@]}" polkit-kde-agent-1; then
-    print_warning "Retrying with alternative polkit agent name..."
+    print_warning "Retrying with alternative polkit agent..."
     pacman -S --noconfirm --needed "${PACMAN_PACKAGES[@]}" polkit-kde-agent
 fi
 
@@ -79,33 +72,34 @@ fi
 run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16" "Install Pywal16"
 
 # ----------------------------
-# 4. Moving Scripts, Templates & Configs
+# 4. Copying Files & Fixing Symlinks
 # ----------------------------
 print_header "Step 4: Copying Scripts & Templates"
 
-# Ensure all target directories exist
+# 1. Create Directories
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,mako,scripts,wal/templates,fastfetch} "$WAL_CACHE"
 
-# A. Copy Pywal Templates
-if [[ -d "$REPO_ROOT/configs/wal/templates" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/wal/templates"/* "$WAL_TEMPLATES/"
-    print_success "Templates copied to $WAL_TEMPLATES"
-fi
+# 2. REMOVE OLD SYMLINKS FIRST (Prevents "dangling symlink" errors)
+sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/waybar/style.css" "$CONFIG_DIR/mako/config" "$CONFIG_DIR/kitty/kitty.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
 
-# B. Copy Scripts & Fix Permissions
-if [[ -d "$SCRIPTS_SRC" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/"
-    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
-    print_success "Scripts installed and made executable."
-fi
-
-# C. Copy General Configs
+# 3. Copy Repo Configs to ~/.config
 [[ -d "$REPO_ROOT/configs/hypr" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/hypr"/* "$CONFIG_DIR/hypr/"
 [[ -d "$REPO_ROOT/configs/waybar" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/waybar"/* "$CONFIG_DIR/waybar/"
 [[ -d "$REPO_ROOT/configs/yazi" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/yazi"/* "$CONFIG_DIR/yazi/"
 [[ -d "$REPO_ROOT/configs/kitty" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/kitty"/* "$CONFIG_DIR/kitty/"
 
-# D. Setup Symlinks
+# 4. Copy Pywal Templates
+if [[ -d "$REPO_ROOT/configs/wal/templates" ]]; then
+    sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/wal/templates"/* "$WAL_TEMPLATES/"
+fi
+
+# 5. Copy Scripts & Fix Permissions
+if [[ -d "$SCRIPTS_SRC" ]]; then
+    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/"
+    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
+fi
+
+# 6. NOW CREATE SYMLINKS (Pointing to the cache)
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
@@ -116,17 +110,15 @@ sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/
 # ----------------------------
 print_header "Step 5: Initialization"
 
-# Copy Wallpapers
 if [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]]; then
     sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures"
     sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 fi
 
-# Run Wal once
 FIRST_WALL=$(find "$USER_HOME/Pictures/Wallpapers" -type f | head -n 1 || true)
 if [[ -n "$FIRST_WALL" ]]; then
     sudo -u "$USER_NAME" wal -i "$FIRST_WALL" -q
-    print_success "Pywal colors initialized."
+    print_success "Pywal colors generated."
 fi
 
 # ----------------------------
@@ -134,11 +126,10 @@ fi
 # ----------------------------
 print_header "Step 6: Services"
 systemctl enable --now bluetooth.service || true
-
 if [ -f /usr/lib/systemd/system/sddm.service ]; then
     systemctl enable sddm.service
 else
     pacman -S --noconfirm sddm && systemctl enable sddm.service
 fi
 
-print_success "🎉 Done! Scripts and templates are synced. Reboot now."
+print_success "🎉 Done! Everything is synced correctly. Reboot now."
