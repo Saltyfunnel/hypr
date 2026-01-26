@@ -1,5 +1,5 @@
 #!/bin/bash
-# Universal Hyprland Installer - 2026 (AMD / NVIDIA / Intel)
+# Hyprland Installer – 2026 AMD/NVIDIA + Pywal + Dotfiles
 set -euo pipefail
 
 # ----------------------------
@@ -8,24 +8,14 @@ set -euo pipefail
 print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success() { echo -e "\e[32m$1\e[0m"; }
 print_warning() { echo -e "\e[33mWarning: $1\e[0m" >&2; }
-print_error() { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
+print_error() { echo -e "\e[31mError: $1\e[0m"; exit 1; }
 
 run_command() {
     local cmd="$1"
     local desc="$2"
     echo -e "\nRunning: $desc"
     if ! eval "$cmd"; then print_error "Failed: $desc"; fi
-    print_success "✅ $desc"
-}
-
-detect_bootloader() {
-    if bootctl is-installed &>/dev/null; then
-        echo "systemd-boot"
-    elif command -v grub-mkconfig &>/dev/null; then
-        echo "grub"
-    else
-        echo "unknown"
-    fi
+    print_success "✅ Success: $desc"
 }
 
 # ----------------------------
@@ -36,188 +26,152 @@ USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
 CONFIG_DIR="$USER_HOME/.config"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPTS_SRC="$REPO_ROOT/scripts"
+WAL_TEMPLATES="$CONFIG_DIR/wal/templates"
+WAL_CACHE="$USER_HOME/.cache/wal"
+HYPR_CONFIG="$CONFIG_DIR/hypr"
+GPU_CONF="$HYPR_CONFIG/gpu.conf"
 
 # ----------------------------
 # Checks
 # ----------------------------
-[[ "$EUID" -eq 0 ]] || print_error "Run as root: sudo $0"
+[[ "$EUID" -eq 0 ]] || print_error "Run as root (sudo $0)"
 command -v pacman &>/dev/null || print_error "pacman not found"
 
 # ----------------------------
-# System Update
+# System Update & GPU Drivers
 # ----------------------------
-print_header "System update"
-run_command "pacman -Syyu --noconfirm" "Updating system"
-
-# ----------------------------
-# GPU Detection & Drivers
-# ----------------------------
-print_header "Detecting GPU & Installing Drivers"
+print_header "Updating system & installing GPU drivers"
+run_command "pacman -Syyu --noconfirm" "System update"
 
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
-BOOTLOADER=$(detect_bootloader)
 
-if echo "$GPU_INFO" | grep -qi "nvidia"; then
-    print_header "NVIDIA GPU detected"
+if echo "$GPU_INFO" | grep -qi nvidia; then
+    print_header "Detected NVIDIA GPU"
+    run_command "pacman -S --noconfirm nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" "Install NVIDIA drivers"
 
-    run_command "pacman -S --noconfirm --needed \
-        nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" \
-        "Installing NVIDIA drivers"
+    # Write GPU config
+    sudo -u "$USER_NAME" mkdir -p "$HYPR_CONFIG"
+    cat <<EOF | sudo -u "$USER_NAME" tee "$GPU_CONF" >/dev/null
+# NVIDIA GPU – auto-generated
+env = LIBVA_DRIVER_NAME,nvidia
+env = GBM_BACKEND,nvidia-drm
+env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+env = NVD_BACKEND,direct
+env = WLR_NO_HARDWARE_CURSORS,1
+env = WLR_RENDERER,vulkan
+EOF
 
-    # Early KMS
-    sed -i 's/^MODULES=(/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm /' /etc/mkinitcpio.conf
-    run_command "mkinitcpio -P" "Rebuilding initramfs (NVIDIA)"
+elif echo "$GPU_INFO" | grep -qi amd; then
+    print_header "Detected AMD GPU"
+    run_command "pacman -S --noconfirm mesa vulkan-radeon lib32-vulkan-radeon" "Install AMD drivers"
 
-    # Kernel params
-    if [[ "$BOOTLOADER" == "systemd-boot" ]]; then
-        print_header "Configuring systemd-boot kernel params"
-        for entry in /boot/loader/entries/*.conf; do
-            grep -q "nvidia_drm.modeset=1" "$entry" || \
-                sed -i 's/^options /options nvidia_drm.modeset=1 /' "$entry"
-        done
-
-    elif [[ "$BOOTLOADER" == "grub" ]]; then
-        print_header "Configuring GRUB kernel params"
-        if [ -f /etc/default/grub ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="nvidia_drm.modeset=1 /' /etc/default/grub
-            run_command "grub-mkconfig -o /boot/grub/grub.cfg" "Updating GRUB"
-        fi
-    else
-        print_warning "Unknown bootloader — add nvidia_drm.modeset=1 manually if needed"
-    fi
-
-    GPU_VENDOR="nvidia"
-
-elif echo "$GPU_INFO" | grep -qi "amd"; then
-    print_header "AMD GPU detected"
-
-    run_command "pacman -S --noconfirm --needed \
-        mesa \
-        vulkan-radeon lib32-vulkan-radeon \
-        libva-mesa-driver mesa-vdpau \
-        xf86-video-amdgpu" \
-        "Installing AMD GPU stack"
-
-    GPU_VENDOR="amd"
-
-elif echo "$GPU_INFO" | grep -qi "intel"; then
-    print_header "Intel GPU detected"
-
-    run_command "pacman -S --noconfirm --needed \
-        mesa \
-        vulkan-intel lib32-vulkan-intel \
-        libva-intel-driver libva-mesa-driver" \
-        "Installing Intel GPU stack"
-
-    GPU_VENDOR="intel"
+    # Write GPU config
+    sudo -u "$USER_NAME" mkdir -p "$HYPR_CONFIG"
+    cat <<EOF | sudo -u "$USER_NAME" tee "$GPU_CONF" >/dev/null
+# AMD GPU – auto-generated
+env = WLR_RENDERER,vulkan
+EOF
 
 else
-    print_warning "Unknown GPU — installing generic Mesa stack"
-    run_command "pacman -S --noconfirm --needed mesa vulkan-icd-loader" \
-        "Installing generic GPU drivers"
-    GPU_VENDOR="unknown"
+    print_warning "Unknown GPU, using generic GPU.conf"
+    sudo -u "$USER_NAME" mkdir -p "$HYPR_CONFIG"
+    cp "$REPO_ROOT/configs/hypr/gpu.conf" "$GPU_CONF"
 fi
 
 # ----------------------------
 # Core Packages
 # ----------------------------
 print_header "Installing core packages"
-
 PACMAN_PACKAGES=(
-    hyprland waybar swww mako grim slurp kitty wget jq btop
-    sddm polkit polkit-kde-agent code curl bluez bluez-utils blueman
-    gvfs udiskie udisks2 firefox fastfetch starship mpv pavucontrol
-    qt5-wayland qt6-wayland gtk3 gtk4 trash-cli
+    hyprland waybar swww mako grim slurp kitty nano wget jq btop
+    sddm polkit polkit-kde-agent-1 code curl bluez bluez-utils blueman python-pyqt6 python-pillow
+    gvfs udiskie udisks2 firefox fastfetch starship mpv gnome-disk-utility pavucontrol
+    qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
     unzip p7zip tar gzip xz bzip2 unrar atool imv
     yazi ffmpegthumbnailer poppler imagemagick chafa
-    ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-cascadia-code-nerd
+    ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
 )
-
-run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Installing core packages"
-
-run_command "systemctl enable --now bluetooth.service" "Enabling Bluetooth"
-
-# ----------------------------
-# Display Manager
-# ----------------------------
-print_header "Configuring SDDM (Wayland)"
-mkdir -p /etc/sddm.conf.d
-cat <<'EOF' > /etc/sddm.conf.d/10-wayland.conf
-[General]
-DisplayServer=wayland
-EOF
-
-systemctl enable sddm.service
+run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install core packages"
+run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth"
+run_command "systemctl enable sddm.service" "Enable SDDM"
 
 # ----------------------------
-# Install Yay
+# Install Yay & AUR packages
 # ----------------------------
-print_header "Installing yay (AUR helper)"
-
+print_header "Installing Yay & AUR packages"
 if ! command -v yay &>/dev/null; then
-    run_command "pacman -S --noconfirm --needed git base-devel" "Installing base-devel"
-    run_command "rm -rf /tmp/yay && git clone https://aur.archlinux.org/yay.git /tmp/yay" "Cloning yay"
-    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay && cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" \
-        "Building yay"
+    run_command "pacman -S --noconfirm --needed git base-devel" "Install base-devel tools"
+    run_command "rm -rf /tmp/yay && git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay"
+    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay && cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Install yay"
+fi
+
+run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16" "Install Pywal16 from AUR"
+
+# ----------------------------
+# Shell Setup
+# ----------------------------
+print_header "Configuring shell"
+run_command "chsh -s $(command -v bash) $USER_NAME" "Set Bash as default shell"
+
+BASHRC_SRC="$REPO_ROOT/configs/.bashrc"
+BASHRC_DEST="$USER_HOME/.bashrc"
+
+if [[ -f "$BASHRC_SRC" ]]; then
+    sudo -u "$USER_NAME" cp "$BASHRC_SRC" "$BASHRC_DEST"
+else
+    sudo -u "$USER_NAME" bash -c "cat <<'EOF' > $BASHRC_DEST
+wal -R -q 2>/dev/null && clear
+eval \"\$(starship init bash)\"
+fastfetch
+EOF"
 fi
 
 # ----------------------------
-# User Config Directories
+# Config & Directories
 # ----------------------------
-print_header "Setting up user config directories"
-
+print_header "Applying configs"
 sudo -u "$USER_NAME" mkdir -p \
-    "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts,themes} \
-    "$USER_HOME/Pictures/Wallpapers"
+    "$HYPR_CONFIG" \
+    "$CONFIG_DIR"/{waybar,kitty,yazi,fastfetch,mako,scripts} \
+    "$WAL_TEMPLATES" "$WAL_CACHE"
+
+# Clean old Yazi state
+sudo -u "$USER_NAME" rm -rf "$USER_HOME/.cache/yazi" "$USER_HOME/.local/state/yazi"
+
+# Copy repo configs
+[[ -f "$REPO_ROOT/configs/hypr/hyprland.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/hypr/hyprland.conf" "$HYPR_CONFIG/hyprland.conf"
+[[ -f "$REPO_ROOT/configs/waybar/config" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/waybar/config" "$CONFIG_DIR/waybar/config"
+[[ -d "$REPO_ROOT/configs/yazi" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/yazi"/* "$CONFIG_DIR/yazi/"
+[[ -f "$REPO_ROOT/configs/fastfetch/config.jsonc" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/fastfetch/config.jsonc" "$CONFIG_DIR/fastfetch/config.jsonc"
+[[ -f "$REPO_ROOT/configs/starship/starship.toml" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/starship/starship.toml" "$CONFIG_DIR/starship.toml"
+[[ -f "$REPO_ROOT/configs/btop/btop.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/btop/btop.conf" "$CONFIG_DIR/btop/btop.conf"
+
+# Kitty & Pywal
+[[ -f "$REPO_ROOT/configs/kitty/kitty.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/kitty/kitty.conf" "$WAL_TEMPLATES/kitty.conf"
+[[ -d "$REPO_ROOT/configs/wal/templates" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/wal/templates"/* "$WAL_TEMPLATES/"
+
+# Symlinks for Pywal
+sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
+sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
+sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
+sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$HYPR_CONFIG/colors-hyprland.conf"
+
+# Scripts & permissions
+[[ -d "$SCRIPTS_SRC" ]] && sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/" && sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
+
+# Wallpapers
+[[ -d "$REPO_ROOT/Pictures/Wallpapers" ]] && sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures" && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
 
 # ----------------------------
-# GPU-specific Hyprland env file
+# Yazi Config
 # ----------------------------
-print_header "Writing GPU-specific Hyprland env"
-
-GPU_ENV_FILE="$CONFIG_DIR/hypr/gpu.conf"
-
-case "$GPU_VENDOR" in
-    nvidia)
-        cat <<'EOF' > "$GPU_ENV_FILE"
-env = LIBVA_DRIVER_NAME,nvidia
-env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-env = WLR_NO_HARDWARE_CURSORS,1
-EOF
-        ;;
-    *)
-        echo "# No GPU-specific env needed" > "$GPU_ENV_FILE"
-        ;;
-esac
-
-chown "$USER_NAME:$USER_NAME" "$GPU_ENV_FILE"
+print_header "Applying Yazi configs"
+sudo -u "$USER_NAME" rm -rf "$USER_HOME/.cache/yazi" "$USER_HOME/.local/state/yazi"
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/yazi"
+[[ -d "$REPO_ROOT/configs/yazi" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/yazi"/* "$CONFIG_DIR/yazi/"
+run_command "chown -R $USER_NAME:$USER_NAME $CONFIG_DIR/yazi" "Fixing Yazi permissions"
 
 # ----------------------------
-# Optional: Copy Repo Configs
+# Final message
 # ----------------------------
-print_header "Applying repo configs if present"
-
-copy_if_exists() {
-    local src="$1"
-    local dest="$2"
-    [[ -e "$src" ]] && sudo -u "$USER_NAME" cp -r "$src" "$dest"
-}
-
-copy_if_exists "$REPO_ROOT/configs/hypr/hyprland.conf" "$CONFIG_DIR/hypr/hyprland.conf"
-copy_if_exists "$REPO_ROOT/configs/waybar" "$CONFIG_DIR/"
-copy_if_exists "$REPO_ROOT/configs/kitty" "$CONFIG_DIR/"
-copy_if_exists "$REPO_ROOT/configs/yazi" "$CONFIG_DIR/"
-copy_if_exists "$REPO_ROOT/configs/fastfetch" "$CONFIG_DIR/"
-copy_if_exists "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
-
-# ----------------------------
-# Final Permissions
-# ----------------------------
-print_header "Fixing permissions"
-chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$USER_HOME/Pictures"
-
-# ----------------------------
-# Done
-# ----------------------------
-print_success "Installation complete."
-print_success "Reboot recommended."
+print_success "🎉 Installation complete! Reboot to start Hyprland."
