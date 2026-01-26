@@ -1,35 +1,28 @@
 #!/bin/bash
-# ----------------------------------------------------------------              
-# AMD-Optimized Wallpaper Setter (Full Path & Daemon Fix)
-# ----------------------------------------------------------------
+# ~/.config/scripts/setwall.sh
 
-if [ -z "$1" ]; then
-    echo "Error: No wallpaper path provided."
-    exit 1
-fi
+# 1. Simple Pathing
+WALL="$1"
 
-# Convert to absolute path so swww never misses it
-WALLPAPER=$(readlink -f "$1")
+# 2. The Original Pywal Command (The one that worked)
+# We use the standard wal -i which you had before.
+wal -i "$WALL"
 
-# 1. Update Pywal Colors
-wal -i "$WALLPAPER" -q
+# 3. Simple SWWW (No fancy AMD flags if they were causing the miss)
+# If it worked before, this is the syntax it used:
+swww img "$WALL" --transition-type simple
 
-# 2. Check if swww-daemon is running, if not, start it
-if ! pgrep -x "swww-daemon" > /dev/null; then
-    swww-daemon --format xrgb &
-    sleep 1 # Give it a second to initialize
-fi
+# 4. Refresh everything 
+# We wait 0.5s to make sure the cache files are actually WRITTEN
+sleep 0.5
 
-# 3. Apply Wallpaper with AMD-safe grow transition
-swww img "$WALLPAPER" \
-    --transition-type grow \
-    --transition-fps 165 \
-    --transition-duration 1.5 \
-    --transition-pos 0.5,0.5
+# Reload Waybar
+killall waybar
+waybar &
 
-# 4. Refresh UI Components
-killall waybar && waybar &
-makoctl reload
+# Reload Mako
+killall mako
+mako &
+
+# Reload Hyprland Borders
 hyprctl reload
-
-echo "Wallpaper applied: $WALLPAPER"
