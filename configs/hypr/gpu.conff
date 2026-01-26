@@ -1,0 +1,4 @@
+# GPU config — this file is overwritten by install.sh
+# Safe defaults for non-NVIDIA systems
+
+env = WLR_RENDERER,vulkan
