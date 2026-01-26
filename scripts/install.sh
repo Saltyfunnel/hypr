@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland Installer – 2026 AMD/NVIDIA + Pywal + Full Dotfiles
+# Full Hyprland Installer – 2026 AMD + Pywal + Dotfiles (mirrors NVIDIA setup)
 set -euo pipefail
 
 # ----------------------------
@@ -8,7 +8,7 @@ set -euo pipefail
 print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
 print_success() { echo -e "\e[32m$1\e[0m"; }
 print_warning() { echo -e "\e[33mWarning: $1\e[0m" >&2; }
-print_error() { echo -e "\e[31mError: $1\e[0m"; exit 1; }
+print_error() { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
 
 run_command() {
     local cmd="$1"
@@ -28,7 +28,6 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPTS_SRC="$REPO_ROOT/scripts"
 WAL_TEMPLATES="$CONFIG_DIR/wal/templates"
 WAL_CACHE="$USER_HOME/.cache/wal"
-HYPR_CONFIG="$CONFIG_DIR/hypr"
 
 # ----------------------------
 # Checks
@@ -37,42 +36,35 @@ HYPR_CONFIG="$CONFIG_DIR/hypr"
 command -v pacman &>/dev/null || print_error "pacman not found"
 
 # ----------------------------
-# System Update & GPU Drivers
+# System Update & AMD Drivers
 # ----------------------------
-print_header "Updating system & installing GPU drivers"
+print_header "Updating system & installing AMD drivers"
 run_command "pacman -Syyu --noconfirm" "System update"
-
-GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
-
-if echo "$GPU_INFO" | grep -qi nvidia; then
-    print_header "Detected NVIDIA GPU"
-    run_command "pacman -S --noconfirm nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" "Install NVIDIA drivers"
-
-elif echo "$GPU_INFO" | grep -qi amd; then
-    print_header "Detected AMD GPU"
-    run_command "pacman -S --noconfirm mesa vulkan-radeon lib32-vulkan-radeon" "Install AMD drivers"
-
-else
-    print_warning "Unknown GPU, skipping driver install"
-fi
+run_command "pacman -S --noconfirm mesa vulkan-radeon lib32-vulkan-radeon xf86-video-amdgpu linux-headers" "Install AMD drivers"
 
 # ----------------------------
 # Core Packages
 # ----------------------------
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
+    # Desktop Environment
     hyprland waybar swww mako grim slurp kitty nano wget jq btop
     sddm polkit polkit-kde-agent-1 code curl bluez bluez-utils blueman python-pyqt6 python-pillow
     gvfs udiskie udisks2 firefox fastfetch starship mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
     unzip p7zip tar gzip xz bzip2 unrar atool imv
+    
+    # Yazi & Image Preview Stack
     yazi ffmpegthumbnailer poppler imagemagick chafa
+    
+    # Fonts
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
 )
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[@]}" "Install core packages"
 
+# Enable Bluetooth & SDDM
 run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth"
-run_command "systemctl enable sddm.service" "Enable SDDM"
+run_command "systemctl enable --now sddm.service" "Enable SDDM"
 
 # ----------------------------
 # Install Yay & AUR packages
@@ -109,16 +101,13 @@ fi
 # Config & Directories
 # ----------------------------
 print_header "Applying configs"
-sudo -u "$USER_NAME" mkdir -p \
-    "$HYPR_CONFIG" \
-    "$CONFIG_DIR"/{waybar,kitty,yazi,fastfetch,mako,scripts} \
-    "$WAL_TEMPLATES" "$WAL_CACHE"
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts} "$WAL_TEMPLATES" "$WAL_CACHE"
 
 # Clean old Yazi state
 sudo -u "$USER_NAME" rm -rf "$USER_HOME/.cache/yazi" "$USER_HOME/.local/state/yazi"
 
 # Copy repo configs
-[[ -f "$REPO_ROOT/configs/hypr/hyprland.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/hypr/hyprland.conf" "$HYPR_CONFIG/hyprland.conf"
+[[ -f "$REPO_ROOT/configs/hypr/hyprland.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/hypr/hyprland.conf" "$CONFIG_DIR/hypr/hyprland.conf"
 [[ -f "$REPO_ROOT/configs/waybar/config" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/waybar/config" "$CONFIG_DIR/waybar/config"
 [[ -d "$REPO_ROOT/configs/yazi" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/yazi"/* "$CONFIG_DIR/yazi/"
 [[ -f "$REPO_ROOT/configs/fastfetch/config.jsonc" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/fastfetch/config.jsonc" "$CONFIG_DIR/fastfetch/config.jsonc"
@@ -129,12 +118,12 @@ sudo -u "$USER_NAME" rm -rf "$USER_HOME/.cache/yazi" "$USER_HOME/.local/state/ya
 [[ -f "$REPO_ROOT/configs/kitty/kitty.conf" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/kitty/kitty.conf" "$WAL_TEMPLATES/kitty.conf"
 [[ -d "$REPO_ROOT/configs/wal/templates" ]] && sudo -u "$USER_NAME" cp -r "$REPO_ROOT/configs/wal/templates"/* "$WAL_TEMPLATES/"
 
-# Symlinks for Pywal (ensure dirs exist first)
+# Symlinks for Pywal
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{waybar,mako,kitty,hypr}
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
 sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
-sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$HYPR_CONFIG/colors-hyprland.conf"
+sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
 
 # Scripts & permissions
 [[ -d "$SCRIPTS_SRC" ]] && sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/" && sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
