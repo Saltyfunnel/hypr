@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprland Installer – 2026 AMD/NVIDIA + Pywal + Dotfiles (Fixed)
+# Hyprland Installer – 2026 AMD/NVIDIA + Pywal + Dotfiles (Production-ready)
 set -euo pipefail
 
 # ----------------------------
@@ -77,23 +77,26 @@ else
 fi
 
 # ----------------------------
-# Core Packages
+# Core Packages (without SDDM)
 # ----------------------------
 print_header "Installing core packages"
 PACMAN_PACKAGES=(
     hyprland waybar swww mako grim slurp kitty nano wget jq btop
-    sddm polkit polkit-kde-agent-1 code curl bluez bluez-utils blueman python-pyqt6 python-pillow
+    polkit polkit-kde-agent-1 code curl bluez bluez-utils blueman python-pyqt6 python-pillow
     gvfs udiskie udisks2 firefox fastfetch starship mpv gnome-disk-utility pavucontrol
     qt5-wayland qt6-wayland gtk3 gtk4 libgit2 trash-cli
     unzip p7zip tar gzip xz bzip2 unrar atool imv
     yazi ffmpegthumbnailer poppler imagemagick chafa
     ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-fira-mono ttf-cascadia-code-nerd
 )
-# Fixed: use @ instead of * for array expansion
 run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[@]}" "Install core packages"
 
+# ----------------------------
+# Install SDDM explicitly & enable
+# ----------------------------
+run_command "pacman -S --noconfirm --needed sddm" "Install SDDM"
 run_command "systemctl enable --now bluetooth.service" "Enable Bluetooth"
-run_command "systemctl enable sddm.service" "Enable SDDM"
+run_command "systemctl enable --now sddm.service" "Enable SDDM"
 
 # ----------------------------
 # Install Yay & AUR packages
@@ -102,7 +105,6 @@ print_header "Installing Yay & AUR packages"
 if ! command -v yay &>/dev/null; then
     run_command "pacman -S --noconfirm --needed git base-devel" "Install base-devel tools"
     run_command "rm -rf /tmp/yay && git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone yay"
-    # Fixed: wrap cd + makepkg in subshell
     run_command "(cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm)" "Install yay"
 fi
 
