@@ -1,5 +1,5 @@
 #!/bin/bash
-# Full Hyprland Installer – 2026 AMD (Final Fix Version)
+# Minimal Hyprland Installer - 2026 Optimized (Universal GPU + UI Stack)
 set -euo pipefail
 
 # ----------------------------
@@ -29,107 +29,113 @@ SCRIPTS_SRC="$REPO_ROOT/scripts"
 WAL_TEMPLATES="$CONFIG_DIR/wal/templates"
 WAL_CACHE="$USER_HOME/.cache/wal"
 
-# Check root
-[[ "$EUID" -eq 0 ]] || print_error "Please run with: sudo $0"
+# ----------------------------
+# Checks
+# ----------------------------
+[[ "$EUID" -eq 0 ]] || print_error "Run as root (sudo $0)"
+command -v pacman &>/dev/null || print_error "pacman not found"
 
 # ----------------------------
-# 1. System & Drivers
+# System Update & Drivers
 # ----------------------------
-print_header "Step 1: System Update & AMD Drivers"
-run_command "pacman -Syu --noconfirm" "Full system upgrade"
-run_command "pacman -S --noconfirm --needed mesa vulkan-radeon lib32-vulkan-radeon xf86-video-amdgpu linux-headers" "AMD GPU stack"
+print_header "Updating system & Drivers"
+run_command "pacman -Syyu --noconfirm" "System update"
 
-# ----------------------------
-# 2. The Full Package Stack
-# ----------------------------
-print_header "Step 2: Installing All Apps"
-PACMAN_PACKAGES=(
-    hyprland waybar swww mako grim slurp kitty sddm code firefox
-    bluez bluez-utils blueman pavucontrol fastfetch starship
-    gvfs udiskie udisks2 gnome-disk-utility btop jq wget curl trash-cli
-    python-pyqt6 python-pillow base-devel git
-    unzip p7zip tar gzip xz bzip2 unrar
-    yazi ffmpegthumbnailer poppler imagemagick chafa imv
-    ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-fira-code ttf-cascadia-code-nerd
-)
+GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
 
-if ! pacman -S --noconfirm --needed "${PACMAN_PACKAGES[@]}" polkit-kde-agent-1; then
-    print_warning "Retrying with alternative polkit agent..."
-    pacman -S --noconfirm --needed "${PACMAN_PACKAGES[@]}" polkit-kde-agent
+if echo "$GPU_INFO" | grep -qi nvidia; then
+    run_command "pacman -S --noconfirm nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" "NVIDIA Drivers"
+    sed -i 's/^MODULES=(/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm /' /etc/mkinitcpio.conf
+    run_command "mkinitcpio -P" "Rebuilding Initramfs"
+elif echo "$GPU_INFO" | grep -qi amd; then
+    run_command "pacman -S --noconfirm xf86-video-amdgpu mesa vulkan-radeon lib32-vulkan-radeon" "AMD Drivers"
 fi
 
 # ----------------------------
-# 3. Yay & AUR (Permission Fix)
+# Core Packages
 # ----------------------------
-print_header "Step 3: Yay & Pywal16"
+print_header "Installing UI & Tool Stack"
+PACMAN_PACKAGES=(
+    hyprland waybar swww mako grim slurp kitty nano wget jq btop
+    sddm polkit-kde-agent-1 code curl bluez bluez-utils blueman python-pyqt6 python-pillow
+    gvfs udiskie udisks2 firefox fastfetch starship gnome-disk-utility pavucontrol
+    unzip p7zip tar gzip xz bzip2 unrar imv
+    yazi ffmpegthumbnailer poppler imagemagick chafa
+    ttf-jetbrains-mono-nerd ttf-iosevka-nerd ttf-cascadia-code-nerd
+)
+run_command "pacman -S --noconfirm --needed ${PACMAN_PACKAGES[*]}" "Install packages"
+
+# ----------------------------
+# AUR Setup
+# ----------------------------
 if ! command -v yay &>/dev/null; then
-    BUILD_DIR="/tmp/yay_build"
-    rm -rf "$BUILD_DIR" && mkdir -p "$BUILD_DIR"
-    chown -R "$USER_NAME:$USER_NAME" "$BUILD_DIR"
-    sudo -u "$USER_NAME" git clone https://aur.archlinux.org/yay.git "$BUILD_DIR/yay"
-    (cd "$BUILD_DIR/yay" && sudo -u "$USER_NAME" makepkg -si --noconfirm)
+    run_command "rm -rf /tmp/yay && git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone Yay"
+    run_command "chown -R $USER_NAME:$USER_NAME /tmp/yay && cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm" "Install Yay"
 fi
 run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16" "Install Pywal16"
 
 # ----------------------------
-# 4. Copying Files & Fixing Symlinks
+# Fastfetch / Starship / Bash Setup
 # ----------------------------
-print_header "Step 4: Copying Scripts & Templates"
+print_header "Setting up Shell Visuals"
+BASHRC_DEST="$USER_HOME/.bashrc"
 
-# 1. Create Directories
-sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,mako,scripts,wal/templates,fastfetch} "$WAL_CACHE"
+# Create a clean .bashrc that initializes everything correctly
+sudo -u "$USER_NAME" bash -c "cat <<'EOF' > $BASHRC_DEST
+# Pywal Color Restore
+(wal -r -q &)
 
-# 2. REMOVE OLD SYMLINKS FIRST (Prevents "dangling symlink" errors)
-sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/waybar/style.css" "$CONFIG_DIR/mako/config" "$CONFIG_DIR/kitty/kitty.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
+# Starship Prompt
+eval \"\$(starship init bash)\"
 
-# 3. Copy Repo Configs to ~/.config
-[[ -d "$REPO_ROOT/configs/hypr" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/hypr"/* "$CONFIG_DIR/hypr/"
-[[ -d "$REPO_ROOT/configs/waybar" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/waybar"/* "$CONFIG_DIR/waybar/"
-[[ -d "$REPO_ROOT/configs/yazi" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/yazi"/* "$CONFIG_DIR/yazi/"
-[[ -d "$REPO_ROOT/configs/kitty" ]] && sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/kitty"/* "$CONFIG_DIR/kitty/"
-
-# 4. Copy Pywal Templates
-if [[ -d "$REPO_ROOT/configs/wal/templates" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/configs/wal/templates"/* "$WAL_TEMPLATES/"
+# Fastfetch on Startup
+if [[ -z \$DISPLAY_FETCHED ]]; then
+    fastfetch
+    export DISPLAY_FETCHED=1
 fi
 
-# 5. Copy Scripts & Fix Permissions
-if [[ -d "$SCRIPTS_SRC" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/"
-    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
-fi
-
-# 6. NOW CREATE SYMLINKS (Pointing to the cache)
-sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
-sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
-sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
-sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
+# Aliases
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+alias v='yazi'
+EOF"
 
 # ----------------------------
-# 5. Initialization
+# Config & Directories
 # ----------------------------
-print_header "Step 5: Initialization"
+print_header "Applying Configs"
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts,wal/templates} "$WAL_CACHE"
 
-if [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]]; then
-    sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures"
-    sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
-fi
-
-FIRST_WALL=$(find "$USER_HOME/Pictures/Wallpapers" -type f | head -n 1 || true)
-if [[ -n "$FIRST_WALL" ]]; then
-    sudo -u "$USER_NAME" wal -i "$FIRST_WALL" -q
-    print_success "Pywal colors generated."
-fi
-
-# ----------------------------
-# 6. Services
-# ----------------------------
-print_header "Step 6: Services"
-systemctl enable --now bluetooth.service || true
-if [ -f /usr/lib/systemd/system/sddm.service ]; then
-    systemctl enable sddm.service
+# Mako Setup (Pywal compatible)
+if [[ -f "$REPO_ROOT/configs/mako/config" ]]; then
+    sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/mako/config" "$WAL_TEMPLATES/mako-config"
 else
-    pacman -S --noconfirm sddm && systemctl enable sddm.service
+    # Create default Mako template for Pywal if missing
+    sudo -u "$USER_NAME" bash -c "cat <<'EOF' > $WAL_TEMPLATES/mako-config
+background-color={background}
+text-color={foreground}
+border-color={color4}
+border-size=2
+border-radius=10
+font=JetBrainsMono Nerd Font 10
+EOF"
 fi
 
-print_success "🎉 Done! Everything is synced correctly. Reboot now."
+# Copy Fastfetch & Starship Configs
+[[ -f "$REPO_ROOT/configs/fastfetch/config.jsonc" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/fastfetch/config.jsonc" "$CONFIG_DIR/fastfetch/config.jsonc"
+[[ -f "$REPO_ROOT/configs/starship/starship.toml" ]] && sudo -u "$USER_NAME" cp "$REPO_ROOT/configs/starship/starship.toml" "$CONFIG_DIR/starship.toml"
+
+# Symlinks for the Live-Theme switch
+sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
+sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
+sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
+
+# Scripts
+[[ -d "$SCRIPTS_SRC" ]] && sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC"/* "$CONFIG_DIR/scripts/" && sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"*
+
+# ----------------------------
+# Finalization
+# ----------------------------
+systemctl enable sddm.service
+systemctl enable bluetooth.service
+print_success "Done. Fastfetch, Starship, and Mako are configured. Reboot now."
