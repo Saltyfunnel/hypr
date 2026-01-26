@@ -5,11 +5,9 @@ from PyQt6 import QtWidgets, QtGui, QtCore
 
 # ---------------- CONFIG ----------------
 WALLPAPER_DIR = Path.home() / "Pictures/Wallpapers"
-
 THUMB_SIZE = (220, 140)
 THUMBS_PER_ROW = 5
 VISIBLE_ROWS = 3
-
 GRID_SPACING = 14
 BORDER_RADIUS = 12
 # ----------------------------------------
@@ -20,7 +18,6 @@ class Thumbnail(QtWidgets.QLabel):
         self.wp_path = wp_path
         self.click_callback = click_callback
         self.hover_color = hover_color
-
         self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         self.setStyleSheet("border-radius:8px; border:2px solid #444;")
 
@@ -48,28 +45,19 @@ class Thumbnail(QtWidgets.QLabel):
 class WallpaperPicker(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-
-        # --- HYPRLAND v0.53 IDENTIFICATION ---
         self.setWindowTitle("WallpaperPicker")
-        
-        self.setWindowFlags(
-            QtCore.Qt.WindowType.Window |
-            QtCore.Qt.WindowType.FramelessWindowHint
-        )
+        self.setWindowFlags(QtCore.Qt.WindowType.Window | QtCore.Qt.WindowType.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        # ----- Wallpapers -----
         self.wallpapers = sorted(list(WALLPAPER_DIR.glob("*.[pj][pn]g")))
         if not self.wallpapers:
             QtWidgets.QMessageBox.critical(None, "Error", "No wallpapers found!")
             sys.exit(1)
 
-        # ----- Pywal Colors -----
         self.BG, self.FG, self.HOVER = self.get_pywal_colors()
         self.tint_color = QtGui.QColor(self.BG)
         self.tint_color.setAlpha(180)
 
-        # ----- Layout -----
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(GRID_SPACING, GRID_SPACING, GRID_SPACING, GRID_SPACING)
 
@@ -82,7 +70,6 @@ class WallpaperPicker(QtWidgets.QWidget):
         container = QtWidgets.QWidget()
         grid = QtWidgets.QGridLayout(container)
         grid.setSpacing(GRID_SPACING)
-        grid.setContentsMargins(0, 0, 0, 0)
 
         row = col = 0
         for wp in self.wallpapers:
@@ -97,28 +84,18 @@ class WallpaperPicker(QtWidgets.QWidget):
         layout.addWidget(scroll)
 
         rows = min(VISIBLE_ROWS, row + 1)
-        width = (THUMBS_PER_ROW * THUMB_SIZE[0]) + ((THUMBS_PER_ROW + 1) * GRID_SPACING)
-        height = (rows * THUMB_SIZE[1]) + ((rows + 1) * GRID_SPACING)
-        self.resize(width, height)
+        self.resize((THUMBS_PER_ROW * THUMB_SIZE[0]) + ((THUMBS_PER_ROW + 1) * GRID_SPACING),
+                    (rows * THUMB_SIZE[1]) + ((rows + 1) * GRID_SPACING))
 
     def select_wallpaper(self, wp_path):
-        subprocess.run([str(Path.home() / ".config/scripts/setwall.sh"), str(wp_path)])
+        subprocess.run(["bash", str(Path.home() / ".config/scripts/setwall.sh"), str(wp_path)])
         QtWidgets.QApplication.quit()
 
     def get_pywal_colors(self):
-        wal_cache = Path.home() / ".cache/wal/colors.css"
         try:
-            with open(wal_cache) as f:
-                colors = {
-                    line.split(":")[0].strip().replace("--", ""):
-                    line.split(":")[1].strip().rstrip(";")
-                    for line in f if ":" in line
-                }
-            return (
-                colors.get("color0", "#1a1a1a"),
-                colors.get("color7", "#ffffff"),
-                colors.get("color4", "#00aaff")
-            )
+            with open(Path.home() / ".cache/wal/colors.css") as f:
+                colors = {l.split(":")[0].strip().replace("--", ""): l.split(":")[1].strip().rstrip(";") for l in f if ":" in l}
+            return colors.get("color0", "#1a1a1a"), colors.get("color7", "#ffffff"), colors.get("color4", "#00aaff")
         except:
             return "#1a1a1a", "#ffffff", "#00aaff"
 
@@ -130,12 +107,10 @@ class WallpaperPicker(QtWidgets.QWidget):
         painter.drawRoundedRect(self.rect().adjusted(1,1,-1,-1), BORDER_RADIUS, BORDER_RADIUS)
 
     def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key.Key_Escape:
-            QtWidgets.QApplication.quit()
+        if event.key() == QtCore.Qt.Key.Key_Escape: QtWidgets.QApplication.quit()
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    # This is crucial for Wayland identification
     app.setDesktopFileName("WallpaperPicker")
     picker = WallpaperPicker()
     picker.show()
