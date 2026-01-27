@@ -88,9 +88,37 @@ if [[ -d "$CONFIGS_SRC/waybar" ]]; then
     print_success "Waybar config copied"
 fi
 
-# Copy Kitty config
+# Copy Kitty base config (with fallback colors)
 if [[ -f "$CONFIGS_SRC/kitty/kitty.conf" ]]; then
     sudo -u "$USER_NAME" cp "$CONFIGS_SRC/kitty/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
+else
+    # Create a default kitty.conf that includes pywal colors
+    sudo -u "$USER_NAME" cat > "$CONFIG_DIR/kitty/kitty.conf" << 'KITTYCONF'
+# Kitty Configuration
+font_family      JetBrainsMono Nerd Font
+font_size        11.0
+window_padding_width 8
+confirm_os_window_close 0
+enable_audio_bell no
+tab_bar_edge bottom
+tab_bar_style powerline
+tab_powerline_style slanted
+repaint_delay 10
+input_delay 3
+sync_to_monitor yes
+
+# Include pywal colors (generated from template)
+include ~/.cache/wal/kitty-wal.conf
+
+# Fallback colors
+background #1a1b26
+foreground #c0caf5
+KITTYCONF
+fi
+
+# Copy Pywal template for kitty (kitty-wal.conf)
+if [[ -f "$CONFIGS_SRC/wal/templates/kitty-wal.conf" ]]; then
+    sudo -u "$USER_NAME" cp "$CONFIGS_SRC/wal/templates/kitty-wal.conf" "$CONFIG_DIR/wal/templates/kitty-wal.conf"
 fi
 
 # Copy Mako config
@@ -113,6 +141,56 @@ fi
 if [[ -d "$CONFIGS_SRC/wal/templates" ]]; then
     sudo -u "$USER_NAME" cp -rf "$CONFIGS_SRC/wal/templates/"* "$CONFIG_DIR/wal/templates/" 2>/dev/null || true
 fi
+
+# ----------------------------
+# GPU Environment Config
+# ----------------------------
+print_header "Generating GPU Environment Config"
+
+GPU_ENV_FILE="$CONFIG_DIR/hypr/gpu-env.conf"
+GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
+
+sudo -u "$USER_NAME" bash -c "cat > $GPU_ENV_FILE" << 'GPUEOF'
+# Auto-generated GPU environment variables
+# Generated during installation
+
+GPUEOF
+
+if echo "$GPU_INFO" | grep -qi nvidia; then
+    print_success "Detected NVIDIA GPU - configuring environment"
+    sudo -u "$USER_NAME" bash -c "cat >> $GPU_ENV_FILE" << 'NVIDIAEOF'
+env = LIBVA_DRIVER_NAME,nvidia
+env = XDG_SESSION_TYPE,wayland
+env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+env = GBM_BACKEND,nvidia-drm
+env = WLR_NO_HARDWARE_CURSORS,1
+env = __GL_GSYNC_ALLOWED,1
+env = __GL_VRR_ALLOWED,1
+env = QT_QPA_PLATFORM,wayland
+NVIDIAEOF
+elif echo "$GPU_INFO" | grep -qi amd; then
+    print_success "Detected AMD GPU - configuring environment"
+    sudo -u "$USER_NAME" bash -c "cat >> $GPU_ENV_FILE" << 'AMDEOF'
+env = LIBVA_DRIVER_NAME,radeonsi
+env = XDG_SESSION_TYPE,wayland
+env = QT_QPA_PLATFORM,wayland
+AMDEOF
+elif echo "$GPU_INFO" | grep -qi intel; then
+    print_success "Detected Intel GPU - configuring environment"
+    sudo -u "$USER_NAME" bash -c "cat >> $GPU_ENV_FILE" << 'INTELEOF'
+env = LIBVA_DRIVER_NAME,iHD
+env = XDG_SESSION_TYPE,wayland
+env = QT_QPA_PLATFORM,wayland
+INTELEOF
+else
+    print_success "No GPU detected - using default Wayland environment"
+    sudo -u "$USER_NAME" bash -c "cat >> $GPU_ENV_FILE" << 'DEFAULTEOF'
+env = XDG_SESSION_TYPE,wayland
+env = QT_QPA_PLATFORM,wayland
+DEFAULTEOF
+fi
+
+print_success "GPU environment config created: $GPU_ENV_FILE"
 
 # Scripts & Wallpapers
 if [[ -d "$SCRIPTS_SRC" ]]; then
@@ -198,9 +276,9 @@ if [[ -f "$CONFIG_DIR/wal/templates/waybar-style.css" ]]; then
     sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
 fi
 
-if [[ -f "$CONFIG_DIR/wal/templates/kitty.conf" ]]; then
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
-fi
+# NOTE: Kitty uses "include" directive, not symlink
+# Pywal will generate ~/.cache/wal/kitty.conf
+# Add to your kitty.conf: include ~/.cache/wal/kitty.conf
 
 if [[ -f "$CONFIG_DIR/wal/templates/colors-hyprland.conf" ]]; then
     sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
