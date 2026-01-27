@@ -1,90 +1,104 @@
 # --------------------------
-#     Yazi Theme - Pywal + Beginner Friendly
+# Yazi Theme - Pywal Compatible
 # --------------------------
 
-[colors]
+# File type colors - Controls folder and file text colors
+[filetype]
+rules = [
+    # Directories - THIS is what makes folders not blue!
+    { url = "*/", fg = "#6272a4" },
+    # Images
+    { mime = "image/*", fg = "#50fa7b" },
+    # Videos
+    { mime = "video/*", fg = "#ffb86c" },
+    # Audio
+    { mime = "audio/*", fg = "#bd93f9" },
+    # Archives
+    { mime = "application/*zip", fg = "#ffb86c" },
+    { mime = "application/*tar", fg = "#ffb86c" },
+    # Documents
+    { mime = "text/*", fg = "#f8f8f2" },
+    # Executables
+    { mime = "*", is = "exec", fg = "#f1fa8c" },
+    # Symlinks
+    { mime = "*", is = "link", fg = "#50fa7b" },
+    # Orphaned symlinks
+    { mime = "*", is = "orphan", fg = "#ff5c57" },
+]
 
-# Backgrounds
-bg        = "#1c1c1c"    # Default dark background
-bg_alt    = "#2a2a2a"    # Alternate background for panels/previews
+# Icons - Controls folder icon colors
+[icon]
+prepend_conds = [
+    { if = "dir", text = "", fg = "#6272a4" },
+    { if = "link", text = "", fg = "#50fa7b" },
+]
 
-# Foreground / Text
-fg        = "#e0e0e0"    # Default text
-fg_alt    = "#c0c0c0"    # Secondary text
+# Manager (main file list)
+[manager]
+cwd = { fg = "#f0c674", bold = true }
+hovered = { reversed = true }
+preview_hovered = { underline = true }
 
-# Selection / Highlight
-sel_bg    = "#4f5b66"    # Selected item background
-sel_fg    = "#ffffff"    # Selected item text
+# Find highlighting
+find_keyword = { fg = "#f0c674", bg = "#3a3a3a", bold = true }
+find_position = { fg = "#8abeb7", italic = true }
 
-# Cursor
-cursor_fg = "#1c1c1c"
-cursor_bg = "#f0c674"
-
-# Borders / Lines
-border    = "#3a3a3a"
-line      = "#3a3a3a"
-
-# Status / Titles
-status_bg = "#3a3a3a"    # ⬅️ CHANGED: Using border color for better separation from main panels
-status_fg = "#f8f8f2"
-title_fg  = "#f8f8f2"
-
-# Preview pane
-preview_bg = "#262626"
-preview_fg = "#e0e0e0"
-
-# Errors / Warnings
-error_fg  = "#ff5c57"
-warn_fg   = "#f3f99d"
-info_fg   = "#8abeb7"
-
-# File types (syntax-style hints)
-file_text    = "#f8f8f2"
-file_code    = "#8be9fd"
-file_image   = "#50fa7b"
-file_video   = "#ffb86c"
-file_audio   = "#bd93f9"
-file_pdf     = "#ff79c6"
-file_archive = "#ffb86c"
-file_exec    = "#f1fa8c"
-file_dir     = "#6272a4"
-
-# ⬅️ ADDED: Essential file status colors for clarity
-file_perm    = "#6272a4"    # Muted color for permission text
-file_link    = "#50fa7b"    # Bright color to immediately spot symlinks
-folder_open  = "#f0c674"    # Subtle hint for currently open folder
-
-# --------------------------
-# UI Elements
-# --------------------------
-
-[ui]
-
-# Scrollbar
-scrollbar_fg = "#f8f8f2"
-scrollbar_bg = "#3a3a3a"
-
-# Prompt / Input
-prompt_fg = "#f8f8f2"
-prompt_bg = "#2a2a2a"
-
-# Confirm boxes
-confirm_fg = "#f8f8f2"
-confirm_bg = "#2a2a2a"
-
-# Key hints / Tooltips
-hint_fg = "#f8f8f2"
-hint_bg = "#3a3a3a"
+# Markers for copied/cut files
+marker_copied = { fg = "#50fa7b", bg = "#50fa7b" }
+marker_cut = { fg = "#ff5c57", bg = "#ff5c57" }
+marker_marked = { fg = "#ffb86c", bg = "#ffb86c" }
+marker_selected = { fg = "#8be9fd", bg = "#8be9fd" }
 
 # Tabs
-tab_active_bg   = "#4f5b66"
-tab_active_fg   = "#f8f8f2"
-tab_inactive_bg = "#2a2a2a"
-tab_inactive_fg = "#c0c0c0"
+[tabs]
+active = { fg = "#1c1c1c", bg = "#4f5b66", bold = true }
+inactive = { fg = "#c0c0c0", bg = "#2a2a2a" }
 
-# --------------------------
-# Optional: Pywal Overrides
-# --------------------------
+# Status bar
+[status]
+separator_style = { fg = "#3a3a3a", bg = "#1c1c1c" }
 
-# If you run pywal, it will overwrite these automatically.
-# Use `pywal -n` to apply colors only to terminals/Yazi if needed.
+# Mode indicator
+[mode]
+normal_main = { fg = "#1c1c1c", bg = "#8abeb7", bold = true }
+normal_alt = { fg = "#f8f8f2", bg = "#3a3a3a" }
+select_main = { fg = "#1c1c1c", bg = "#f0c674", bold = true }
+select_alt = { fg = "#f8f8f2", bg = "#3a3a3a" }
+unset_main = { fg = "#1c1c1c", bg = "#ff5c57", bold = true }
+unset_alt = { fg = "#f8f8f2", bg = "#3a3a3a" }
+
+# Input dialog
+[input]
+border = { fg = "#8abeb7" }
+title = { fg = "#f8f8f2" }
+value = { fg = "#f8f8f2" }
+selected = { bg = "#3a3a3a" }
+
+# Completion menu
+[completion]
+border = { fg = "#8abeb7" }
+active = { bg = "#3a3a3a", fg = "#f8f8f2" }
+inactive = { fg = "#c0c0c0" }
+
+# Help menu
+[help]
+on = { fg = "#8abeb7" }
+run = { fg = "#f0c674" }
+desc = { fg = "#c0c0c0" }
+hovered = { reversed = true }
+footer = { fg = "#1c1c1c", bg = "#3a3a3a" }
+
+# Which-key hints
+[which]
+cols = 3
+mask = { bg = "#1c1c1c" }
+cand = { fg = "#8abeb7" }
+rest = { fg = "#c0c0c0" }
+desc = { fg = "#e0e0e0" }
+separator_style = { fg = "#3a3a3a" }
+
+# Confirm dialogs
+[confirm]
+border = { fg = "#8abeb7" }
+title = { fg = "#f8f8f2" }
+body = { fg = "#e0e0e0" }
