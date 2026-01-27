@@ -67,6 +67,14 @@ run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16" "Pywal16"
 print_header "Configs & Visuals"
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts,wal/templates} "$WAL_CACHE"
 
+# CRITICAL FIX: Remove old dangling symlinks first
+print_header "Cleaning Old Symlinks"
+sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/mako/config" 2>/dev/null || true
+sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/waybar/style.css" 2>/dev/null || true
+sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/kitty/kitty.conf" 2>/dev/null || true
+sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/hypr/colors-hyprland.conf" 2>/dev/null || true
+print_success "Old symlinks removed"
+
 # CRITICAL FIX: Copy ALL Hyprland configs (not just colors)
 if [[ -d "$CONFIGS_SRC/hypr" ]]; then
     print_header "Copying Hyprland Configuration"
