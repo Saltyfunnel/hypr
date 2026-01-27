@@ -127,6 +127,47 @@ if [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]]; then
     print_success "Wallpapers copied"
 fi
 
+# GENERATE GPU-SPECIFIC ENVIRONMENT
+print_header "Generating GPU Environment"
+sudo -u "$USER_NAME" bash -c "cat > $CONFIG_DIR/scripts/generate-gpu-env.sh" << 'GPUSCRIPT'
+#!/bin/bash
+OUTPUT_FILE="$HOME/.config/hypr/gpu-env.conf"
+GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
+echo "# Auto-generated GPU environment variables" > "$OUTPUT_FILE"
+echo "# Generated on: $(date)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+if echo "$GPU_INFO" | grep -qi nvidia; then
+    cat >> "$OUTPUT_FILE" << 'EOF'
+env = LIBVA_DRIVER_NAME,nvidia
+env = XDG_SESSION_TYPE,wayland
+env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+env = GBM_BACKEND,nvidia-drm
+env = WLR_NO_HARDWARE_CURSORS,1
+env = __GL_GSYNC_ALLOWED,1
+env = __GL_VRR_ALLOWED,1
+env = QT_QPA_PLATFORM,wayland
+cursor { no_hardware_cursors = true }
+EOF
+elif echo "$GPU_INFO" | grep -qi amd; then
+    cat >> "$OUTPUT_FILE" << 'EOF'
+env = LIBVA_DRIVER_NAME,radeonsi
+env = XDG_SESSION_TYPE,wayland
+env = QT_QPA_PLATFORM,wayland
+EOF
+elif echo "$GPU_INFO" | grep -qi intel; then
+    cat >> "$OUTPUT_FILE" << 'EOF'
+env = LIBVA_DRIVER_NAME,iHD
+env = XDG_SESSION_TYPE,wayland
+env = QT_QPA_PLATFORM,wayland
+EOF
+fi
+GPUSCRIPT
+
+sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/generate-gpu-env.sh"
+sudo -u "$USER_NAME" bash "$CONFIG_DIR/scripts/generate-gpu-env.sh"
+print_success "GPU environment generated"
+
 # .bashrc setup
 sudo -u "$USER_NAME" bash -c "cat <<'EOF' > $USER_HOME/.bashrc
 # Restore Pywal Colors
