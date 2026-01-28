@@ -1,313 +1,841 @@
-#!/bin/bash
-# Minimal Hyprland Installer - 2026 Unified (AMD/Nvidia + UI Fixes)
-set -euo pipefail
+#!/usr/bin/env python3
+"""
+PyQt5 File Manager with LIVE Pywal theming + Hover Preview + Nerd Font Icons + Semi-Transparency
+- Tree on top-left, Preview below tree (fixed height)
+- File list on right
+- Live Pywal colors
+- Back / Home / Refresh / Copy / Cut / Paste / Delete
+- Toggle button for hidden files
+- Uses Nerd Font glyphs for folder/file icons
+- Semi-transparent panels
+- OPTIMIZED: Async image loading, caching, debouncing to prevent UI hangs
+"""
 
-# ----------------------------
-# Helper functions
-# ----------------------------
-print_header() { echo -e "\n--- \e[1m\e[34m$1\e[0m ---"; }
-print_success() { echo -e "\e[32m$1\e[0m"; }
-print_error() { echo -e "\e[31mError: $1\e[0m" >&2; exit 1; }
+import sys, json, shutil, subprocess, tempfile
+from pathlib import Path
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QListWidget, QListWidgetItem, QPushButton, QLabel, QLineEdit,
+    QMessageBox, QSplitter, QMenu, QTreeWidgetItem, QTreeWidget,
+    QSizePolicy, QStyleFactory
+)
+from PyQt5.QtCore import Qt, QFileSystemWatcher, QThread, pyqtSignal, QTimer
+from PyQt5.QtGui import QFont, QColor, QPalette, QPixmap, QImage
 
-run_command() {
-    local cmd="$1"
-    local desc="$2"
-    echo -e "\nRunning: $desc"
-    if ! eval "$cmd"; then print_error "Failed: $desc"; fi
-}
+# ---------------- Image Loader Thread ----------------
+class ImageLoaderThread(QThread):
+    """Async thread for loading images without blocking UI"""
+    image_loaded = pyqtSignal(str, QPixmap)
+    
+    def __init__(self, filepath, target_width, target_height):
+        super().__init__()
+        self.filepath = filepath
+        self.target_width = target_width
+        self.target_height = target_height
+    
+    def run(self):
+        try:
+            # Load image with size hint to avoid loading full resolution
+            reader = QImage(self.filepath)
+            if not reader.isNull():
+                # Scale to reasonable preview size before converting to pixmap
+                scaled = reader.scaled(
+                    self.target_width, 
+                    self.target_height, 
+                    Qt.KeepAspectRatio, 
+                    Qt.SmoothTransformation
+                )
+                pixmap = QPixmap.fromImage(scaled)
+                self.image_loaded.emit(self.filepath, pixmap)
+        except Exception as e:
+            print(f"Image load error: {e}")
 
-# ----------------------------
-# Setup Variables
-# ----------------------------
-USER_NAME="${SUDO_USER:-$USER}"
-USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
-CONFIG_DIR="$USER_HOME/.config"
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SCRIPTS_SRC="$REPO_ROOT/scripts"
-CONFIGS_SRC="$REPO_ROOT/configs"
-WAL_CACHE="$USER_HOME/.cache/wal"
+# ---------------- Main File Manager ----------------
+class FileManager(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-[[ "$EUID" -eq 0 ]] || print_error "Run as root (sudo $0)"
+        self.current_path = str(Path.home())
+        self.clipboard = []
+        self.clipboard_action = None
+        self.colors_file = Path.home() / ".cache" / "wal" / "colors.json"
+        self.show_hidden = False
 
-# ----------------------------
-# Drivers & Updates
-# ----------------------------
-print_header "System & Drivers"
-run_command "pacman -Syu --noconfirm" "System update"
+        # Image cache to prevent reloading
+        self.image_cache = {}
+        self.cache_max_size = 50  # Max cached images
+        
+        # Current loading thread
+        self.current_loader = None
+        
+        # Hover debounce timer
+        self.hover_timer = QTimer()
+        self.hover_timer.setSingleShot(True)
+        self.hover_timer.timeout.connect(self.load_hovered_preview)
+        self.hover_delay = 150  # ms delay before loading preview
+        self.pending_hover_item = None
 
-GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
-if echo "$GPU_INFO" | grep -qi nvidia; then
-    run_command "pacman -S --noconfirm --needed nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" "NVIDIA"
-elif echo "$GPU_INFO" | grep -qi amd; then
-    run_command "pacman -S --noconfirm --needed xf86-video-amdgpu mesa vulkan-radeon lib32-vulkan-radeon linux-headers" "AMD"
-fi
+        # Nerd Font icons (using Unicode escape codes)
+        self.icon_font = QFont("JetBrainsMono Nerd Font", 12)
+        self.folder_glyph = "\uf07b"  # nf-fa-folder
+        self.file_glyph = "\uf15b"  # nf-fa-file
+        self.video_glyph = "\U000f0219"  # nf-md-video
+        self.drive_glyph = "\uf0a0"  # nf-fa-hdd_o
+        self.usb_glyph = "\uf287"  # nf-fa-usb
+        
+        # Debug: Check if font is available
+        print(f"Icon font family: {self.icon_font.family()}")
+        print(f"Folder glyph: '{self.folder_glyph}' (U+{ord(self.folder_glyph):04X})")
+        print(f"File glyph: '{self.file_glyph}' (U+{ord(self.file_glyph):04X})")
 
-# ----------------------------
-# Packages
-# ----------------------------
-print_header "Installing Apps"
-APPS="hyprland waybar swww mako grim slurp kitty nano wget jq btop sddm code curl bluez bluez-utils blueman python-pyqt6 python-pillow gvfs udiskie udisks2 firefox fastfetch starship gnome-disk-utility pavucontrol yazi ffmpegthumbnailer poppler ffmpeg imagemagick chafa imv unzip p7zip tar gzip xz bzip2 unrar trash-cli git base-devel ttf-jetbrains-mono-nerd ttf-iosevka-nerd wl-clipboard xdg-desktop-portal-hyprland python-pyqt5 python-opencv qt5-wayland qt6-wayland"
+        # Watch Pywal colors.json for live updates
+        self.watcher = QFileSystemWatcher([str(self.colors_file)])
+        self.watcher.fileChanged.connect(self.reload_pywal_theme)
 
-run_command "pacman -S --noconfirm --needed $APPS" "Core Apps"
-pacman -S --noconfirm --needed polkit-kde-agent || pacman -S --noconfirm --needed polkit-gnome || true
+        self.colors = self.load_pywal_colors()
 
-# ----------------------------
-# AUR (Yay & Pywal)
-# ----------------------------
-print_header "AUR Tools"
-if ! command -v yay &>/dev/null; then
-    run_command "rm -rf /tmp/yay && sudo -u $USER_NAME git clone https://aur.archlinux.org/yay.git /tmp/yay" "Clone Yay"
-    (cd /tmp/yay && sudo -u $USER_NAME makepkg -si --noconfirm)
-fi
-run_command "sudo -u $USER_NAME yay -S --noconfirm python-pywal16" "Pywal16"
+        self.initUI()
+        self.apply_theme()
+        self.load_directory(self.current_path)
 
-# ----------------------------
-# Config & Shell
-# ----------------------------
-print_header "Configs & Visuals"
-sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR"/{hypr,waybar,kitty,yazi,fastfetch,mako,scripts,wal/templates} "$WAL_CACHE"
+    # ---------------- Live Pywal Reload ----------------
+    def reload_pywal_theme(self):
+        self.colors = self.load_pywal_colors()
+        self.apply_theme()
+        self.populate_tree()
+        self.load_directory(self.current_path)
 
-# CRITICAL FIX: Remove old dangling symlinks first
-print_header "Cleaning Old Symlinks"
-sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/mako/config" 2>/dev/null || true
-sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/waybar/style.css" 2>/dev/null || true
-sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/kitty/kitty.conf" 2>/dev/null || true
-sudo -u "$USER_NAME" rm -f "$CONFIG_DIR/hypr/colors-hyprland.conf" 2>/dev/null || true
-print_success "Old symlinks removed"
+    # ---------------- Theme ----------------
+    def load_pywal_colors(self):
+        try:
+            if self.colors_file.exists():
+                with open(self.colors_file, "r") as f:
+                    data = json.load(f)
+                colors = data.get("colors", {})
+                if colors:
+                    print(f"✓ Loaded pywal colors from {self.colors_file}")
+                    print(f"  color0: {colors.get('color0')}, color7: {colors.get('color7')}")
+                    return colors
+                else:
+                    print(f"⚠ colors.json exists but 'colors' key is empty")
+            else:
+                print(f"⚠ Pywal colors file not found: {self.colors_file}")
+        except Exception as e:
+            print(f"✗ pywal load failed: {e}")
+        
+        print("→ Using fallback Catppuccin colors")
+        return {"color0": "#1e1e2e","color7": "#cdd6f4","color4": "#89b4fa","color8": "#45475a"}
 
-# CRITICAL FIX: Copy ALL Hyprland configs (not just colors)
-if [[ -d "$CONFIGS_SRC/hypr" ]]; then
-    print_header "Copying Hyprland Configuration"
-    sudo -u "$USER_NAME" cp -rf "$CONFIGS_SRC/hypr/"* "$CONFIG_DIR/hypr/" 2>/dev/null || true
-    print_success "Hyprland config copied"
-fi
+    def apply_theme(self):
+        bg = QColor(self.colors.get("color0","#1e1e2e"))
+        fg = QColor(self.colors.get("color7","#cdd6f4"))
+        accent = QColor(self.colors.get("color4","#89b4fa"))
+        hover = QColor(self.colors.get("color8","#45475a"))
 
-# Copy Waybar configs (both config.jsonc and style.css)
-if [[ -d "$CONFIGS_SRC/waybar" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$CONFIGS_SRC/waybar/"* "$CONFIG_DIR/waybar/" 2>/dev/null || true
-    print_success "Waybar config copied"
-fi
+        QApplication.setStyle(QStyleFactory.create("Fusion"))
+        palette = QApplication.palette()
+        palette.setColor(QPalette.Window, bg)
+        palette.setColor(QPalette.WindowText, fg)
+        palette.setColor(QPalette.Base, bg)
+        palette.setColor(QPalette.AlternateBase, hover)
+        palette.setColor(QPalette.Text, fg)
+        palette.setColor(QPalette.Button, hover)
+        palette.setColor(QPalette.ButtonText, fg)
+        palette.setColor(QPalette.Highlight, accent)
+        palette.setColor(QPalette.HighlightedText, bg)
+        QApplication.setPalette(palette)
 
-# Copy Kitty base config (with fallback colors)
-if [[ -f "$CONFIGS_SRC/kitty/kitty.conf" ]]; then
-    sudo -u "$USER_NAME" cp "$CONFIGS_SRC/kitty/kitty.conf" "$CONFIG_DIR/kitty/kitty.conf"
-else
-    # Create a default kitty.conf that includes pywal colors
-    sudo -u "$USER_NAME" cat > "$CONFIG_DIR/kitty/kitty.conf" << 'KITTYCONF'
-# Kitty Configuration
-font_family      JetBrainsMono Nerd Font
-font_size        11.0
-window_padding_width 8
-confirm_os_window_close 0
-enable_audio_bell no
-tab_bar_edge bottom
-tab_bar_style powerline
-tab_powerline_style slanted
-repaint_delay 10
-input_delay 3
-sync_to_monitor yes
+        # More transparent panels - lower alpha = more see-through
+        bg_rgba = f"rgba({bg.red()},{bg.green()},{bg.blue()},120)"  # More transparent
+        hover_rgba = f"rgba({hover.red()},{hover.green()},{hover.blue()},100)"
+        accent_rgba = f"rgba({accent.red()},{accent.green()},{accent.blue()},150)"
 
-# Include pywal colors (generated from template)
-include ~/.cache/wal/kitty-wal.conf
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {bg_rgba};
+            }}
+            QPushButton {{
+                border-radius: 8px;
+                padding: 6px 12px;
+            }}
+            QPushButton:hover {{
+                background-color: {accent_rgba};
+                color: {bg.name()};
+            }}
+            QLineEdit {{
+                border-radius: 6px;
+                padding: 4px 8px;
+                background-color: {bg_rgba};
+                color: {fg.name()};
+            }}
+            QListWidget, QTreeWidget {{
+                background-color: {bg_rgba};
+                color: {fg.name()};
+                border: none;
+            }}
+            QTreeWidget {{
+                background-color: {bg_rgba};
+                color: {fg.name()};
+                border: none;
+                outline: 0;
+                selection-background-color: transparent;
+            }}
+            QTreeWidget::item {{
+                color: {fg.name()};
+                background: transparent !important;
+                border: none;
+            }}
+            QTreeWidget::item:selected {{
+                background: transparent !important;
+                color: {accent.name()};
+            }}
+            QTreeWidget::item:selected:active {{
+                background: transparent !important;
+            }}
+            QTreeWidget::item:selected:!active {{
+                background: transparent !important;
+            }}
+            QTreeWidget::item:hover {{
+                background: transparent !important;
+                color: {accent.name()};
+            }}
+            QTreeWidget::branch {{
+                background: transparent !important;
+            }}
+            QHeaderView::section {{
+                background-color: transparent;
+                color: {fg.name()};
+                border: none;
+                padding: 4px;
+            }}
+            QListWidget {{
+                background-color: {bg_rgba};
+                color: {fg.name()};
+                border: none;
+                selection-background-color: transparent;
+            }}
+            QListWidget::item {{
+                color: {fg.name()};
+                background: transparent !important;
+                border: none;
+            }}
+            QListWidget::item:selected {{
+                background: transparent !important;
+                color: {accent.name()};
+            }}
+            QListWidget::item:selected:active {{
+                background: transparent !important;
+            }}
+            QListWidget::item:selected:!active {{
+                background: transparent !important;
+            }}
+            QListWidget::item:hover {{
+                background: transparent !important;
+                color: {accent.name()};
+            }}
+        """)
 
-# Fallback colors
-background #1a1b26
-foreground #c0caf5
-KITTYCONF
-fi
+    # ---------------- UI ----------------
+    def initUI(self):
+        self.setWindowTitle("File Manager")
+        self.setGeometry(100,100,1200,700)
 
-# Copy Pywal template for kitty (kitty-wal.conf)
-if [[ -f "$CONFIGS_SRC/wal/templates/kitty-wal.conf" ]]; then
-    sudo -u "$USER_NAME" cp "$CONFIGS_SRC/wal/templates/kitty-wal.conf" "$CONFIG_DIR/wal/templates/kitty-wal.conf"
-fi
+        # --- Enable semi-transparency ---
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
 
-# Copy Mako config
-if [[ -f "$CONFIGS_SRC/mako/config" ]]; then
-    sudo -u "$USER_NAME" cp "$CONFIGS_SRC/mako/config" "$CONFIG_DIR/mako/config"
-fi
+        icon_font = QFont("JetBrainsMono Nerd Font",14)
 
-# Copy Yazi config
-if [[ -d "$CONFIGS_SRC/yazi" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$CONFIGS_SRC/yazi/"* "$CONFIG_DIR/yazi/" 2>/dev/null || true
-fi
+        central = QWidget()
+        self.setCentralWidget(central)
+        main = QVBoxLayout(central)
 
-# Copy Fastfetch
-[[ -f "$CONFIGS_SRC/fastfetch/config.jsonc" ]] && sudo -u "$USER_NAME" cp "$CONFIGS_SRC/fastfetch/config.jsonc" "$CONFIG_DIR/fastfetch/config.jsonc"
+        # Toolbar
+        bar = QHBoxLayout()
+        self.btn_back = QPushButton("󰁍 Back"); self.btn_back.setFont(icon_font); self.btn_back.clicked.connect(self.go_back)
+        self.btn_home = QPushButton("󰋜 Home"); self.btn_home.setFont(icon_font); self.btn_home.clicked.connect(self.go_home)
+        self.btn_refresh = QPushButton("󰑐 Refresh"); self.btn_refresh.setFont(icon_font); self.btn_refresh.clicked.connect(self.refresh)
+        self.path_edit = QLineEdit(self.current_path); self.path_edit.returnPressed.connect(self.navigate_to_path)
+        bar.addWidget(self.btn_back); bar.addWidget(self.btn_home); bar.addWidget(self.btn_refresh)
+        bar.addWidget(self.path_edit)
 
-# Copy Starship
-[[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && sudo -u "$USER_NAME" cp "$CONFIGS_SRC/starship/starship.toml" "$CONFIG_DIR/starship.toml"
+        # Hidden files toggle button
+        self.btn_hidden = QPushButton("󰜉 Show Hidden"); self.btn_hidden.setFont(icon_font); self.btn_hidden.setCheckable(True)
+        self.btn_hidden.toggled.connect(self.toggle_hidden)
+        bar.addWidget(self.btn_hidden)
 
-# Copy Pywal templates
-if [[ -d "$CONFIGS_SRC/wal/templates" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$CONFIGS_SRC/wal/templates/"* "$CONFIG_DIR/wal/templates/" 2>/dev/null || true
-fi
+        main.addLayout(bar)
 
-# ----------------------------
-# GPU Environment Config
-# ----------------------------
-print_header "Generating GPU Environment Config"
+        # Actions
+        actions = QHBoxLayout()
+        self.btn_copy = QPushButton("󰆏 Copy"); self.btn_cut  = QPushButton("󰩨 Cut")
+        self.btn_paste= QPushButton("󰅌 Paste"); self.btn_delete=QPushButton("󰩹 Delete")
+        for b in [self.btn_copy,self.btn_cut,self.btn_paste,self.btn_delete]:
+            b.setFont(icon_font)
+        self.btn_copy.clicked.connect(self.copy_files)
+        self.btn_cut.clicked.connect(self.cut_files)
+        self.btn_paste.clicked.connect(self.paste_files)
+        self.btn_delete.clicked.connect(self.delete_files)
+        actions.addWidget(self.btn_copy); actions.addWidget(self.btn_cut); actions.addWidget(self.btn_paste); actions.addWidget(self.btn_delete); actions.addStretch()
+        main.addLayout(actions)
 
-GPU_ENV_FILE="$CONFIG_DIR/hypr/gpu-env.conf"
-GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
+        # ---------------- Split view ----------------
+        self.splitter = QSplitter(Qt.Horizontal)
 
-sudo -u "$USER_NAME" bash -c "cat > $GPU_ENV_FILE" << 'GPUEOF'
-# Auto-generated GPU environment variables
-# Generated during installation
+        # Left panel (Tree + Preview)
+        self.left_panel = QWidget()
+        left_layout = QVBoxLayout(self.left_panel)
 
-GPUEOF
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabel("Folders")
+        self.tree.setFont(self.icon_font)
+        self.tree.itemClicked.connect(self.tree_clicked)
+        self.populate_tree()
+        left_layout.addWidget(self.tree, stretch=3)
 
-if echo "$GPU_INFO" | grep -qi nvidia; then
-    print_success "Detected NVIDIA GPU - configuring environment"
-    sudo -u "$USER_NAME" bash -c "cat >> $GPU_ENV_FILE" << 'NVIDIAEOF'
-env = LIBVA_DRIVER_NAME,nvidia
-env = XDG_SESSION_TYPE,wayland
-env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-env = GBM_BACKEND,nvidia-drm
-env = WLR_NO_HARDWARE_CURSORS,1
-env = __GL_GSYNC_ALLOWED,1
-env = __GL_VRR_ALLOWED,1
-env = QT_QPA_PLATFORM,wayland
-NVIDIAEOF
-elif echo "$GPU_INFO" | grep -qi amd; then
-    print_success "Detected AMD GPU - configuring environment"
-    sudo -u "$USER_NAME" bash -c "cat >> $GPU_ENV_FILE" << 'AMDEOF'
-env = LIBVA_DRIVER_NAME,radeonsi
-env = XDG_SESSION_TYPE,wayland
-env = QT_QPA_PLATFORM,wayland
-AMDEOF
-elif echo "$GPU_INFO" | grep -qi intel; then
-    print_success "Detected Intel GPU - configuring environment"
-    sudo -u "$USER_NAME" bash -c "cat >> $GPU_ENV_FILE" << 'INTELEOF'
-env = LIBVA_DRIVER_NAME,iHD
-env = XDG_SESSION_TYPE,wayland
-env = QT_QPA_PLATFORM,wayland
-INTELEOF
-else
-    print_success "No GPU detected - using default Wayland environment"
-    sudo -u "$USER_NAME" bash -c "cat >> $GPU_ENV_FILE" << 'DEFAULTEOF'
-env = XDG_SESSION_TYPE,wayland
-env = QT_QPA_PLATFORM,wayland
-DEFAULTEOF
-fi
+        self.preview_label = QLabel("")  # start empty
+        self.preview_label.setAlignment(Qt.AlignCenter)
+        self.preview_label.setMinimumHeight(200)
+        self.preview_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        left_layout.addWidget(self.preview_label, stretch=0)
 
-print_success "GPU environment config created: $GPU_ENV_FILE"
+        self.splitter.addWidget(self.left_panel)
 
-# Scripts & Wallpapers
-if [[ -d "$SCRIPTS_SRC" ]]; then
-    sudo -u "$USER_NAME" cp -rf "$SCRIPTS_SRC/"* "$CONFIG_DIR/scripts/"
-    sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/"* 2>/dev/null || true
-    print_success "Scripts copied and made executable"
-fi
+        # Right panel (File list)
+        self.file_list = QListWidget()
+        self.file_list.setFont(self.icon_font)
+        self.file_list.itemDoubleClicked.connect(self.item_opened)
+        self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
+        self.file_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.file_list.customContextMenuRequested.connect(self.show_context_menu)
+        self.file_list.itemSelectionChanged.connect(self.update_preview)
+        # Hover preview
+        self.file_list.setMouseTracking(True)
+        self.file_list.enterEvent = self.start_hover_preview
+        self.file_list.leaveEvent = self.stop_hover_preview
+        self.file_list.viewport().installEventFilter(self)
+        self.splitter.addWidget(self.file_list)
+        self.splitter.setStretchFactor(1,1)
+        main.addWidget(self.splitter)
 
-if [[ -d "$REPO_ROOT/Pictures/Wallpapers" ]]; then
-    sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures"
-    sudo -u "$USER_NAME" cp -rf "$REPO_ROOT/Pictures/Wallpapers" "$USER_HOME/Pictures/"
-    print_success "Wallpapers copied"
-fi
+        # Status bar
+        self.statusBar().showMessage("Ready")
 
-# GENERATE GPU-SPECIFIC ENVIRONMENT
-print_header "Generating GPU Environment"
-sudo -u "$USER_NAME" bash -c "cat > $CONFIG_DIR/scripts/generate-gpu-env.sh" << 'GPUSCRIPT'
-#!/bin/bash
-OUTPUT_FILE="$HOME/.config/hypr/gpu-env.conf"
-GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
-echo "# Auto-generated GPU environment variables" > "$OUTPUT_FILE"
-echo "# Generated on: $(date)" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+    # ---------------- Toggle Hidden ----------------
+    def toggle_hidden(self, checked):
+        self.show_hidden = checked
+        self.refresh()
 
-if echo "$GPU_INFO" | grep -qi nvidia; then
-    cat >> "$OUTPUT_FILE" << 'EOF'
-env = LIBVA_DRIVER_NAME,nvidia
-env = XDG_SESSION_TYPE,wayland
-env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-env = GBM_BACKEND,nvidia-drm
-env = WLR_NO_HARDWARE_CURSORS,1
-env = __GL_GSYNC_ALLOWED,1
-env = __GL_VRR_ALLOWED,1
-env = QT_QPA_PLATFORM,wayland
-cursor { no_hardware_cursors = true }
-EOF
-elif echo "$GPU_INFO" | grep -qi amd; then
-    cat >> "$OUTPUT_FILE" << 'EOF'
-env = LIBVA_DRIVER_NAME,radeonsi
-env = XDG_SESSION_TYPE,wayland
-env = QT_QPA_PLATFORM,wayland
-EOF
-elif echo "$GPU_INFO" | grep -qi intel; then
-    cat >> "$OUTPUT_FILE" << 'EOF'
-env = LIBVA_DRIVER_NAME,iHD
-env = XDG_SESSION_TYPE,wayland
-env = QT_QPA_PLATFORM,wayland
-EOF
-fi
-GPUSCRIPT
+    # ---------------- Cache Management ----------------
+    def add_to_cache(self, filepath, pixmap):
+        """Add image to cache with size limit"""
+        if len(self.image_cache) >= self.cache_max_size:
+            # Remove oldest entry (first key)
+            self.image_cache.pop(next(iter(self.image_cache)))
+        self.image_cache[filepath] = pixmap
 
-sudo -u "$USER_NAME" chmod +x "$CONFIG_DIR/scripts/generate-gpu-env.sh"
-sudo -u "$USER_NAME" bash "$CONFIG_DIR/scripts/generate-gpu-env.sh"
-print_success "GPU environment generated"
+    def clear_cache(self):
+        """Clear image cache"""
+        self.image_cache.clear()
 
-# .bashrc setup
-sudo -u "$USER_NAME" bash -c "cat <<'EOF' > $USER_HOME/.bashrc
-# Restore Pywal Colors
-[[ -f ~/.cache/wal/sequences ]] && cat ~/.cache/wal/sequences
+    # ---------------- Preview Pane ----------------
+    def update_preview(self):
+        """Update preview when selection changes"""
+        items = self.file_list.selectedItems()
+        if not items:
+            self.preview_label.clear()
+            return
+        self.show_preview_for_item(items[0])
 
-# Starship Prompt
-if command -v starship >/dev/null; then
-    eval \"\$(starship init bash)\"
-fi
+    def show_preview_for_item(self, item):
+        """Show preview for a specific item"""
+        # Cancel any pending loader thread
+        if self.current_loader and self.current_loader.isRunning():
+            self.current_loader.wait()
+        
+        path = Path(item.data(Qt.UserRole))
+        suffix = path.suffix.lower()
+        
+        if path.is_file() and suffix in [".png",".jpg",".jpeg",".bmp",".gif",".webp"]:
+            filepath = str(path)
+            
+            # Check cache first
+            if filepath in self.image_cache:
+                self.preview_label.setPixmap(self.image_cache[filepath])
+                self.preview_label.setFont(self.icon_font)
+                return
+            
+            # Show loading indicator
+            self.preview_label.clear()
+            self.preview_label.setText("⏳ Loading...")
+            self.preview_label.setFont(QFont("JetBrainsMono Nerd Font", 16))
+            
+            # Load asynchronously
+            self.current_loader = ImageLoaderThread(
+                filepath, 
+                self.preview_label.width(), 
+                self.preview_label.height()
+            )
+            self.current_loader.image_loaded.connect(self.on_image_loaded)
+            self.current_loader.start()
+            
+        elif path.is_file() and suffix in [".mp4",".mkv",".webm",".mov",".avi",".flv",".m4v",".mpg",".mpeg"]:
+            filepath = str(path)
+            
+            # Check cache first
+            if filepath in self.image_cache:
+                self.preview_label.setPixmap(self.image_cache[filepath])
+                self.preview_label.setFont(self.icon_font)
+                return
+            
+            # Show loading indicator
+            self.preview_label.clear()
+            self.preview_label.setText("⏳ Loading video...")
+            self.preview_label.setFont(QFont("JetBrainsMono Nerd Font", 16))
+            
+            # Generate thumbnail asynchronously
+            self.generate_video_thumbnail(filepath)
+            
+        elif path.is_dir():
+            self.preview_label.clear()
+            self.preview_label.setText(self.folder_glyph)
+            self.preview_label.setFont(QFont("JetBrainsMono Nerd Font",72))
+        else:
+            self.preview_label.clear()
+            self.preview_label.setText(self.file_glyph)
+            self.preview_label.setFont(QFont("JetBrainsMono Nerd Font",72))
+        self.preview_label.setAlignment(Qt.AlignCenter)
+    
+    def generate_video_thumbnail(self, video_path):
+        """Generate thumbnail from video using ffmpeg"""
+        try:
+            import tempfile
+            import os
+            
+            # Create temp file for thumbnail
+            temp_fd, temp_path = tempfile.mkstemp(suffix='.jpg')
+            os.close(temp_fd)
+            
+            # Use ffmpeg to extract frame at 1 second
+            result = subprocess.run([
+                'ffmpeg', '-ss', '00:00:01', '-i', video_path,
+                '-vframes', '1', '-q:v', '2', temp_path, '-y'
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            if result.returncode == 0 and os.path.exists(temp_path):
+                # Load the thumbnail
+                pixmap = QPixmap(temp_path)
+                if not pixmap.isNull():
+                    pixmap = pixmap.scaled(
+                        self.preview_label.width(),
+                        self.preview_label.height(),
+                        Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation
+                    )
+                    self.preview_label.setPixmap(pixmap)
+                    # Cache it
+                    self.add_to_cache(video_path, pixmap)
+                else:
+                    self.show_video_icon()
+                
+                # Clean up temp file
+                os.unlink(temp_path)
+            else:
+                self.show_video_icon()
+                
+        except Exception as e:
+            print(f"Video thumbnail error: {e}")
+            self.show_video_icon()
+    
+    def show_video_icon(self):
+        """Fallback to video icon if thumbnail fails"""
+        self.preview_label.clear()
+        self.preview_label.setText(self.video_glyph)
+        self.preview_label.setFont(QFont("JetBrainsMono Nerd Font",72))
 
-# Fastfetch on launch
-if command -v fastfetch >/dev/null; then
-    fastfetch
-fi
+    def on_image_loaded(self, filepath, pixmap):
+        """Callback when image is loaded asynchronously"""
+        if not pixmap.isNull():
+            # Add to cache
+            self.add_to_cache(filepath, pixmap)
+            # Display if still relevant
+            self.preview_label.setPixmap(pixmap)
+        else:
+            self.preview_label.setText("❌ Cannot load")
+            self.preview_label.setFont(QFont("JetBrainsMono Nerd Font", 16))
 
-# Aliases
-alias v='yazi'
-alias ls='ls --color=auto'
-EOF"
+    # ---------------- Hover Preview with Debouncing ----------------
+    def start_hover_preview(self, event): 
+        self.file_list.viewport().setMouseTracking(True)
+    
+    def stop_hover_preview(self, event): 
+        self.hover_timer.stop()
+        self.pending_hover_item = None
+        self.preview_label.clear()
+    
+    def eventFilter(self, source, event):
+        """Handle mouse move events with debouncing"""
+        if event.type() == event.MouseMove and source is self.file_list.viewport():
+            item = self.file_list.itemAt(event.pos())
+            if item and item != self.pending_hover_item:
+                # Schedule preview load after delay
+                self.pending_hover_item = item
+                self.hover_timer.stop()
+                self.hover_timer.start(self.hover_delay)
+            elif not item:
+                self.hover_timer.stop()
+                self.pending_hover_item = None
+        return super().eventFilter(source, event)
+    
+    def load_hovered_preview(self):
+        """Actually load the preview after debounce delay"""
+        if self.pending_hover_item:
+            self.show_preview_for_item(self.pending_hover_item)
 
-# CRITICAL: Create symlinks AFTER copying base configs
-# Only symlink if Pywal templates exist
-if [[ -f "$CONFIG_DIR/wal/templates/mako-config" ]]; then
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config"
-fi
+    # ---------------- Tree ----------------
+    def get_mounted_drives(self):
+        """Get all mounted drives/USB devices"""
+        drives = []
+        try:
+            # Read /proc/mounts to find mounted devices
+            with open('/proc/mounts', 'r') as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) < 2:
+                        continue
+                    device, mountpoint = parts[0], parts[1]
+                    
+                    # Debug: Check /run/media mounts specifically
+                    if '/run/media/' in mountpoint or '/media/' in mountpoint or '/mnt/' in mountpoint:
+                        print(f"Checking mount: {mountpoint} (device: {device})")
+                    
+                    # Skip system mounts
+                    if mountpoint in ['/', '/boot', '/home', '/tmp', '/var', '/usr', '/sys', '/proc', '/dev', '/run']:
+                        continue
+                    if mountpoint.startswith(('/sys/', '/proc/', '/dev/', '/run/user')):
+                        continue
+                    
+                    # Include /media, /mnt, and /run/media mounts (USB drives, external drives)
+                    if mountpoint.startswith(('/media/', '/mnt/', '/run/media/')) and Path(mountpoint).exists():
+                        # Get a friendly name
+                        name = Path(mountpoint).name
+                        if not name:
+                            name = mountpoint
+                        drives.append({
+                            'name': name,
+                            'path': mountpoint,
+                            'device': device
+                        })
+                        print(f"✓ Added drive: {name} at {mountpoint} (device: {device})")
+        except Exception as e:
+            print(f"Error reading mounts: {e}")
+        
+        print(f"Total drives found: {len(drives)}")
+        return drives
 
-if [[ -f "$CONFIG_DIR/wal/templates/waybar-style.css" ]]; then
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
-fi
+    def populate_tree(self):
+        self.tree.clear()
+        
+        # Home directory
+        home = Path.home()
+        home_item = QTreeWidgetItem([f"{self.folder_glyph} {home.name}"])
+        home_item.setData(0, Qt.UserRole, str(home))
+        home_item.setFont(0, self.icon_font)
+        self.tree.addTopLevelItem(home_item)
+        for p in sorted(home.iterdir()):
+            if not self.show_hidden and p.name.startswith("."): continue
+            if p.is_dir():
+                item = QTreeWidgetItem([f"{self.folder_glyph} {p.name}"])
+                item.setData(0, Qt.UserRole, str(p))
+                item.setFont(0, self.icon_font)
+                home_item.addChild(item)
+        home_item.setExpanded(True)
+        
+        # Mounted drives/USB
+        print("Calling get_mounted_drives()...")
+        drives = self.get_mounted_drives()
+        print(f"Drives returned: {drives}")
+        
+        if drives:
+            print(f"Creating drives section with {len(drives)} drives")
+            drives_item = QTreeWidgetItem([f"{self.drive_glyph} Drives"])
+            drives_item.setFont(0, self.icon_font)
+            self.tree.addTopLevelItem(drives_item)
+            
+            for drive in drives:
+                print(f"Adding drive item: {drive['name']}")
+                drive_item = QTreeWidgetItem([f"{self.usb_glyph} {drive['name']}"])
+                drive_item.setData(0, Qt.UserRole, drive['path'])
+                drive_item.setFont(0, self.icon_font)
+                drives_item.addChild(drive_item)
+            
+            drives_item.setExpanded(True)
+            print("Drives section added to tree")
+        else:
+            print("No drives found, skipping drives section")
 
-# NOTE: Kitty uses "include" directive, not symlink
-# Pywal will generate ~/.cache/wal/kitty.conf
-# Add to your kitty.conf: include ~/.cache/wal/kitty.conf
+    def tree_clicked(self, item, column):
+        path = item.data(0, Qt.UserRole)
+        if path: self.load_directory(path)
 
-if [[ -f "$CONFIG_DIR/wal/templates/colors-hyprland.conf" ]]; then
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf"
-fi
+    # ---------------- Files ----------------
+    def load_directory(self, path):
+        try:
+            # Clear cache when changing directories
+            self.clear_cache()
+            
+            self.file_list.clear()
+            self.current_path = path
+            self.path_edit.setText(path)
+            if path != "/":
+                parent_item = QListWidgetItem(f"{self.folder_glyph} ..")
+                parent_item.setData(Qt.UserRole,str(Path(path).parent))
+                parent_item.setFont(self.icon_font)
+                self.file_list.addItem(parent_item)
+            entries = sorted(Path(path).iterdir(), key=lambda x:(not x.is_dir(),x.name.lower()))
+            visible=0
+            for e in entries:
+                if not self.show_hidden and e.name.startswith("."): continue
+                glyph = self.folder_glyph if e.is_dir() else self.file_glyph
+                item = QListWidgetItem(f"{glyph} {e.name}")
+                item.setData(Qt.UserRole,str(e))
+                item.setFont(self.icon_font)
+                self.file_list.addItem(item)
+                visible+=1
+            self.statusBar().showMessage(f"{visible} items")
+            self.update_preview()
+        except Exception as e: QMessageBox.critical(self,"Error", str(e))
 
-# ----------------------------
-# Finalization
-# ----------------------------
-print_header "Enabling Services"
-systemctl enable sddm.service || true
-systemctl enable bluetooth.service || true
+    def item_opened(self, item):
+        path = item.data(Qt.UserRole)
+        if Path(path).is_dir(): self.load_directory(path)
+        else: subprocess.Popen(["xdg-open", path])
 
-# Set ownership
-chown -R "$USER_NAME:$USER_NAME" "$USER_HOME/.config" "$USER_HOME/.cache"
+    # ---------------- Context Menu ----------------
+    def show_context_menu(self, position):
+        menu = QMenu(self)
+        
+        # Get selected items
+        selected = self.file_list.selectedItems()
+        
+        # Basic operations
+        copy_action = menu.addAction("Copy")
+        cut_action = menu.addAction("Cut")
+        paste_action = menu.addAction("Paste"); paste_action.setEnabled(bool(self.clipboard))
+        menu.addSeparator()
+        
+        # Archive operations (only if single archive selected)
+        if len(selected) == 1:
+            path = Path(selected[0].data(Qt.UserRole))
+            if self.is_archive(path):
+                extract_here = menu.addAction("📦 Extract Here")
+                extract_to = menu.addAction("📂 Extract To...")
+                menu.addSeparator()
+        
+        delete_action = menu.addAction("Delete")
+        
+        action = menu.exec_(self.file_list.mapToGlobal(position))
+        if action == copy_action: self.copy_files()
+        elif action == cut_action: self.cut_files()
+        elif action == paste_action: self.paste_files()
+        elif action == delete_action: self.delete_files()
+        elif len(selected) == 1 and self.is_archive(Path(selected[0].data(Qt.UserRole))):
+            if action.text() == "📦 Extract Here":
+                self.extract_here(Path(selected[0].data(Qt.UserRole)))
+            elif action.text() == "📂 Extract To...":
+                self.extract_to(Path(selected[0].data(Qt.UserRole)))
 
-print_success "✓ Install Complete!"
-echo ""
-echo "IMPORTANT NEXT STEPS:"
-echo "1. Reboot your system"
-echo "2. Login to Hyprland via SDDM"
-echo "3. Press SUPER+Q to open a terminal (Kitty)"
-echo "4. Run: wal -i ~/Pictures/Wallpapers/<your-wallpaper.jpg>"
-echo "   This will generate themes and start waybar/mako"
-echo ""
-echo "Common keybinds (check ~/.config/hypr/hyprland.conf):"
-echo "  SUPER+Q = Terminal"
-echo "  SUPER+C = Close window"
-echo "  SUPER+M = Exit"
-echo "  SUPER+E = File manager"
-echo "  SUPER+V = Toggle floating"
-echo "  SUPER+R = App launcher (wofi/rofi if installed)"
-echo ""
+    # ---------------- Archive Detection ----------------
+    def is_archive(self, path):
+        """Check if file is a supported archive"""
+        if not path.is_file():
+            return False
+        ext = path.suffix.lower()
+        archive_exts = ['.zip', '.tar', '.gz', '.bz2', '.xz', '.7z', '.rar', 
+                       '.tar.gz', '.tar.bz2', '.tar.xz', '.tgz', '.tbz2', '.txz']
+        # Check for compound extensions
+        if path.suffixes:
+            compound = ''.join(path.suffixes[-2:]).lower()
+            if compound in archive_exts:
+                return True
+        return ext in archive_exts
+
+    # ---------------- Archive Extraction ----------------
+    def extract_here(self, archive_path):
+        """Extract archive to current directory"""
+        try:
+            self.statusBar().showMessage(f"Extracting {archive_path.name}...")
+            QApplication.processEvents()  # Update UI
+            
+            extract_path = archive_path.parent
+            success = self.extract_archive(archive_path, extract_path)
+            
+            if success:
+                self.statusBar().showMessage(f"✓ Extracted {archive_path.name}")
+                self.refresh()
+            else:
+                QMessageBox.warning(self, "Extraction Failed", 
+                                  f"Could not extract {archive_path.name}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+
+    def extract_to(self, archive_path):
+        """Extract archive to a new folder with archive name"""
+        try:
+            # Create extraction folder with archive name (without extension)
+            folder_name = archive_path.stem
+            if archive_path.suffixes and len(archive_path.suffixes) > 1:
+                # Handle .tar.gz, .tar.bz2, etc.
+                folder_name = archive_path.name
+                for ext in ['.tar.gz', '.tar.bz2', '.tar.xz', '.tgz', '.tbz2', '.txz']:
+                    if archive_path.name.lower().endswith(ext):
+                        folder_name = archive_path.name[:-len(ext)]
+                        break
+            
+            extract_path = archive_path.parent / folder_name
+            counter = 1
+            while extract_path.exists():
+                extract_path = archive_path.parent / f"{folder_name}_{counter}"
+                counter += 1
+            
+            extract_path.mkdir(parents=True, exist_ok=True)
+            
+            self.statusBar().showMessage(f"Extracting {archive_path.name} to {extract_path.name}...")
+            QApplication.processEvents()
+            
+            success = self.extract_archive(archive_path, extract_path)
+            
+            if success:
+                self.statusBar().showMessage(f"✓ Extracted to {extract_path.name}")
+                self.refresh()
+            else:
+                # Clean up empty folder if extraction failed
+                if extract_path.exists() and not any(extract_path.iterdir()):
+                    extract_path.rmdir()
+                QMessageBox.warning(self, "Extraction Failed", 
+                                  f"Could not extract {archive_path.name}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+
+    def extract_archive(self, archive_path, extract_path):
+        """Extract archive using appropriate tool"""
+        ext = archive_path.suffix.lower()
+        
+        # Check for compound extensions
+        compound_ext = None
+        if archive_path.suffixes and len(archive_path.suffixes) > 1:
+            compound_ext = ''.join(archive_path.suffixes[-2:]).lower()
+        
+        try:
+            # ZIP files
+            if ext == '.zip':
+                result = subprocess.run(['unzip', '-q', str(archive_path), '-d', str(extract_path)],
+                                      capture_output=True, text=True)
+                return result.returncode == 0
+            
+            # 7Z files
+            elif ext == '.7z':
+                result = subprocess.run(['7z', 'x', str(archive_path), f'-o{extract_path}', '-y'],
+                                      capture_output=True, text=True)
+                return result.returncode == 0
+            
+            # RAR files
+            elif ext == '.rar':
+                result = subprocess.run(['unrar', 'x', '-y', str(archive_path), str(extract_path)],
+                                      capture_output=True, text=True)
+                return result.returncode == 0
+            
+            # TAR and compressed TAR files
+            elif compound_ext in ['.tar.gz', '.tar.bz2', '.tar.xz'] or ext in ['.tgz', '.tbz2', '.txz', '.tar']:
+                result = subprocess.run(['tar', '-xf', str(archive_path), '-C', str(extract_path)],
+                                      capture_output=True, text=True)
+                return result.returncode == 0
+            
+            # Standalone compression (gz, bz2, xz)
+            elif ext in ['.gz', '.bz2', '.xz']:
+                # These are single-file compression, extract to file without extension
+                output_file = extract_path / archive_path.stem
+                if ext == '.gz':
+                    result = subprocess.run(['gunzip', '-c', str(archive_path)],
+                                          capture_output=True)
+                elif ext == '.bz2':
+                    result = subprocess.run(['bunzip2', '-c', str(archive_path)],
+                                          capture_output=True)
+                elif ext == '.xz':
+                    result = subprocess.run(['unxz', '-c', str(archive_path)],
+                                          capture_output=True)
+                
+                if result.returncode == 0:
+                    with open(output_file, 'wb') as f:
+                        f.write(result.stdout)
+                    return True
+                return False
+            
+            return False
+            
+        except FileNotFoundError as e:
+            QMessageBox.critical(self, "Tool Missing", 
+                               f"Required extraction tool not found. Please install the necessary package.")
+            return False
+        except Exception as e:
+            print(f"Extraction error: {e}")
+            return False
+
+    # ---------------- Clipboard ----------------
+    def get_selected_paths(self): return [i.data(Qt.UserRole) for i in self.file_list.selectedItems()]
+    def copy_files(self): self.clipboard = self.get_selected_paths(); self.clipboard_action="copy"; self.statusBar().showMessage(f"Copied {len(self.clipboard)} item(s)")
+    def cut_files(self): self.clipboard = self.get_selected_paths(); self.clipboard_action="cut"; self.statusBar().showMessage(f"Cut {len(self.clipboard)} item(s)")
+    def paste_files(self):
+        if not self.clipboard: return
+        errors=[]
+        for src in self.clipboard:
+            try:
+                src_p = Path(src)
+                dest = Path(self.current_path)/src_p.name
+                counter=1
+                while dest.exists(): dest = Path(self.current_path)/f"{src_p.stem}_{counter}{src_p.suffix}"; counter+=1
+                if self.clipboard_action=="copy":
+                    if src_p.is_dir(): shutil.copytree(src,dest)
+                    else: shutil.copy2(src,dest)
+                else: shutil.move(src,dest)
+            except Exception as e: errors.append(str(e))
+        if self.clipboard_action=="cut": self.clipboard=[]
+        self.refresh()
+        if errors: QMessageBox.warning(self,"Errors","\n".join(errors))
+
+    def delete_files(self):
+        paths=self.get_selected_paths()
+        if not paths: return
+        reply=QMessageBox.question(self,"Delete",f"Delete {len(paths)} item(s)?")
+        if reply!=QMessageBox.Yes: return
+        errors=[]
+        for p in paths:
+            try:
+                path=Path(p)
+                if path.is_dir(): shutil.rmtree(path)
+                else: path.unlink()
+            except Exception as e: errors.append(str(e))
+        self.refresh()
+        if errors: QMessageBox.warning(self,"Errors","\n".join(errors))
+
+    # ---------------- Navigation ----------------
+    def go_back(self): self.load_directory(str(Path(self.current_path).parent))
+    def go_home(self): self.load_directory(str(Path.home()))
+    def refresh(self): 
+        self.populate_tree()  # Refresh tree to show new drives
+        self.load_directory(self.current_path)
+    def navigate_to_path(self):
+        path=self.path_edit.text()
+        if Path(path).is_dir(): self.load_directory(path)
+        else: QMessageBox.warning(self,"Invalid Path", path); self.path_edit.setText(self.current_path)
+
+# ---------------- Main ----------------
+def main():
+    app=QApplication(sys.argv)
+    app.setFont(QFont("JetBrainsMono Nerd Font",10))
+    win=FileManager()
+    win.show()
+    sys.exit(app.exec_())
+
+if __name__=="__main__":
+    main()
