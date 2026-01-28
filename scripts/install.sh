@@ -46,7 +46,7 @@ fi
 # Packages
 # ----------------------------
 print_header "Installing Apps"
-APPS="hyprland waybar swww mako grim slurp kitty nano wget jq btop sddm code curl bluez bluez-utils blueman python-pyqt6 python-pillow gvfs udiskie udisks2 firefox fastfetch starship gnome-disk-utility pavucontrol yazi ffmpegthumbnailer poppler imagemagick chafa imv unzip p7zip tar gzip xz bzip2 unrar trash-cli git base-devel ttf-jetbrains-mono-nerd ttf-iosevka-nerd wl-clipboard xdg-desktop-portal-hyprland qt5-wayland qt6-wayland"
+APPS="hyprland waybar swww mako grim slurp kitty nano wget jq btop sddm code curl bluez bluez-utils blueman python-pyqt6 python-pillow gvfs udiskie udisks2 firefox fastfetch starship gnome-disk-utility pavucontrol yazi ffmpegthumbnailer poppler imagemagick chafa imv unzip p7zip tar gzip xz bzip2 unrar trash-cli git base-devel ttf-jetbrains-mono-nerd ttf-iosevka-nerd wl-clipboard xdg-desktop-portal-hyprland python-pyqt5 python-opencv qt5-wayland qt6-wayland"
 
 run_command "pacman -S --noconfirm --needed $APPS" "Core Apps"
 pacman -S --noconfirm --needed polkit-kde-agent || pacman -S --noconfirm --needed polkit-gnome || true
