@@ -173,18 +173,34 @@ class FileManager(QMainWindow):
                 color: {fg.name()};
                 border: none;
             }}
+            QTreeWidget {{
+                background-color: {bg_rgba};
+                color: {fg.name()};
+                border: none;
+                outline: 0;
+                selection-background-color: transparent;
+            }}
             QTreeWidget::item {{
                 color: {fg.name()};
-                background-color: transparent;
+                background: transparent !important;
+                border: none;
             }}
             QTreeWidget::item:selected {{
-                background-color: {hover_rgba};
+                background: transparent !important;
+                color: {accent.name()};
+            }}
+            QTreeWidget::item:selected:active {{
+                background: transparent !important;
+            }}
+            QTreeWidget::item:selected:!active {{
+                background: transparent !important;
             }}
             QTreeWidget::item:hover {{
-                background-color: {hover_rgba};
+                background: transparent !important;
+                color: {accent.name()};
             }}
             QTreeWidget::branch {{
-                background-color: transparent;
+                background: transparent !important;
             }}
             QHeaderView::section {{
                 background-color: transparent;
@@ -192,11 +208,30 @@ class FileManager(QMainWindow):
                 border: none;
                 padding: 4px;
             }}
+            QListWidget {{
+                background-color: {bg_rgba};
+                color: {fg.name()};
+                border: none;
+                selection-background-color: transparent;
+            }}
             QListWidget::item {{
                 color: {fg.name()};
+                background: transparent !important;
+                border: none;
+            }}
+            QListWidget::item:selected {{
+                background: transparent !important;
+                color: {accent.name()};
+            }}
+            QListWidget::item:selected:active {{
+                background: transparent !important;
+            }}
+            QListWidget::item:selected:!active {{
+                background: transparent !important;
             }}
             QListWidget::item:hover {{
-                background-color: {hover_rgba};
+                background: transparent !important;
+                color: {accent.name()};
             }}
         """)
 
