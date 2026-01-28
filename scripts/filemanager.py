@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-PyQt5 File Manager with LIVE Pywal theming + Hover Preview + Nerd Font Icons + Semi-Transparent Window
+PyQt5 File Manager with LIVE Pywal theming + Hover Preview + Nerd Font Icons + Semi-Transparency
 - Tree on top-left, Preview below tree (fixed height)
 - File list on right
 - Live Pywal colors
 - Back / Home / Refresh / Copy / Cut / Paste / Delete
 - Toggle button for hidden files
 - Uses Nerd Font glyphs for folder/file icons
-- Tooltips behave properly on hover
+- Semi-transparent panels
 """
 
 import sys, json, shutil, subprocess
@@ -85,27 +85,34 @@ class FileManager(QMainWindow):
         palette.setColor(QPalette.HighlightedText, bg)
         QApplication.setPalette(palette)
 
-        # Semi-transparent window background
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
+        # Semi-transparent panels
+        bg_rgba = f"rgba({bg.red()},{bg.green()},{bg.blue()},180)"
+        hover_rgba = f"rgba({hover.red()},{hover.green()},{hover.blue()},120)"
+        accent_rgba = f"rgba({accent.red()},{accent.green()},{accent.blue()},180)"
+
         self.setStyleSheet(f"""
             QWidget {{
-                background-color: rgba({bg.red()},{bg.green()},{bg.blue()},200);
+                background-color: {bg_rgba};
             }}
             QPushButton {{
                 border-radius: 8px;
                 padding: 6px 12px;
             }}
             QPushButton:hover {{
-                background-color: {accent.name()};
+                background-color: {accent_rgba};
                 color: {bg.name()};
             }}
             QLineEdit {{
                 border-radius: 6px;
                 padding: 4px 8px;
+                background-color: {bg_rgba};
+                color: {fg.name()};
+            }}
+            QListWidget, QTreeWidget {{
+                background-color: {bg_rgba};
             }}
             QListWidget::item:hover {{
-                background-color: {hover.name()};
+                background-color: {hover_rgba};
             }}
         """)
 
@@ -113,6 +120,11 @@ class FileManager(QMainWindow):
     def initUI(self):
         self.setWindowTitle("File Manager")
         self.setGeometry(100,100,1200,700)
+
+        # --- Enable semi-transparency ---
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+
         icon_font = QFont("JetBrainsMono Nerd Font",14)
 
         central = QWidget()
@@ -121,15 +133,15 @@ class FileManager(QMainWindow):
 
         # Toolbar
         bar = QHBoxLayout()
-        self.btn_back = QPushButton("󰁍"); self.btn_back.setFont(icon_font); self.btn_back.clicked.connect(self.go_back)
-        self.btn_home = QPushButton("󰋜"); self.btn_home.setFont(icon_font); self.btn_home.clicked.connect(self.go_home)
-        self.btn_refresh = QPushButton("󰑐"); self.btn_refresh.setFont(icon_font); self.btn_refresh.clicked.connect(self.refresh)
+        self.btn_back = QPushButton("󰁍 Back"); self.btn_back.setFont(icon_font); self.btn_back.clicked.connect(self.go_back)
+        self.btn_home = QPushButton("󰋜 Home"); self.btn_home.setFont(icon_font); self.btn_home.clicked.connect(self.go_home)
+        self.btn_refresh = QPushButton("󰑐 Refresh"); self.btn_refresh.setFont(icon_font); self.btn_refresh.clicked.connect(self.refresh)
         self.path_edit = QLineEdit(self.current_path); self.path_edit.returnPressed.connect(self.navigate_to_path)
         bar.addWidget(self.btn_back); bar.addWidget(self.btn_home); bar.addWidget(self.btn_refresh)
         bar.addWidget(QLabel("Path:")); bar.addWidget(self.path_edit)
 
-        # Hidden files toggle
-        self.btn_hidden = QPushButton("󰜉"); self.btn_hidden.setFont(icon_font); self.btn_hidden.setCheckable(True)
+        # Hidden files toggle button
+        self.btn_hidden = QPushButton("󰜉 Show Hidden"); self.btn_hidden.setFont(icon_font); self.btn_hidden.setCheckable(True)
         self.btn_hidden.toggled.connect(self.toggle_hidden)
         bar.addWidget(self.btn_hidden)
 
@@ -137,14 +149,14 @@ class FileManager(QMainWindow):
 
         # Actions
         actions = QHBoxLayout()
-        self.btn_copy = QPushButton("󰆏"); self.btn_cut  = QPushButton("󰩨")
-        self.btn_paste= QPushButton("󰅌"); self.btn_delete=QPushButton("󰩹")
+        self.btn_copy = QPushButton("󰆏 Copy"); self.btn_cut  = QPushButton("󰩨 Cut")
+        self.btn_paste= QPushButton("󰅌 Paste"); self.btn_delete=QPushButton("󰩹 Delete")
         for b in [self.btn_copy,self.btn_cut,self.btn_paste,self.btn_delete]:
             b.setFont(icon_font)
         actions.addWidget(self.btn_copy); actions.addWidget(self.btn_cut); actions.addWidget(self.btn_paste); actions.addWidget(self.btn_delete); actions.addStretch()
         main.addLayout(actions)
 
-        # Split view
+        # ---------------- Split view ----------------
         self.splitter = QSplitter(Qt.Horizontal)
 
         # Left panel (Tree + Preview)
@@ -157,7 +169,7 @@ class FileManager(QMainWindow):
         self.populate_tree()
         left_layout.addWidget(self.tree, stretch=3)
 
-        self.preview_label = QLabel("")
+        self.preview_label = QLabel("")  # start empty
         self.preview_label.setAlignment(Qt.AlignCenter)
         self.preview_label.setMinimumHeight(200)
         self.preview_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -172,16 +184,22 @@ class FileManager(QMainWindow):
         self.file_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.file_list.customContextMenuRequested.connect(self.show_context_menu)
         self.file_list.itemSelectionChanged.connect(self.update_preview)
+        # Hover preview
         self.file_list.setMouseTracking(True)
+        self.file_list.enterEvent = self.start_hover_preview
+        self.file_list.leaveEvent = self.stop_hover_preview
         self.file_list.viewport().installEventFilter(self)
         self.splitter.addWidget(self.file_list)
         self.splitter.setStretchFactor(1,1)
         main.addWidget(self.splitter)
 
+        # Status bar
         self.statusBar().showMessage("Ready")
 
     # ---------------- Tooltip helper ----------------
-    def set_instant_tooltip(self, button, text): button.setToolTip(text)
+    def set_instant_tooltip(self, button, text):
+        button.setToolTip(text)
+        button.setMouseTracking(True)
 
     # ---------------- Toggle Hidden ----------------
     def toggle_hidden(self, checked):
@@ -191,7 +209,9 @@ class FileManager(QMainWindow):
     # ---------------- Preview Pane ----------------
     def update_preview(self):
         items = self.file_list.selectedItems()
-        if not items: self.preview_label.clear(); return
+        if not items:
+            self.preview_label.clear()
+            return
         self.show_preview_for_item(items[0])
 
     def show_preview_for_item(self, item):
@@ -204,13 +224,22 @@ class FileManager(QMainWindow):
                 self.preview_label.setPixmap(pixmap)
             else: self.preview_label.setText("Cannot load preview")
         elif path.is_file() and suffix in [".mp4",".mkv",".webm",".mov"]:
-            self.preview_label.clear(); self.preview_label.setText(self.video_glyph); self.preview_label.setFont(QFont("JetBrainsMono Nerd Font",72))
+            self.preview_label.clear()
+            self.preview_label.setText(self.video_glyph)
+            self.preview_label.setFont(QFont("JetBrainsMono Nerd Font",72))
         elif path.is_dir():
-            self.preview_label.clear(); self.preview_label.setText(self.folder_glyph); self.preview_label.setFont(QFont("JetBrainsMono Nerd Font",72))
+            self.preview_label.clear()
+            self.preview_label.setText(self.folder_glyph)
+            self.preview_label.setFont(QFont("JetBrainsMono Nerd Font",72))
         else:
-            self.preview_label.clear(); self.preview_label.setText(self.file_glyph); self.preview_label.setFont(QFont("JetBrainsMono Nerd Font",72))
+            self.preview_label.clear()
+            self.preview_label.setText(self.file_glyph)
+            self.preview_label.setFont(QFont("JetBrainsMono Nerd Font",72))
         self.preview_label.setAlignment(Qt.AlignCenter)
 
+    # ---------------- Hover Preview ----------------
+    def start_hover_preview(self, event): self.file_list.viewport().setMouseTracking(True)
+    def stop_hover_preview(self, event): self.preview_label.clear()
     def eventFilter(self, source, event):
         if event.type() == event.MouseMove and source is self.file_list.viewport():
             item = self.file_list.itemAt(event.pos())
