@@ -80,6 +80,8 @@ class FileManager(QMainWindow):
         self.folder_glyph = "\uf07b"  # nf-fa-folder
         self.file_glyph = "\uf15b"  # nf-fa-file
         self.video_glyph = "\U000f0219"  # nf-md-video
+        self.drive_glyph = "\uf0a0"  # nf-fa-hdd_o
+        self.usb_glyph = "\uf287"  # nf-fa-usb
         
         # Debug: Check if font is available
         print(f"Icon font family: {self.icon_font.family()}")
@@ -396,8 +398,50 @@ class FileManager(QMainWindow):
             self.show_preview_for_item(self.pending_hover_item)
 
     # ---------------- Tree ----------------
+    def get_mounted_drives(self):
+        """Get all mounted drives/USB devices"""
+        drives = []
+        try:
+            # Read /proc/mounts to find mounted devices
+            with open('/proc/mounts', 'r') as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) < 2:
+                        continue
+                    device, mountpoint = parts[0], parts[1]
+                    
+                    # Debug: Check /run/media mounts specifically
+                    if '/run/media/' in mountpoint or '/media/' in mountpoint or '/mnt/' in mountpoint:
+                        print(f"Checking mount: {mountpoint} (device: {device})")
+                    
+                    # Skip system mounts
+                    if mountpoint in ['/', '/boot', '/home', '/tmp', '/var', '/usr', '/sys', '/proc', '/dev', '/run']:
+                        continue
+                    if mountpoint.startswith(('/sys/', '/proc/', '/dev/', '/run/user')):
+                        continue
+                    
+                    # Include /media, /mnt, and /run/media mounts (USB drives, external drives)
+                    if mountpoint.startswith(('/media/', '/mnt/', '/run/media/')) and Path(mountpoint).exists():
+                        # Get a friendly name
+                        name = Path(mountpoint).name
+                        if not name:
+                            name = mountpoint
+                        drives.append({
+                            'name': name,
+                            'path': mountpoint,
+                            'device': device
+                        })
+                        print(f"✓ Added drive: {name} at {mountpoint} (device: {device})")
+        except Exception as e:
+            print(f"Error reading mounts: {e}")
+        
+        print(f"Total drives found: {len(drives)}")
+        return drives
+
     def populate_tree(self):
         self.tree.clear()
+        
+        # Home directory
         home = Path.home()
         home_item = QTreeWidgetItem([f"{self.folder_glyph} {home.name}"])
         home_item.setData(0, Qt.UserRole, str(home))
@@ -411,6 +455,29 @@ class FileManager(QMainWindow):
                 item.setFont(0, self.icon_font)
                 home_item.addChild(item)
         home_item.setExpanded(True)
+        
+        # Mounted drives/USB
+        print("Calling get_mounted_drives()...")
+        drives = self.get_mounted_drives()
+        print(f"Drives returned: {drives}")
+        
+        if drives:
+            print(f"Creating drives section with {len(drives)} drives")
+            drives_item = QTreeWidgetItem([f"{self.drive_glyph} Drives"])
+            drives_item.setFont(0, self.icon_font)
+            self.tree.addTopLevelItem(drives_item)
+            
+            for drive in drives:
+                print(f"Adding drive item: {drive['name']}")
+                drive_item = QTreeWidgetItem([f"{self.usb_glyph} {drive['name']}"])
+                drive_item.setData(0, Qt.UserRole, drive['path'])
+                drive_item.setFont(0, self.icon_font)
+                drives_item.addChild(drive_item)
+            
+            drives_item.setExpanded(True)
+            print("Drives section added to tree")
+        else:
+            print("No drives found, skipping drives section")
 
     def tree_clicked(self, item, column):
         path = item.data(0, Qt.UserRole)
@@ -659,7 +726,9 @@ class FileManager(QMainWindow):
     # ---------------- Navigation ----------------
     def go_back(self): self.load_directory(str(Path(self.current_path).parent))
     def go_home(self): self.load_directory(str(Path.home()))
-    def refresh(self): self.load_directory(self.current_path)
+    def refresh(self): 
+        self.populate_tree()  # Refresh tree to show new drives
+        self.load_directory(self.current_path)
     def navigate_to_path(self):
         path=self.path_edit.text()
         if Path(path).is_dir(): self.load_directory(path)
