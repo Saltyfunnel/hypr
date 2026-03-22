@@ -1,4 +1,4 @@
-# hyprland · arch linux · 2026
+# hyprland · arch linux
 
 > automated desktop environment installer — AMD / NVIDIA / Intel
 
@@ -10,7 +10,7 @@ one script. boots you straight from a fresh arch install into a fully configured
 
 - **system update** — `pacman -Syu` before anything touches the disk
 - **gpu detection** — reads `lspci`, installs the right drivers automatically (nvidia-open-dkms / amdgpu / intel mesa + vulkan)
-- **packages** — hyprland, waybar, swww, kitty, mako, sddm, fastfetch, starship, btop, and ~50 others in one shot
+- **packages** — hyprland, waybar, swww, kitty, mako, sddm, thunar, fastfetch, starship, btop, and ~50 others in one shot
 - **aur** — builds yay from source if absent, then pulls pywal16 + pywalfox
 - **dotfiles** — drops your configs into `~/.config/*`, writes a sensible `.bashrc`
 - **pywal theming** — symlinks wal cache into waybar, mako, hyprland so colours update with your wallpaper
