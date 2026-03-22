@@ -1,0 +1,34 @@
+# Mako Configuration - Pywal Dynamic Colors
+anchor=top-right
+width=350
+height=90
+margin=10
+padding=8
+border-size=2
+border-radius=10
+
+font=Hack Nerd Font 12
+
+# Dynamic Variables
+text-color={foreground}
+background-color={background}
+border-color={color4}
+default-timeout=5000
+
+[urgency=low]
+background-color={background}
+text-color={foreground}
+border-color={color8}
+default-timeout=3000
+
+[urgency=normal]
+background-color={background}
+text-color={foreground}
+border-color={color4}
+default-timeout=5000
+
+[urgency=critical]
+background-color={color1}
+text-color={background}
+border-color={color7}
+default-timeout=0
