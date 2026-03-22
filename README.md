@@ -21,12 +21,6 @@ one script. boots you straight from a fresh arch install into a fully configured
 
 ## features
 
-**wallpaper picker** — native python GUI to browse and set wallpapers on the fly (`super + w`)
-
-**app launcher** — lightweight python-based picker for your favourite applications (`super + d`)
-
-**file manager** — streamlined python script for quick file navigation (`super + f`)
-
 **dynamic theming** — full pywal integration, system colours sync automatically with your wallpaper
 
 ---
@@ -43,10 +37,9 @@ one script. boots you straight from a fresh arch install into a fully configured
 > only tested on a minimal arch base install
 
 ```bash
-git clone https://github.com/Saltyfunnel/hpr
-cd hpr
-chmod +x scripts/*.sh
-cd scripts
+git clone https://github.com/Saltyfunnel/hypr
+cd hypr
+chmod +x install.sh
 sudo ./install.sh
 ```
 
