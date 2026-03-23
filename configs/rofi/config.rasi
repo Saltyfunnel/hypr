@@ -1,8 +1,0 @@
-configuration {
-    modi:                       "drun,run,window";
-    show-icons:                 true;
-    display-drun:               "";
-    font:                       "Hack Nerd Font 10";
-}
-
-@import "~/.config/rofi/launcher.rasi"
