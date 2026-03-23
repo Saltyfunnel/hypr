@@ -1,3 +1,4 @@
+/*****----- Configuration -----*****/
 @import "~/.cache/wal/colors-rofi-dark"
 
 * {
@@ -10,9 +11,9 @@ window {
     anchor:                      center;
     fullscreen:                  false;
     width:                       1000px;
-    x-offset:                    0px;
-    y-offset:                    0px;
     enabled:                     true;
+    border:                      2px;
+    border-color:                @selected;
     border-radius:               15px;
     cursor:                      "default";
     background-color:            #DD19110b; /* window-bg */
@@ -22,23 +23,25 @@ window {
 mainbox {
     enabled:                     true;
     spacing:                     0px;
-    background-color:            #FF000000;
+    background-color:            transparent;
     orientation:                 horizontal;
     children:                    [ "imagebox", "listbox" ];
 }
 
+/*****----- Image Box -----*****/
 imagebox {
     padding:                     20px;
     background-color:            transparent;
-    background-image:            url("/home/test/Pictures/Wallpapers/field.jpg", height);
+    background-image:            url("~/.cache/wal/wal", height); 
     orientation:                 vertical;
     children:                    [ "inputbar", "dummy", "mode-switcher" ];
 }
 
+/*****----- List Box -----*****/
 listbox {
     spacing:                     20px;
     padding:                     20px;
-    background-color:            #DD19110b; /* listbox-bg */
+    background-color:            transparent; 
     orientation:                 vertical;
     children:                    [ "message", "listview" ];
 }
@@ -57,13 +60,15 @@ inputbar {
     text-color:                  @foreground;
     children:                    [ "textbox-prompt-colon", "entry" ];
 }
+
 textbox-prompt-colon {
     enabled:                     true;
     expand:                      false;
-    str:                         "";
+    str:                         "";
     background-color:            inherit;
     text-color:                  inherit;
 }
+
 entry {
     enabled:                     true;
     background-color:            inherit;
@@ -80,6 +85,7 @@ mode-switcher {
     background-color:            transparent;
     text-color:                  @foreground;
 }
+
 button {
     padding:                     15px;
     border-radius:               10px;
@@ -87,6 +93,7 @@ button {
     text-color:                  inherit;
     cursor:                      pointer;
 }
+
 button selected {
     background-color:            @selected;
     text-color:                  @foreground;
@@ -120,59 +127,28 @@ element {
     text-color:                  @foreground;
     cursor:                      pointer;
 }
+
 element normal.normal {
     background-color:            inherit;
     text-color:                  inherit;
 }
-element normal.urgent {
-    background-color:            @urgent;
-    text-color:                  @foreground;
-}
-element normal.active {
-    background-color:            @active;
-    text-color:                  @foreground;
-}
+
 element selected.normal {
     background-color:            @selected;
     text-color:                  @foreground;
 }
-element selected.urgent {
-    background-color:            @urgent;
-    text-color:                  @foreground;
-}
-element selected.active {
-    background-color:            @urgent;
-    text-color:                  @foreground;
-}
+
 element-icon {
     background-color:            transparent;
     text-color:                  inherit;
     size:                        32px;
     cursor:                      inherit;
 }
+
 element-text {
     background-color:            transparent;
     text-color:                  inherit;
     cursor:                      inherit;
     vertical-align:              0.5;
     horizontal-align:            0.0;
-}
-
-/*****----- Message -----*****/
-message {
-    background-color:            transparent;
-}
-textbox {
-    padding:                     15px;
-    border-radius:               10px;
-    background-color:            @background-alt;
-    text-color:                  @foreground;
-    vertical-align:              0.5;
-    horizontal-align:            0.0;
-}
-error-message {
-    padding:                     15px;
-    border-radius:               20px;
-    background-color:            @background;
-    text-color:                  @foreground;
 }
