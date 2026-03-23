@@ -182,7 +182,7 @@ UTILITY_PACKAGES=(
     bluez bluez-utils blueman udiskie udisks2 gvfs networkmanager
 )
 FILE_PACKAGES=(
-    thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller
+    thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer
 )
 APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility)
 DEV_PACKAGES=(git base-devel wget curl nano jq)
