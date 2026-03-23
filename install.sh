@@ -287,17 +287,16 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                   ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                               "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"                  ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                          "Waybar config"
+[[ -d "$CONFIGS_SRC/hypr"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"       "Hyprland config"
+[[ -d "$CONFIGS_SRC/waybar"         ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"   "Waybar config"
+[[ -d "$CONFIGS_SRC/rofi"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/rofi/'* '$CONFIG_DIR/rofi/'"       "Rofi config"
 [[ -f "$CONFIGS_SRC/kitty/kitty.conf"        ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"             "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
-[[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
-[[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
-[[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
+[[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"           "Starship config"
+[[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                 "btop config"
+[[ -d "$CONFIGS_SRC/wal/templates"            ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"            "pywal templates"
 
-# mako/config is intentionally NOT copied — managed by pywal symlink
-
-# GTK dark theme
+# GTK dark theme configuration...
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
 [Settings]
 gtk-icon-theme-name=Colloid-Dynamic-Dark
@@ -440,7 +439,7 @@ print_phase "Pywal symlinks"
     print_ok "hypr/colors-hyprland.conf"
 
 [[ -f "$CONFIG_DIR/wal/templates/mako-config"          ]] && \
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config"          "$CONFIG_DIR/mako/config"               && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config"          "$CONFIG_DIR/mako/config"                && \
     print_ok "mako/config"
 
 ################################################################################
@@ -472,8 +471,8 @@ _row "system updated"                        "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
 _row "yay · pywal16 · pywalfox · vscodium"  "AUR"
 _row "dotfiles deployed"                     "~/.config/*"
-_row "gpu environment"                       "hypr/gpu-env.conf"
-_row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
+_row "gpu environment"                        "hypr/gpu-env.conf"
+_row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
 _row "colloid-dynamic icons"                 "~/.local/share/icons"
 _row "pywal symlinks"                        "wal → cache"
 _row "sddm · bluetooth · NetworkManager"    "systemctl enable"
@@ -484,9 +483,9 @@ echo ""
 
 echo -e "    ${BLD}next${RST}"
 echo ""
-echo -e "    ${BCYN}1${RST}  ${DIM}reboot${RST}                    ${BBLK}sudo reboot${RST}"
+echo -e "    ${BCYN}1${RST}  ${DIM}reboot${RST}                     ${BBLK}sudo reboot${RST}"
 echo -e "    ${BCYN}2${RST}  ${DIM}select session at sddm${RST}    ${BBLK}Hyprland${RST}"
-echo -e "    ${BCYN}3${RST}  ${DIM}set your wallpaper${RST}         ${BBLK}wal -i ~/Pictures/Wallpapers/<img>${RST}"
+echo -e "    ${BCYN}3${RST}  ${DIM}set your wallpaper${RST}          ${BBLK}wal -i ~/Pictures/Wallpapers/<img>${RST}"
 
 echo ""
 hr
@@ -496,14 +495,14 @@ _bind() { printf "    ${BBLK}%-22s${RST}${DIM}%s${RST}\n" "$1" "$2"; }
 echo -e "    ${BLD}bindings${RST}"
 echo ""
 _bind "super + return"        "terminal"
-_bind "super + d"             "launcher"
-_bind "super + q"             "close window"
-_bind "super + f"             "file manager"
-_bind "super + w"             "wallpaper picker"
+_bind "super + d"              "launcher"
+_bind "super + q"              "close window"
+_bind "super + f"              "file manager"
+_bind "super + w"              "wallpaper picker"
 _bind "super + b / c / i"    "browser · editor · monitor"
-_bind "super + v"             "toggle float"
+_bind "super + v"              "toggle float"
 _bind "super + h/j/k/l"      "focus ← ↓ ↑ →"
-_bind "super + [1–5]"         "switch workspace"
+_bind "super + [1–5]"          "switch workspace"
 _bind "super+shift + [1–5]"  "move to workspace"
 
 echo ""
