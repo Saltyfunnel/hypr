@@ -259,6 +259,7 @@ CONFIG_DIRS=(
     "$CONFIG_DIR/mako"    "$CONFIG_DIR/scripts"
     "$CONFIG_DIR/wal/templates"  "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
+    "$CONFIG_DIR/zed/themes"
 )
 
 for dir in "${CONFIG_DIRS[@]}"; do
@@ -282,6 +283,7 @@ OLD_SYMLINKS=(
     "$CONFIG_DIR/kitty/kitty.conf"
     "$CONFIG_DIR/hypr/colors-hyprland.conf"
     "$CONFIG_DIR/mako/config"
+    "$CONFIG_DIR/zed/themes/zed.json"
 )
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
@@ -442,6 +444,10 @@ print_phase "Pywal symlinks"
     sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config"          "$CONFIG_DIR/mako/config"               && \
     print_ok "mako/config"
 
+[[ -f "$CONFIG_DIR/wal/templates/zed.json"             ]] && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-zed.json"      "$CONFIG_DIR/zed/themes/zed.json"       && \
+    print_ok "zed/themes/zed.json"
+
 ################################################################################
 # SERVICES & PERMISSIONS
 ################################################################################
@@ -469,12 +475,13 @@ echo ""
 _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
 _row "system updated"                        "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
-_row "yay · pywal16 · pywalfox · vscodium"  "AUR"
+_row "yay · pywal16 · pywalfox"             "AUR"
 _row "dotfiles deployed"                     "~/.config/*"
 _row "gpu environment"                       "hypr/gpu-env.conf"
 _row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
 _row "colloid-dynamic icons"                 "~/.local/share/icons"
 _row "pywal symlinks"                        "wal → cache"
+_row "zed theme"                             "zed/themes/zed.json"
 _row "sddm · bluetooth · NetworkManager"    "systemctl enable"
 
 echo ""
