@@ -1,121 +1,59 @@
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
-
     "logo": {
-        "type": "kitty",
-        "source": "~/.cache/current-wallpaper",
-        "width": 45,
-        "height": 13,
-        "padding": {
-            "top": 2
-        }
+        "source": "arch_small", // search for logos: fastfetch --list-logos or --print-logos
+       	"height": 11,
+    	"padding": {
+    		"top": 2,
+            "left": 2
+   },
     },
-
     "display": {
         "separator": "  "
     },
-
     "modules": [
-             {
+    "break",
+	{
             "type": "custom",
-            "format": " {#90}  {#31}  {#32}  {#33}  {#34}  {#35}  {#36}  {#37}  {#38}  {#39}       {#38}  {#37}  {#36}  {#35}  {#34}  {#33}  {#32}  {#31}  {#90} "
+            "format": "\u001b[90m  \u001b[31m  \u001b[32m  \u001b[33m  \u001b[34m  \u001b[35m  \u001b[36m  \u001b[37m "
         },
-
-        {
-            "type": "custom",
-            "format": "{#33}  ◈ ─────────────────── {#37}S Y S T E M{#33} ─────────────────── ◈  "
-        },
+    "break",
         {
             "type": "os",
-            "key": "     {#33}◆ {#37}os      ",
-            "keyColor": "white"
+            "key": " ",
+            "keyColor": "31",  // = color1
         },
         {
             "type": "kernel",
-            "key": "     {#33}◆ {#37}kernel  ",
-            "keyColor": "white"
+            "key": " ",
+            "keyColor": "32",
+        },
+        {
+            "type": "packages",
+            "format": "{} (pacman)",
+            "key": " ",
+            "keyColor": "33",  
         },
         {
             "type": "shell",
-            "key": "     {#33}◆ {#37}shell   ",
-            "keyColor": "white"
-        },
-
-        {
-            "type": "custom",
-            "format": "{#34}  ◈ ────────────────────── {#37}R I C E{#34} ────────────────────── ◈  "
-        },
-        {
-            "type": "wm",
-            "key": "     {#34}◆ {#37}wm      ",
-            "keyColor": "white"
+            "key": " ",
+            "keyColor": "34", 
         },
         {
             "type": "terminal",
-            "key": "     {#34}◆ {#37}term    ",
-            "keyColor": "white"
+            "key": " ",
+            "keyColor": "35", 
         },
         {
-            "type": "wallpaper",
-            "key": "     {#34}◆ {#37}wall    ",
-            "keyColor": "white"
+            "type": "wm",
+            "key": " ",
+            "keyColor": "36", 
         },
-
-        {
-            "type": "custom",
-            "format": "{#32}  ◈ ─────────────────── {#37}H A R D W A R E{#32} ─────────────────── ◈  "
-        },
-        {
-            "type": "cpu",
-            "key": "     {#32}◆ {#37}cpu     ",
-            "keyColor": "white"
-        },
-        {
-            "type": "gpu",
-            "key": "     {#32}◆ {#37}gpu     ",
-            "keyColor": "white"
-        },
-        {
-            "type": "memory",
-            "key": "     {#32}◆ {#37}memory  ",
-            "keyColor": "white"
-        },
-        {
-            "type": "disk",
-            "key": "     {#32}◆ {#37}disk    ",
-            "keyColor": "white"
-        },
-        {
-            "type": "display",
-            "key": "     {#32}◆ {#37}display ",
-            "keyColor": "white"
-        },
-        {
-            "type": "uptime",
-            "key": "     {#32}◆ {#37}uptime  ",
-            "keyColor": "white"
-        },
-
+        "break",
         {
             "type": "custom",
-            "format": "{#36}  ◈ ─────────────────────── {#37}A U D I O{#36} ─────────────────── ◈  "
+            "format": "\u001b[90m  \u001b[31m  \u001b[32m  \u001b[33m  \u001b[34m  \u001b[35m  \u001b[36m  \u001b[37m "
         },
-        {
-            "type": "sound",
-            "key": "     {#36}◆ {#37}sound   ",
-            "keyColor": "white"
-        },
-
-        {
-            "type": "custom",
-            "format": " "
-        },
-
-        {
-            "type": "custom",
-            "format": " {#90}  {#31}  {#32}  {#33}  {#34}  {#35}  {#36}  {#37}  {#38}  {#39}       {#38}  {#37}  {#36}  {#35}  {#34}  {#33}  {#32}  {#31}  {#90} "
-        },
-
-        "break"
+    "break",
     ]
 }
