@@ -259,6 +259,7 @@ CONFIG_DIRS=(
     "$CONFIG_DIR/mako"    "$CONFIG_DIR/scripts"
     "$CONFIG_DIR/wal/templates"  "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
+    "$CONFIG_DIR/rofi"
 )
 
 for dir in "${CONFIG_DIRS[@]}"; do
