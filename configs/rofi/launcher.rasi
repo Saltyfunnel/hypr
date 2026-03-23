@@ -2,21 +2,28 @@
 @import "~/.cache/wal/colors-rofi-dark"
 
 * {
+    /* Font Requirement */
     font: "Hack Nerd Font 10";
+
+    /* Pywal usually defines @background, @foreground, and @color1 through @color15.
+       We map them here so the rest of the script understands 'selected' and 'background-alt'.
+    */
+    background-alt:              @color1;     /* Using pywal color1 for bar/button backgrounds */
+    selected:                    @color2;     /* Using pywal color2 for highlights */
+    active:                      @color3;
+    urgent:                      @color8;
 }
 
 /*****----- Main Window -----*****/
 window {
     location:                    center;
     anchor:                      center;
-    fullscreen:                  false;
-    width:                       1000px;
     enabled:                     true;
+    width:                       1000px;
     border:                      2px;
-    border-color:                @selected;
+    border-color:                @selected;   /* Now this will resolve to @color2 */
     border-radius:               15px;
-    cursor:                      "default";
-    background-color:            #DD19110b; /* window-bg */
+    background-color:            #DD19110b;   /* window-bg */
 }
 
 /*****----- Main Box -----*****/
