@@ -22,7 +22,7 @@ WIN_H = 480
 # WALLPAPER JUSTIFICATION: "left", "center", or "right"
 WALL_ALIGN = "left" 
 
-EXCLUDE = ["ssh", "server", "avahi", "helper", "setup", "settings daemon", "gnome-session"]
+EXCLUDE = ["ssh", "server", "avahi", "helper", "setup", "settings daemon", "gnome-session", "xfce", "lstopo", "qt", "xgps"]
 WAL_CACHE = Path.home() / ".cache/wal/colors.json"
 WAL_WALL = Path.home() / ".cache/wal/wal"
 USAGE_FILE = Path.home() / ".cache/launcher_usage.json"
