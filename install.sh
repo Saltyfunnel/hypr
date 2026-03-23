@@ -173,7 +173,7 @@ fi
 print_phase "Package Installation"
 
 CORE_PACKAGES=(
-    hyprland waybar swww mako sddm
+    hyprland waybar swww mako zed sddm
     xdg-desktop-portal-hyprland
 )
 TERMINAL_PACKAGES=(kitty starship fastfetch)
@@ -241,9 +241,9 @@ else
     print_ok "yay already present"
 fi
 
-sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 python-pywalfox vscodium-bin \
+sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 python-pywalfox \
     > /tmp/hypr_install_log 2>&1 &
-spinner "$!" "Installing pywal16, pywalfox, vscodium"
+spinner "$!" "Installing pywal16, pywalfox"
 wait $! || print_err "AUR install failed  →  /tmp/hypr_install_log"
 print_ok "AUR packages installed"
 
