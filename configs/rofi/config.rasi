@@ -1,14 +1,8 @@
 configuration {
     modi:                       "drun,run,window";
     show-icons:                 true;
-    icon-theme:                 "Colloid-Dynamic-Dark";
-    font:                       "Hack Nerd Font 12";
-    drun-display-format:        "{name}";
-    hover-select:               true;
-    me-select-entry:            "";
-    me-accept-entry:            "MousePrimary";
-    terminal:                   "kitty";
+    display-drun:               "";
+    font:                       "Hack Nerd Font 10";
 }
 
-/* This imports the generated Pywal colors for Rofi */
-@import "~/.cache/wal/colors-rofi-dark.rasi"
+@import "~/.config/rofi/launcher.rasi"
