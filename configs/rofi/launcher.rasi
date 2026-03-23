@@ -1,28 +1,154 @@
-#!/bin/bash
+/*****----- Configuration -----*****/
+@import "~/.cache/wal/colors-rofi-dark"
 
-# Define paths
-CONFIG="$HOME/.config/rofi/launcher.rasi"
-WALL_FILE="$HOME/.cache/wal/wal"
-ROFI_WAL_COLORS="$HOME/.cache/wal/colors-rofi-dark.rasi"
+* {
+    font: "Hack Nerd Font 10";
+}
 
-# Check if pywal files exist
-if [[ ! -f "$WALL_FILE" ]]; then
-    notify-send "Rofi Error" "No wallpaper found in cache. Run 'wal' first."
-    exit 1
-fi
+/*****----- Main Window -----*****/
+window {
+    location:                    center;
+    anchor:                      center;
+    fullscreen:                  false;
+    width:                       1000px;
+    enabled:                     true;
+    border:                      2px;
+    border-color:                @selected;
+    border-radius:               15px;
+    cursor:                      "default";
+    background-color:            #DD19110b; /* window-bg */
+}
 
-# Current wallpaper path
-WALL=$(cat "$WALL_FILE")
+/*****----- Main Box -----*****/
+mainbox {
+    enabled:                     true;
+    spacing:                     0px;
+    background-color:            transparent;
+    orientation:                 horizontal;
+    children:                    [ "imagebox", "listbox" ];
+}
 
-# Extract the background color from pywal-generated rofi file
-# We grab the hex and strip the '#' and ';'
-BG=$(grep "background:" "$ROFI_WAL_COLORS" | head -n 1 | awk '{print $2}' | tr -d ';#')
+/*****----- Image Box -----*****/
+imagebox {
+    padding:                     20px;
+    background-color:            transparent;
+    background-image:            url("~/.cache/wal/wal", height); 
+    orientation:                 vertical;
+    children:                    [ "inputbar", "dummy", "mode-switcher" ];
+}
 
-# 1. Update the wallpaper image path
-sed -i "s|background-image:.*|background-image:            url(\"$WALL\", height);|" "$CONFIG"
+/*****----- List Box -----*****/
+listbox {
+    spacing:                     20px;
+    padding:                     20px;
+    background-color:            transparent; 
+    orientation:                 vertical;
+    children:                    [ "message", "listview" ];
+}
 
-# 2. Update the window background with transparency (DD = ~86% opacity)
-sed -i "s|background-color:.*\/\* window-bg \*\/|background-color:            #DD${BG}; /* window-bg */|" "$CONFIG"
+dummy {
+    background-color:            transparent;
+}
 
-# Execute rofi
-rofi -show drun -theme "$CONFIG"
+/*****----- Inputbar -----*****/
+inputbar {
+    enabled:                     true;
+    spacing:                     10px;
+    padding:                     15px;
+    border-radius:               10px;
+    background-color:            @background-alt;
+    text-color:                  @foreground;
+    children:                    [ "textbox-prompt-colon", "entry" ];
+}
+
+textbox-prompt-colon {
+    enabled:                     true;
+    expand:                      false;
+    str:                         "";
+    background-color:            inherit;
+    text-color:                  inherit;
+}
+
+entry {
+    enabled:                     true;
+    background-color:            inherit;
+    text-color:                  inherit;
+    cursor:                      text;
+    placeholder:                 "Search";
+    placeholder-color:           inherit;
+}
+
+/*****----- Mode Switcher -----*****/
+mode-switcher {
+    enabled:                     true;
+    spacing:                     20px;
+    background-color:            transparent;
+    text-color:                  @foreground;
+}
+
+button {
+    padding:                     15px;
+    border-radius:               10px;
+    background-color:            @background-alt;
+    text-color:                  inherit;
+    cursor:                      pointer;
+}
+
+button selected {
+    background-color:            @selected;
+    text-color:                  @foreground;
+}
+
+/*****----- Listview -----*****/
+listview {
+    enabled:                     true;
+    columns:                     1;
+    lines:                       8;
+    cycle:                       true;
+    dynamic:                     true;
+    scrollbar:                   false;
+    layout:                      vertical;
+    reverse:                     false;
+    fixed-height:                true;
+    fixed-columns:               true;
+    spacing:                     10px;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      "default";
+}
+
+/*****----- Elements -----*****/
+element {
+    enabled:                     true;
+    spacing:                     15px;
+    padding:                     8px;
+    border-radius:               10px;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      pointer;
+}
+
+element normal.normal {
+    background-color:            inherit;
+    text-color:                  inherit;
+}
+
+element selected.normal {
+    background-color:            @selected;
+    text-color:                  @foreground;
+}
+
+element-icon {
+    background-color:            transparent;
+    text-color:                  inherit;
+    size:                        32px;
+    cursor:                      inherit;
+}
+
+element-text {
+    background-color:            transparent;
+    text-color:                  inherit;
+    cursor:                      inherit;
+    vertical-align:              0.5;
+    horizontal-align:            0.0;
+}
