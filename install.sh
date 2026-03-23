@@ -241,9 +241,9 @@ else
     print_ok "yay already present"
 fi
 
-sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 python-pywalfox vscodium-bin \
+sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 python-pywalfox vscodium-bin rofi-wayland\
     > /tmp/hypr_install_log 2>&1 &
-spinner "$!" "Installing pywal16, pywalfox, vscodium"
+spinner "$!" "Installing pywal16, pywalfox, rofi-wayland, vscodium"
 wait $! || print_err "AUR install failed  →  /tmp/hypr_install_log"
 print_ok "AUR packages installed"
 
