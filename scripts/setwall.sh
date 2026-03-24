@@ -1,30 +1,24 @@
 #!/bin/bash
 WALL="$1"
 
-# 1. Let wal run fully and apply everything as normal
-wal -i "$WALL"
+# Visual feedback immediately
+swww img "$WALL" --transition-type simple &
 
-# 2. TRIGGER THE ICON RECOLOR (The missing link!)
-# We run this BEFORE the notifications so it's done by the time you look
-if [ -f "$HOME/.config/scripts/recolor_folders.sh" ]; then
-    echo "🎨 Patching folder icons..."
-    # Running without '&' ensures it finishes before we reload everything else
-    bash "$HOME/.config/scripts/recolor_folders.sh"
-else
-    echo "⚠️ Recolor script not found at ~/.config/scripts/recolor_folders.sh"
-fi
+# Generate palette (this is the slow part, let it run while swww animates)
+wal -i "$WALL" --backend haiku  # or fast/colorz if installed — much faster than default
 
-# 3. Set wallpaper immediately after
-swww img "$WALL" --transition-type simple
+# Folder icons (now has fresh colours)
+[ -f "$HOME/.config/scripts/recolor_folders.sh" ] && \
+    bash "$HOME/.config/scripts/recolor_folders.sh" &
 
-# 4. Update fastfetch wallpaper cache
+# Symlink wallpaper cache
 ln -sf "$WALL" ~/.cache/current-wallpaper
 
-# 5. Restart waybar and mako in parallel
-{ killall waybar 2>/dev/null; waybar & } &
-{ killall mako 2>/dev/null; sleep 0.1; mako & disown; } &
+# Restart waybar + mako in parallel
+killall waybar 2>/dev/null; waybar &
+killall mako 2>/dev/null; sleep 0.1; mako & disown
 
-# 6. Final UI Sync
+# Reload hyprland config
 hyprctl reload
 
-notify-send -i "$WALL" "Theme Updated" "Colors & Icons synced to $(basename "$WALL")"
+notify-send -i "$WALL" "Theme Updated" "$(basename "$WALL")"
