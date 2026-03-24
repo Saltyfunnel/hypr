@@ -335,7 +335,7 @@ class Launcher(QtWidgets.QWidget):
     def _style(self):
         self.setStyleSheet(f"""
             #MainFrame {{ background: {mk_alpha(self.BG, 240)}; border: 1px solid {self.ACC}; border-radius: 10px; }}
-            #LeftOverlay {{ background: rgba(0,0,0,185); border-right: 1px solid {mk_alpha(self.ACC, 80)}; border-top-left-radius: 10px; border-bottom-left-radius: 10px; }}
+            #LeftOverlay {{ background: rgba(0,0,0,100); border-right: 1px solid {mk_alpha(self.ACC, 80)}; border-top-left-radius: 10px; border-bottom-left-radius: 10px; }}
             #Clock {{ font-family: "{FONT}"; font-size: 52px; font-weight: bold; color: {self.ACC}; }}
             #DateLbl {{ font-family: "{FONT}"; font-size: 10px; color: {self.FG}; letter-spacing: 2px; }}
             #Search {{ background: rgba(255,255,255,10); border: 1px solid {mk_alpha(self.ACC2, 100)}; border-radius: 6px; color: #fff; font-family: "{FONT}"; font-size: 13px; padding-left: 12px; }}
