@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import configparser
 import json
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 from PyQt6 import QtCore, QtGui, QtWidgets
@@ -14,90 +14,140 @@ TERMINAL = "kitty"
 FONT = "Hack Nerd Font"
 
 # UI Dimensions
-ITEM_H = 50        
-WALL_W = 500       
-WIN_W = 850        
-WIN_H = 480        
+ITEM_H = 50
+WALL_W = 500
+WIN_W = 850
+WIN_H = 480
 
 # WALLPAPER JUSTIFICATION: "left", "center", or "right"
-WALL_ALIGN = "left" 
+WALL_ALIGN = "left"
 
-EXCLUDE = ["ssh", "server", "avahi", "helper", "setup", "settings daemon", "gnome-session", "xfce", "lstopo", "qt", "xgps"]
+EXCLUDE = [
+    "ssh",
+    "server",
+    "avahi",
+    "helper",
+    "setup",
+    "settings daemon",
+    "gnome-session",
+    "xfce",
+    "lstopo",
+    "qt",
+    "xgps",
+]
 WAL_CACHE = Path.home() / ".cache/wal/colors.json"
 WAL_WALL = Path.home() / ".cache/wal/wal"
 USAGE_FILE = Path.home() / ".cache/launcher_usage.json"
 
 SHORTCUTS = [
-    ("Files", "󰝰", "thunar"),
+    ("Files", "󰝰", "filemanager.py"),
     ("Terminal", "󰆍", "kitty"),
     ("Browser", "󰖟", "firefox"),
     ("Editor", "󰅩", "zeditor"),
 ]
 
+# Nerd Font glyph overrides for apps without a proper theme icon
+# Add any app here by its Name= from the .desktop file
+ICON_OVERRIDES = {
+    "Zed": "󰅩",
+    "btop": "󰓅",
+    "htop": "󰓅",
+    "nvim": "󰕷",
+    "vim": "󰕷",
+}
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def load_pywal():
     d = ("#1a1a1a", "#c0caf5", "#7aa2f7", "#bb9af7")
-    if not WAL_CACHE.exists(): return d
+    if not WAL_CACHE.exists():
+        return d
     try:
         data = json.loads(WAL_CACHE.read_text())
-        return (data["special"]["background"], data["special"]["foreground"], 
-                data["colors"].get("color4", d[2]), data["colors"].get("color5", d[3]))
-    except: return d
+        return (
+            data["special"]["background"],
+            data["special"]["foreground"],
+            data["colors"].get("color4", d[2]),
+            data["colors"].get("color5", d[3]),
+        )
+    except:
+        return d
+
 
 def wal_path():
     return WAL_WALL.read_text().strip() if WAL_WALL.exists() else None
+
 
 def mk_alpha(hex_c, a):
     c = QtGui.QColor(hex_c)
     c.setAlpha(a)
     return c.name(QtGui.QColor.NameFormat.HexArgb)
 
+
 def load_wall(path, w, h, align="center"):
-    if not path or not os.path.exists(path): return QtGui.QPixmap()
+    if not path or not os.path.exists(path):
+        return QtGui.QPixmap()
     src = QtGui.QPixmap(path)
-    if src.isNull(): return QtGui.QPixmap()
-    
-    # Scale to fill height while maintaining aspect ratio
+    if src.isNull():
+        return QtGui.QPixmap()
+
     scaled = src.scaledToHeight(h, QtCore.Qt.TransformationMode.SmoothTransformation)
-    
-    # If image is still narrower than the panel, scale to width instead
     if scaled.width() < w:
         scaled = src.scaledToWidth(w, QtCore.Qt.TransformationMode.SmoothTransformation)
-        
-    # Calculate crop area based on alignment
+
     if align == "left":
         return scaled.copy(0, 0, w, h)
     elif align == "right":
         return scaled.copy(scaled.width() - w, 0, w, h)
-    else: # center
+    else:
         return scaled.copy((scaled.width() - w) // 2, 0, w, h)
+
 
 # ── App Row ───────────────────────────────────────────────────────────────────
 
+
 class AppRow(QtWidgets.QWidget):
     launched = QtCore.pyqtSignal(dict)
+
     def __init__(self, app, accent, fg, parent=None):
         super().__init__(parent)
         self._app, self._accent, self._fg = app, accent, fg
         self._hover = False
         self.setFixedHeight(ITEM_H)
         self.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        icon = QtGui.QIcon.fromTheme(app.get("Icon", "application-default-icon"))
-        self._icon = icon.pixmap(QtCore.QSize(22, 22))
+
+        # Use Nerd Font glyph override if available, otherwise fall back to theme icon
+        glyph = ICON_OVERRIDES.get(app.get("Name", ""))
+        if glyph:
+            self._glyph = glyph
+            self._icon = None
+        else:
+            self._glyph = None
+            icon = QtGui.QIcon.fromTheme(app.get("Icon", "application-default-icon"))
+            if icon.isNull():
+                icon = QtGui.QIcon.fromTheme("application-default-icon")
+            self._icon = icon.pixmap(QtCore.QSize(22, 22))
 
     def update_colors(self, accent, fg):
         self._accent, self._fg = accent, fg
         self.update()
 
-    def enterEvent(self, _): self._hover = True; self.update()
-    def leaveEvent(self, _): self._hover = False; self.update()
-    def mousePressEvent(self, _): self.launched.emit(self._app)
+    def enterEvent(self, _):
+        self._hover = True
+        self.update()
+
+    def leaveEvent(self, _):
+        self._hover = False
+        self.update()
+
+    def mousePressEvent(self, _):
+        self.launched.emit(self._app)
 
     def paintEvent(self, _):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
-        rect = self.rect().adjusted(2, 2, -8, -2) 
+        rect = self.rect().adjusted(2, 2, -8, -2)
         if self._hover:
             p.setBrush(QtGui.QColor(mk_alpha(self._accent, 80)))
             p.setPen(QtGui.QPen(QtGui.QColor(self._accent), 1))
@@ -105,7 +155,15 @@ class AppRow(QtWidgets.QWidget):
             p.setBrush(QtGui.QColor(255, 255, 255, 8))
             p.setPen(QtCore.Qt.PenStyle.NoPen)
         p.drawRoundedRect(rect, 5, 5)
-        p.drawPixmap(10, (ITEM_H - 22) // 2, self._icon)
+
+        # Draw glyph or pixmap icon
+        if self._glyph:
+            p.setFont(QtGui.QFont(FONT, 14))
+            p.setPen(QtGui.QColor(self._accent))
+            p.drawText(8, (ITEM_H + 14) // 2, self._glyph)
+        else:
+            p.drawPixmap(10, (ITEM_H - 22) // 2, self._icon)
+
         p.setPen(QtGui.QColor("#ffffff"))
         p.setFont(QtGui.QFont(FONT, 9, QtGui.QFont.Weight.Bold))
         p.drawText(40, 20, self._app["Name"])
@@ -113,7 +171,9 @@ class AppRow(QtWidgets.QWidget):
         p.setFont(QtGui.QFont(FONT, 7))
         p.drawText(40, 35, self._app["Exec"][:35] + "...")
 
+
 # ── Main Launcher ─────────────────────────────────────────────────────────────
+
 
 class Launcher(QtWidgets.QWidget):
     def __init__(self):
@@ -124,18 +184,19 @@ class Launcher(QtWidgets.QWidget):
 
         self.watcher = QtCore.QFileSystemWatcher(self)
         for f in [WAL_CACHE, WAL_WALL]:
-            if f.exists(): self.watcher.addPath(str(f))
+            if f.exists():
+                self.watcher.addPath(str(f))
         self.watcher.fileChanged.connect(self._refresh_theme)
 
         self.usage = self._load_usage()
-        
+
         self.frame = QtWidgets.QFrame(self)
         self.frame.setObjectName("MainFrame")
         self.frame.setGeometry(0, 0, WIN_W, WIN_H)
 
         self.left_img = QtWidgets.QLabel(self.frame)
         self.left_img.setGeometry(0, 0, WALL_W, WIN_H)
-        
+
         self.left_overlay = QtWidgets.QFrame(self.frame)
         self.left_overlay.setObjectName("LeftOverlay")
         self.left_overlay.setGeometry(0, 0, WALL_W, WIN_H)
@@ -143,7 +204,7 @@ class Launcher(QtWidgets.QWidget):
         self._clock = QtWidgets.QLabel("00:00", self.frame)
         self._clock.setObjectName("Clock")
         self._clock.setGeometry(35, 40, 250, 60)
-        
+
         self._date = QtWidgets.QLabel("DATE", self.frame)
         self._date.setObjectName("DateLbl")
         self._date.setGeometry(38, 100, 250, 20)
@@ -173,7 +234,7 @@ class Launcher(QtWidgets.QWidget):
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.scroll.viewport().setStyleSheet("background: transparent;")
-        
+
         self.list_container = QtWidgets.QWidget()
         self.list_layout = QtWidgets.QVBoxLayout(self.list_container)
         self.list_layout.setContentsMargins(5, 5, 5, 5)
@@ -183,17 +244,24 @@ class Launcher(QtWidgets.QWidget):
 
         self._refresh_theme()
         self._find_apps()
-        
-        t = QtCore.QTimer(self); t.timeout.connect(self._tick); t.start(1000); self._tick()
-        self._center(); self._search.setFocus(); self.show()
+
+        t = QtCore.QTimer(self)
+        t.timeout.connect(self._tick)
+        t.start(1000)
+        self._tick()
+        self._center()
+        self._search.setFocus()
+        self.show()
 
     def _refresh_theme(self):
         self.BG, self.FG, self.ACC, self.ACC2 = load_pywal()
         px = load_wall(wal_path(), WALL_W, WIN_H, align=WALL_ALIGN)
-        if not px.isNull(): self.left_img.setPixmap(px)
+        if not px.isNull():
+            self.left_img.setPixmap(px)
         for i in range(self.list_layout.count()):
             w = self.list_layout.itemAt(i).widget()
-            if isinstance(w, AppRow): w.update_colors(self.ACC, self.FG)
+            if isinstance(w, AppRow):
+                w.update_colors(self.ACC, self.FG)
         self._style()
 
     def _load_usage(self):
@@ -202,7 +270,8 @@ class Launcher(QtWidgets.QWidget):
     def _find_apps(self):
         apps, seen = [], set()
         for d in APP_DIRS:
-            if not d.exists(): continue
+            if not d.exists():
+                continue
             for f in d.glob("*.desktop"):
                 cfg = configparser.ConfigParser(interpolation=None)
                 try:
@@ -210,22 +279,37 @@ class Launcher(QtWidgets.QWidget):
                     e = cfg["Desktop Entry"]
                     name = e.get("Name", "")
                     if name and name not in seen:
-                        if any(k in name.lower() for k in EXCLUDE) or e.get("NoDisplay") == "true":
+                        if (
+                            any(k in name.lower() for k in EXCLUDE)
+                            or e.get("NoDisplay") == "true"
+                        ):
                             continue
-                        apps.append({"Name": name, "Exec": e.get("Exec", "").split("%")[0].strip(), "Icon": e.get("Icon", "")})
+                        apps.append(
+                            {
+                                "Name": name,
+                                "Exec": e.get("Exec", "").split("%")[0].strip(),
+                                "Icon": e.get("Icon", ""),
+                                "Terminal": e.get("Terminal", "false").lower()
+                                == "true",
+                            }
+                        )
                         seen.add(name)
-                except: continue
+                except:
+                    continue
         self.all_apps = apps
         self._rebuild(apps)
 
     def _rebuild(self, apps):
         for i in reversed(range(self.list_layout.count())):
-            if self.list_layout.itemAt(i).widget(): self.list_layout.itemAt(i).widget().setParent(None)
-        srt = sorted(apps, key=lambda a: (-self.usage.get(a["Name"], 0), a["Name"].lower()))
+            if self.list_layout.itemAt(i).widget():
+                self.list_layout.itemAt(i).widget().setParent(None)
+        srt = sorted(
+            apps, key=lambda a: (-self.usage.get(a["Name"], 0), a["Name"].lower())
+        )
         for app in srt:
             row = AppRow(app, self.ACC, self.FG)
             row.launched.connect(self._execute)
-            self.list_layout.insertWidget(self.list_layout.count()-1, row)
+            self.list_layout.insertWidget(self.list_layout.count() - 1, row)
 
     def _filter(self, text):
         self._rebuild([a for a in self.all_apps if text.lower() in a["Name"].lower()])
@@ -233,10 +317,15 @@ class Launcher(QtWidgets.QWidget):
     def _execute(self, app):
         self.usage[app["Name"]] = self.usage.get(app["Name"], 0) + 1
         USAGE_FILE.write_text(json.dumps(self.usage))
-        subprocess.Popen(app["Exec"], shell=True); QtWidgets.QApplication.quit()
+        cmd = app["Exec"]
+        if app.get("Terminal"):
+            cmd = f"{TERMINAL} -- {cmd}"
+        subprocess.Popen(cmd, shell=True)
+        QtWidgets.QApplication.quit()
 
     def _run_cmd(self, cmd):
-        subprocess.Popen(cmd, shell=True); QtWidgets.QApplication.quit()
+        subprocess.Popen(cmd, shell=True)
+        QtWidgets.QApplication.quit()
 
     def _tick(self):
         now = QtCore.QDateTime.currentDateTime()
@@ -250,7 +339,7 @@ class Launcher(QtWidgets.QWidget):
             #Clock {{ font-family: "{FONT}"; font-size: 52px; font-weight: bold; color: {self.ACC}; }}
             #DateLbl {{ font-family: "{FONT}"; font-size: 10px; color: {self.FG}; letter-spacing: 2px; }}
             #Search {{ background: rgba(255,255,255,10); border: 1px solid {mk_alpha(self.ACC2, 100)}; border-radius: 6px; color: #fff; font-family: "{FONT}"; font-size: 13px; padding-left: 12px; }}
-            #ScBtn {{ background: {mk_alpha(self.BG, 150)}; border: 1px solid {mk_alpha(self.ACC, 60)}; border-radius: 6px; color: {self.FG}; font-size: 16px; }}
+            #ScBtn {{ background: {mk_alpha(self.BG, 150)}; border: 1px solid {mk_alpha(self.ACC, 60)}; border-radius: 6px; color: {self.FG}; font-family: "{FONT}"; font-size: 16px; }}
             #ScBtn:hover {{ background: {self.ACC}; color: #fff; }}
             QScrollBar:vertical {{ width: 2px; background: transparent; }}
             QScrollBar::handle:vertical {{ background: {self.ACC}; }}
@@ -258,8 +347,11 @@ class Launcher(QtWidgets.QWidget):
 
     def _center(self):
         qr = self.frameGeometry()
-        qr.moveCenter(QtGui.QGuiApplication.primaryScreen().availableGeometry().center())
+        qr.moveCenter(
+            QtGui.QGuiApplication.primaryScreen().availableGeometry().center()
+        )
         self.move(qr.topLeft())
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
