@@ -427,6 +427,33 @@ wait $! || print_err "Colloid install failed  →  /tmp/hypr_install_log"
 print_ok "Colloid-Dynamic icons installed"
 
 ################################################################################
+# THUNAR CUSTOM ACTIONS (KITTY)
+################################################################################
+
+print_phase "Thunar Custom Actions"
+
+# Ensure the Thunar config directory exists
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/Thunar"
+
+# Write the custom action for Kitty
+sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/Thunar/uca.xml' << 'EOF'
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<actions>
+<action>
+    <icon>kitty</icon>
+    <name>Open Kitty Here</name>
+    <unique-id>kitty-open-here</unique-id>
+    <command>kitty --directory %f</command>
+    <description>Open Kitty terminal in this directory</description>
+    <patterns>*</patterns>
+    <directories/>
+</action>
+</actions>
+EOF"
+
+print_ok "Thunar 'Open Kitty Here' action configured"
+
+################################################################################
 # PYWAL SYMLINKS
 ################################################################################
 
