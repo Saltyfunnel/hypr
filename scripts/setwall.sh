@@ -2,7 +2,7 @@
 WALL="$1"
 
 # Visual feedback immediately
-swww img "$WALL" --transition-type simple &
+awww img "$WALL" --transition-type simple &
 
 # Generate palette (this is the slow part, let it run while swww animates)
 wal -i "$WALL" --backend haiku  # or fast/colorz if installed — much faster than default
