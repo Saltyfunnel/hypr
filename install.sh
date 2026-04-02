@@ -173,7 +173,7 @@ fi
 print_phase "Package Installation"
 
 CORE_PACKAGES=(
-    hyprland waybar awww mako zed sddm
+    hyprland waybar awww mako zed ly
     xdg-desktop-portal-hyprland
 )
 TERMINAL_PACKAGES=(kitty starship fastfetch)
@@ -432,10 +432,8 @@ print_ok "Colloid-Dynamic icons installed"
 
 print_phase "Thunar Custom Actions"
 
-# Ensure the Thunar config directory exists
 sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/Thunar"
 
-# Write the custom action for Kitty
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/Thunar/uca.xml' << 'EOF'
 <?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <actions>
@@ -481,7 +479,7 @@ print_phase "Pywal symlinks"
 
 print_phase "Services & permissions"
 
-systemctl enable sddm.service           2>/dev/null && print_ok "sddm enabled"           || true
+systemctl enable ly@tty2.service        2>/dev/null && print_ok "ly enabled"             || true
 systemctl enable bluetooth.service      2>/dev/null && print_ok "bluetooth enabled"      || true
 systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled" || true
 
@@ -509,7 +507,7 @@ _row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
 _row "colloid-dynamic icons"                 "~/.local/share/icons"
 _row "pywal symlinks"                        "wal → cache"
 _row "zed theme"                             "zed/themes/zed.json"
-_row "sddm · bluetooth · NetworkManager"    "systemctl enable"
+_row "ly · bluetooth · NetworkManager"      "systemctl enable"
 
 echo ""
 hr
@@ -518,7 +516,7 @@ echo ""
 echo -e "    ${BLD}next${RST}"
 echo ""
 echo -e "    ${BCYN}1${RST}  ${DIM}reboot${RST}                    ${BBLK}sudo reboot${RST}"
-echo -e "    ${BCYN}2${RST}  ${DIM}select session at sddm${RST}    ${BBLK}Hyprland${RST}"
+echo -e "    ${BCYN}2${RST}  ${DIM}select session at ly${RST}       ${BBLK}Hyprland${RST}"
 echo -e "    ${BCYN}3${RST}  ${DIM}set your wallpaper${RST}         ${BBLK}wal -i ~/Pictures/Wallpapers/<img>${RST}"
 
 echo ""
