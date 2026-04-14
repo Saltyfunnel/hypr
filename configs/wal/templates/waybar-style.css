@@ -1,67 +1,74 @@
 /* Waybar CSS - Pywal */
 * {
-  font-family: "Hack Nerd Font", "Hack NF", monospace;
-  font-size: 13px;
-  font-weight: 600;
-  min-height: 0;
+    font-family: "Hack Nerd Font", "Hack NF", monospace;
+    font-size: 13px;
+    font-weight: 600;
+    min-height: 0;
 }
+
 window#waybar {
     background-color: transparent;
     border: none;
 }
 
-#window, #clock, #workspaces, .modules-right {
+/* --- Shared module base --- */
+#window, #clock, #workspaces,
+#custom-menu-icon, #custom-updates, #custom-spotify,
+#custom-firefox, #custom-steam, #memory, #cpu,
+#temperature, #temperature-gpu,
+#battery, #backlight, #pulseaudio,
+#pulseaudio-microphone, #network,
+#bluetooth, #custom-screenshot, #custom-power {
     background-color: {background};
-    color: {foreground};
-    border: 3px solid {color1}; 
-    border-radius: 15px;
-    margin: 5px;
-    padding: 2px 10px; 
+    border: 3px solid {color1};
+    border-radius: 8px;
+    margin: 3px 1px;
+    padding: 0 10px;
+    min-height: 20px;
+    min-width: 10px;
 }
 
-#custom-spotify, #custom-firefox, #custom-steam, #custom-screenshot,
-#cpu, #temperature, #temperature-gpu, #battery, #backlight, #memory, #network, 
-#pulseaudio, #pulseaudio-microphone, #custom-power, #custom-menu-icon, #bluetooth{
+/* left/center modules side padding */
+#window, #clock, #workspaces {
+    margin: 3px 5px;
+    padding: 0 12px;
+}
+
+/* --- Colors --- */
+#clock                 { color: {color1}; }
+#window                { color: {color4}; }
+#custom-menu-icon      { color: {color3}; }
+#custom-updates        { color: {color4}; }
+#custom-spotify        { color: {color5}; }
+#custom-firefox        { color: {color4}; }
+#custom-steam          { color: {color13}; }
+#cpu                   { color: {color1}; }
+#memory                { color: {color2}; }
+#temperature           { color: {color3}; }
+#temperature-gpu       { color: {color4}; }
+#network               { color: {color1}; }
+#pulseaudio            { color: {color6}; }
+#pulseaudio-microphone { color: {color7}; }
+#backlight             { color: {color8}; }
+#battery               { color: {color9}; }
+#bluetooth             { color: {color14}; }
+#custom-screenshot     { color: {color6}; }
+#custom-power          { color: {color1}; }
+/* --- Workspaces --- */
+#workspaces button {
     background: transparent;
+    color: {foreground};
     border: none;
-    padding: 0 6px;
-    margin: 0 4px;
+    padding: 0 5px;
 }
-
-.drawer-child {
-    margin-left: 4px;
-    margin-right: 4px;
-}
-
-/* Colors */
-#clock { color: {color3}; }
-#window { color: {color5}; }
-#custom-menu-icon { color: {color1}; }
-#custom-spotify { color: {color2}; }
-#custom-firefox { color: {color3}; }
-#custom-steam { color: {color4}; }
-#cpu { color: {color2}; }
-#memory { color: {color4}; }
-#network { color: {color6}; }
-#pulseaudio { color: {color1}; }
-#pulseaudio-microphone { color: {color4}; }
-#temperature { color: {color1}; }
-#temperature-gpu { color: {color2}; } 
-#backlight { color: {color3}; }
-#custom-power { color: {color1}; }
-#custom-screenshot { color: {color5}; }
-#battery { color: {color2}; }
-#bluetooth { color: {color5}; }
-
-#workspaces button { background: transparent; color: {foreground}; border: none; padding: 0 5px; }
 #workspaces button.active { color: {color1}; }
 
+/* --- Tooltip --- */
 tooltip {
     background: {background};
     border: 2px solid {color1};
-    border-radius: 10px;
+    border-radius: 4px;
 }
-
 tooltip label {
     color: {foreground};
     padding: 8px;
