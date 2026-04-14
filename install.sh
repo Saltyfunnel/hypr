@@ -173,7 +173,7 @@ fi
 print_phase "Package Installation"
 
 CORE_PACKAGES=(
-    hyprland waybar awww mako zed ly
+    hyprland waybar awww mako zed ly pacman-contrib
     xdg-desktop-portal-hyprland
 )
 TERMINAL_PACKAGES=(kitty starship fastfetch)
