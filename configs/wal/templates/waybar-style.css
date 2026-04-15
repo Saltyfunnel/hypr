@@ -1,5 +1,3 @@
-/* Waybar CSS - Pywal (Refactored & Grouped) */
-
 * {
     font-family: "Hack Nerd Font", "Hack NF", monospace;
     font-size: 13px;
@@ -39,7 +37,9 @@ window#waybar {
 /* --- Colors --- */
 #clock            { color: {color1}; }
 #window           { color: {color4}; }
+
 #custom-updates   { color: {color4}; }
+
 #custom-spotify   { color: {color5}; border-color: {color5}; padding: 0 14px; }
 
 #custom-firefox   { color: {color4}; }
@@ -93,7 +93,7 @@ window#waybar {
     color: {color1};
 }
 
-/* --- Hover effects (subtle but nice) --- */
+/* --- Hover effects --- */
 #custom-system:hover,
 #custom-firefox:hover,
 #custom-steam:hover,
@@ -122,4 +122,16 @@ tooltip {
 tooltip label {
     color: {foreground};
     padding: 8px;
+}
+
+/* --- 🔥 FIX: remove empty module ghost boxes --- */
+#custom-updates:empty,
+#custom-spotify:empty,
+#custom-firefox:empty,
+#custom-steam:empty {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
 }
