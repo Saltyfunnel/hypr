@@ -43,13 +43,15 @@
     "tooltip-format": "󰚰 Updates available\n\n click  run yay"
   },
 
-  "custom/spotify": {
-    "exec": "playerctl metadata --format '󰓇 {{ artist }} - {{ title }}' 2>/dev/null",
-    "exec-if": "playerctl status 2>/dev/null",
-    "interval": 5,
-    "on-click": "playerctl play-pause",
-    "max-length": 30
-  },
+ "custom/spotify": {
+  "exec": "playerctl metadata --format '󰓇 {{ artist }} - {{ title }}'",
+  "exec-if": "playerctl status 2>/dev/null",
+  "interval": 5,
+  "format": "{}",
+  "return-type": "text",
+  "max-length": 30,
+  "on-click": "playerctl play-pause"
+},
 
   "custom/firefox": {
   "exec": "pgrep -x firefox >/dev/null && echo '󰈹'",
