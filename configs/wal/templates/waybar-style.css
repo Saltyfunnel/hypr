@@ -1,4 +1,5 @@
-/* Waybar CSS - Pywal */
+/* Waybar CSS - Pywal (Refactored & Grouped) */
+
 * {
     font-family: "Hack Nerd Font", "Hack NF", monospace;
     font-size: 13px;
@@ -13,12 +14,13 @@ window#waybar {
 
 /* --- Shared module base --- */
 #window, #clock, #workspaces,
-#custom-menu-icon, #custom-updates, #custom-spotify,
-#custom-firefox, #custom-steam, #memory, #cpu,
-#temperature, #temperature-gpu,
+#custom-updates, #custom-spotify,
+#custom-firefox, #custom-steam,
+#custom-system,
 #battery, #backlight, #pulseaudio,
-#pulseaudio-microphone, #network,
-#bluetooth, #custom-screenshot, #custom-power {
+#network, #bluetooth,
+#tray,
+#custom-screenshot, #custom-power {
     background-color: {background};
     border: 3px solid {color1};
     border-radius: 8px;
@@ -28,32 +30,57 @@ window#waybar {
     min-width: 10px;
 }
 
-/* left/center modules side padding */
+/* --- Left / Center spacing --- */
 #window, #clock, #workspaces {
     margin: 3px 5px;
     padding: 0 12px;
 }
 
 /* --- Colors --- */
-#clock                 { color: {color1}; }
-#window                { color: {color4}; }
-#custom-menu-icon      { color: {color3}; }
-#custom-updates        { color: {color4}; }
-#custom-spotify        { color: {color5}; }
-#custom-firefox        { color: {color4}; }
-#custom-steam          { color: {color13}; }
-#cpu                   { color: {color1}; }
-#memory                { color: {color2}; }
-#temperature           { color: {color3}; }
-#temperature-gpu       { color: {color4}; }
-#network               { color: {color1}; }
-#pulseaudio            { color: {color6}; }
-#pulseaudio-microphone { color: {color7}; }
-#backlight             { color: {color8}; }
-#battery               { color: {color9}; }
-#bluetooth             { color: {color14}; }
-#custom-screenshot     { color: {color6}; }
-#custom-power          { color: {color1}; }
+#clock            { color: {color1}; }
+#window           { color: {color4}; }
+#custom-updates   { color: {color4}; }
+#custom-spotify   { color: {color5}; border-color: {color5}; padding: 0 14px; }
+
+#custom-firefox   { color: {color4}; }
+#custom-steam     { color: {color13}; }
+
+#custom-system    { color: {color1}; }
+
+#network          { color: {color1}; }
+#pulseaudio       { color: {color6}; }
+#backlight        { color: {color8}; }
+#battery          { color: {color9}; }
+#bluetooth        { color: {color14}; }
+
+#custom-screenshot { color: {color6}; }
+#custom-power      { color: {color1}; }
+
+/* --- Dynamic system states --- */
+#custom-system.warning {
+    color: {color3};
+    border-color: {color3};
+}
+
+#custom-system.critical {
+    color: {color9};
+    border-color: {color9};
+}
+
+/* --- Compact icon modules --- */
+#custom-firefox,
+#custom-steam,
+#battery,
+#backlight,
+#pulseaudio,
+#network,
+#bluetooth,
+#tray,
+#custom-screenshot,
+#custom-power {
+    padding: 0 8px;
+}
+
 /* --- Workspaces --- */
 #workspaces button {
     background: transparent;
@@ -61,7 +88,29 @@ window#waybar {
     border: none;
     padding: 0 5px;
 }
-#workspaces button.active { color: {color1}; }
+
+#workspaces button.active {
+    color: {color1};
+}
+
+/* --- Hover effects (subtle but nice) --- */
+#custom-system:hover,
+#custom-firefox:hover,
+#custom-steam:hover,
+#pulseaudio:hover,
+#network:hover,
+#bluetooth:hover,
+#battery:hover,
+#custom-power:hover,
+#custom-screenshot:hover {
+    background-color: {color0};
+    transition: all 0.2s ease;
+}
+
+/* --- Tray --- */
+#tray {
+    padding: 0 6px;
+}
 
 /* --- Tooltip --- */
 tooltip {
@@ -69,6 +118,7 @@ tooltip {
     border: 2px solid {color1};
     border-radius: 4px;
 }
+
 tooltip label {
     color: {foreground};
     padding: 8px;
