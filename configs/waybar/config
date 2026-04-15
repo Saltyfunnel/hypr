@@ -4,8 +4,6 @@
   "spacing": 4,
 
   "modules-left": [
-    "custom/firefox",
-    "custom/steam",
     "hyprland/workspaces",
     "hyprland/window"
   ],
@@ -16,6 +14,8 @@
   ],
 
   "modules-right": [
+    "custom/firefox",
+    "custom/steam",
     "custom/updates",
     "custom/system",
     "battery",
