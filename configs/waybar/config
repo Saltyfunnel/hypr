@@ -1,182 +1,152 @@
 {
   "layer": "top",
   "position": "top",
-  "mod": "dock",
-  "exclusive": true,
-  "passthrough": false,
-  "spacing": 2,
+  "spacing": 4,
+
   "modules-left": [
+    "custom/firefox",
+    "custom/steam",
     "hyprland/workspaces",
     "hyprland/window"
   ],
+
   "modules-center": [
-    "clock"
+    "clock",
+    "custom/spotify"
   ],
+
   "modules-right": [
     "custom/updates",
-    "custom/spotify",
-    "custom/firefox",
-    "custom/steam",
-    "memory",
-    "cpu",
-    "temperature",
-    "temperature#gpu",
+    "custom/system",
     "battery",
     "backlight",
     "pulseaudio",
-    "pulseaudio#microphone",
     "network",
     "bluetooth",
+    "tray",
     "custom/screenshot",
     "custom/power"
   ],
-  "cpu": {
-    "format": " {usage}%",
-    "on-click": "kitty -- btop",
-    "tooltip": true,
-    "tooltip-format": "󰻠 CPU Usage: {usage}%\n󰏗 Cores: {core0}% {core1}% {core2}% {core3}%\n\n click  open btop"
+
+  "custom/system": {
+    "exec": "~/.config/waybar/scripts/system-info.sh",
+    "interval": 5,
+    "return-type": "json",
+    "on-click": "kitty -- btop"
   },
-  "memory": {
-    "format": " {used}GB",
-    "on-click": "kitty -- btop",
-    "tooltip": true,
-    "tooltip-format": "󰍛 RAM: {used:0.1f} / {total:0.1f} GiB ({percentage}%)\n󰾆 Swap: {swapUsed:0.1f} / {swapTotal:0.1f} GiB\n\n click  open btop"
-  },
+
   "custom/updates": {
-    "exec": "count=$(checkupdates 2>/dev/null | wc -l); aur=$(yay -Qua 2>/dev/null | wc -l); total=$((count + aur)); [ $total -gt 0 ] && echo \"󰚰 $total\" || echo ''",
-    "return-type": "",
-    "format": "{}",
-    "interval": 3600,
+    "exec": "count=$(checkupdates 2>/dev/null | wc -l); aur=$(yay -Qua 2>/dev/null | wc -l); total=$((count + aur)); [ \"$total\" -gt 0 ] && echo \"󰚰 $total\" || echo ''",
+    "interval": 1800,
     "on-click": "kitty -- yay",
     "tooltip": true,
     "tooltip-format": "󰚰 Updates available\n\n click  run yay"
   },
+
+  "custom/spotify": {
+    "exec": "playerctl metadata --format '󰓇 {{ artist }} - {{ title }}' 2>/dev/null",
+    "exec-if": "playerctl status 2>/dev/null",
+    "interval": 5,
+    "on-click": "playerctl play-pause",
+    "max-length": 30
+  },
+
+  "custom/firefox": {
+    "format": "󰈹",
+    "on-click": "firefox",
+    "tooltip": true,
+    "tooltip-format": "Launch Firefox"
+  },
+
+  "custom/steam": {
+    "format": "󰓓",
+    "on-click": "steam",
+    "tooltip": true,
+    "tooltip-format": "Launch Steam"
+  },
+
   "custom/screenshot": {
     "format": "󰹑",
     "on-click": "~/.config/scripts/screenshot.sh area",
     "on-click-middle": "~/.config/scripts/screenshot.sh window",
     "on-click-right": "~/.config/scripts/screenshot.sh screen",
     "tooltip": true,
-    "tooltip-format": "󰹑 Screenshot\n\n click  area selection\n middle  active window\n right  fullscreen"
+    "tooltip-format": "󰹑 Screenshot\n\n click  area\n middle  window\n right  screen"
   },
-  "custom/spotify": {
-    "exec": "playerctl -p spotify metadata --format '󰓇 {{ artist }} - {{ title }}' 2>/dev/null || echo ''",
-    "exec-if": "playerctl -p spotify status 2>/dev/null | grep -q 'Playing\\|Paused'",
-    "return-type": "",
-    "format": "{}",
-    "interval": 3,
-    "on-click": "playerctl -p spotify play-pause",
-    "tooltip": true,
-    "tooltip-format": "󰓇 Spotify\n\n click  play / pause",
-    "max-length": 25
-  },
-  "custom/firefox": {
-    "exec": "pgrep -x firefox >/dev/null && echo '󰈹' || echo ''",
-    "return-type": "",
-    "format": "{}",
-    "interval": 5,
-    "tooltip": true,
-    "tooltip-format": "󰈹 Firefox is running"
-  },
-  "custom/steam": {
-    "exec": "pgrep -x steam >/dev/null && echo '󰓓' || echo ''",
-    "return-type": "",
-    "format": "{}",
-    "interval": 5,
-    "tooltip": true,
-    "tooltip-format": "󰓓 Steam is running"
-  },
+
   "custom/power": {
     "format": "⏻",
     "on-click": "systemctl poweroff",
     "on-click-middle": "hyprctl dispatch exit",
     "on-click-right": "systemctl reboot",
     "tooltip": true,
-    "tooltip-format": "⏻ Power\n\n click  shutdown\n middle  log out\n right  reboot"
+    "tooltip-format": "⏻ Power\n\n click  shutdown\n middle  logout\n right  reboot"
   },
+
   "pulseaudio": {
-    "format": "{icon} {volume}%",
-    "format-muted": "󰝟 muted",
+    "format": "{icon}",
+    "format-muted": "󰝟",
     "format-icons": {
       "default": ["󰕿", "󰖀", "󰕾"]
     },
     "on-click": "pavucontrol",
-    "tooltip": true,
-    "tooltip-format": "{icon} Volume: {volume}%\n󰓃 Output: {desc}\n\n click  open pavucontrol"
+    "tooltip-format": "Volume: {volume}%\n{desc}"
   },
-  "pulseaudio#microphone": {
-    "format": "󰍬 {volume}%",
-    "format-muted": "󰍭 muted",
-    "on-click": "pamixer --default-source -t",
-    "tooltip": true,
-    "tooltip-format": "󰍬 Mic: {volume}%\n\n click  toggle mute"
-  },
-"network": {
+
+  "network": {
     "format-wifi": "󰤨",
     "format-ethernet": "󰈀",
     "format-disconnected": "󰤭",
-    "interval": 2,
-    "tooltip": true,
-    "tooltip-format-wifi": "󰤨 {essid}\n󰩟 {ipaddr}\n󰜂 {signaldBm}dBm  󰜃 {frequency}GHz\n⬆ {bandwidthUpBits}  ⬇ {bandwidthDownBits}\n\n click  open nmtui",
-    "tooltip-format-ethernet": "󰈀 {ifname}\n󰩟 {ipaddr}\n⬆ {bandwidthUpBits}  ⬇ {bandwidthDownBits}\n\n click  open nmtui",
-    "tooltip-format-disconnected": "󰤭 no network connection",
-    "on-click": "kitty -- nmtui"
-},
+    "interval": 5,
+    "on-click": "kitty -- nmtui",
+    "tooltip-format-wifi": "{essid}\n{ipaddr}",
+    "tooltip-format-ethernet": "{ifname}\n{ipaddr}"
+  },
+
   "hyprland/workspaces": {
     "format": "{name}",
     "persistent-workspaces": {
       "*": 3
     }
   },
+
   "hyprland/window": {
     "format": "󰣇  {}",
-    "tooltip": true,
-    "tooltip-format": "{}"
+    "max-length": 50
   },
+
   "clock": {
-    "format": "{:%H:%M}",
-    "tooltip": true,
-    "tooltip-format": "{:%A, %B %d, %Y}\n󰃰 week {:%V}"
+    "format": " {:%H:%M}",
+    "tooltip-format": "{:%A, %B %d, %Y}\nweek {:%V}"
   },
-  "temperature": {
-    "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
-    "format": "󰔏 {temperatureC}°C",
-    "tooltip": true,
-    "critical-threshold": 80,
-    "tooltip-format": "󰔏 CPU Temp: {temperatureC}°C / {temperatureF}°F"
-  },
-  "temperature#gpu": {
-    "hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
-    "format": "󱤓 {temperatureC}°C",
-    "tooltip": true,
-    "critical-threshold": 85,
-    "tooltip-format": "󱤓 GPU Temp: {temperatureC}°C / {temperatureF}°F"
-  },
-"battery": {
+
+  "battery": {
     "states": {
-        "warning": 30,
-        "critical": 15
+      "warning": 30,
+      "critical": 15
     },
-    "format": "{icon} {capacity}%",
-    "format-charging": "󰂄 {capacity}%",
-    "format-plugged": "󱐋 {capacity}%",
-    "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
-},
-  "backlight": {
-    "format": "{icon} {percent}%",
-    "format-icons": ["󰃞","󰃟","󰃠"],
-    "tooltip": true,
-    "tooltip-format": "{icon} Brightness: {percent}%"
+    "format": "{icon}",
+    "format-charging": "󰂄",
+    "format-plugged": "󱐋",
+    "tooltip-format": "{capacity}%"
   },
+
+  "backlight": {
+    "format": "{icon}",
+    "format-icons": ["󰃞","󰃟","󰃠"],
+    "on-scroll-up": "brightnessctl set +5%",
+    "on-scroll-down": "brightnessctl set 5%-"
+  },
+
   "bluetooth": {
     "format": "󰂯",
     "format-connected": "󰂱",
-    "format-disabled": "󰂲",
     "format-off": "󰂲",
     "on-click": "blueman-manager",
-    "tooltip": true,
-    "tooltip-format": "󰂯 Bluetooth: {status}\n\n click  open blueman",
-    "tooltip-format-connected": "󰂱 Connected: {device_alias}\n\n click  open blueman",
-    "tooltip-format-connected-battery": "󰂱 {device_alias} — {device_battery_percentage}%\n\n click  open blueman"
+    "tooltip-format": "{status}"
+  },
+
+  "tray": {
+    "spacing": 6
   }
 }
