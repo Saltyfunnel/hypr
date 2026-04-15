@@ -52,18 +52,18 @@
   },
 
   "custom/firefox": {
-    "format": "󰈹",
-    "on-click": "firefox",
-    "tooltip": true,
-    "tooltip-format": "Launch Firefox"
-  },
+  "exec": "pgrep -x firefox >/dev/null && echo '󰈹'",
+  "interval": 10,
+  "format": "{}",
+  "tooltip": false
+},
 
-  "custom/steam": {
-    "format": "󰓓",
-    "on-click": "steam",
-    "tooltip": true,
-    "tooltip-format": "Launch Steam"
-  },
+"custom/steam": {
+  "exec": "pgrep -x steam >/dev/null && echo '󰓓'",
+  "interval": 10,
+  "format": "{}",
+  "tooltip": false
+},
 
   "custom/screenshot": {
     "format": "󰹑",
