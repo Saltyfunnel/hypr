@@ -160,7 +160,8 @@ elif echo "$GPU_INFO" | grep -qi amd; then
         "Installing AMD drivers & Vulkan support"
 elif echo "$GPU_INFO" | grep -qi intel; then
     echo -e "    ${BBLK}gpu${RST}    ${WHT}Intel${RST}"
-    run_command "pacman -S --noconfirm --needed mesa vulkan-intel lib32-vulkan-intel linux-headers" \
+    run_command "pacman -Sy --noconfirm" "Syncing repositories"
+    run_command "pacman -S --noconfirm --needed mesa lib32-mesa vulkan-intel lib32-vulkan-intel linux-headers" \
         "Installing Intel drivers & Vulkan support"
 else
     echo -e "    ${BBLK}gpu${RST}    ${WHT}generic${RST}"
