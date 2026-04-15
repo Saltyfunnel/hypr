@@ -152,12 +152,16 @@
     "critical-threshold": 85,
     "tooltip-format": "󱤓 GPU Temp: {temperatureC}°C / {temperatureF}°F"
   },
-  "battery": {
+"battery": {
+    "states": {
+        "warning": 30,
+        "critical": 15
+    },
     "format": "{icon} {capacity}%",
-    "format-icons": ["󰂃","󰁺","󰁻","󰁼","󰁽","󰁾","󰁿","󰂀","󰂁","󰂂","󰁹"],
-    "tooltip": true,
-    "tooltip-format": "{icon} Battery: {capacity}%\n󰔟 {timeTo}"
-  },
+    "format-charging": "󰂄 {capacity}%",
+    "format-plugged": "󱐋 {capacity}%",
+    "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
+},
   "backlight": {
     "format": "{icon} {percent}%",
     "format-icons": ["󰃞","󰃟","󰃠"],
