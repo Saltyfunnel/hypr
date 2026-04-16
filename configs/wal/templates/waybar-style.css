@@ -71,6 +71,9 @@ window#waybar {
 #bluetooth             { color: {color14}; }
 #custom-screenshot     { color: {color6}; }
 #custom-power          { color: {color1}; }
+#custom-spotify        { color: {color10}; }
+#custom-firefox        { color: {color9}; }
+#custom-steam          { color: {color13}; }
 
 /* --- Workspaces --- */
 #workspaces button {
