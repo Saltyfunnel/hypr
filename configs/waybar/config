@@ -55,11 +55,14 @@
     "format": " {percentage}%",
     "on-click": "kitty -e btop"
   },
-  "custom/updates": {
+   "custom/updates": {
     "exec": "count=$(checkupdates 2>/dev/null | wc -l); aur=$(yay -Qua 2>/dev/null | wc -l); total=$((count + aur)); [ $total -gt 0 ] && echo \"󰚰 $total\" || echo ''",
+    "return-type": "",
     "format": "{}",
     "interval": 3600,
-    "on-click": "kitty -e yay"
+    "on-click": "kitty -- yay",
+    "tooltip": true,
+    "tooltip-format": "󰚰 Updates available\n\n click  run yay"
   },
   "custom/screenshot": {
     "format": "󰹑",
