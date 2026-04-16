@@ -11,13 +11,11 @@ window#waybar {
     border: none;
 }
 
-/* --- Shared module base --- */
+/* --- Standard Modules --- */
 #window, #clock, #workspaces,
-#custom-menu-icon, #custom-updates, #custom-spotify,
-#custom-firefox, #custom-steam, #memory, #cpu,
-#temperature, #temperature-gpu,
-#battery, #backlight, #pulseaudio,
-#pulseaudio-microphone, #network,
+#custom-updates, #custom-spotify,
+#custom-firefox, #custom-steam,
+#pulseaudio, #pulseaudio-microphone, #network,
 #bluetooth, #custom-screenshot, #custom-power {
     background-color: {background};
     border: 3px solid {color1};
@@ -25,35 +23,55 @@ window#waybar {
     margin: 3px 1px;
     padding: 0 10px;
     min-height: 20px;
-    min-width: 10px;
 }
 
-/* left/center modules side padding */
-#window, #clock, #workspaces {
-    margin: 3px 5px;
-    padding: 0 12px;
+/* --- THE HARDWARE PILL --- */
+#hardware {
+    background-color: {background};
+    border: 3px solid {color1};
+    border-radius: 8px;
+    margin: 3px 1px;
+    padding: 0px;
+    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* --- Colors --- */
+#hardware:hover {
+    box-shadow: 0 0 4px {color1};
+}
+
+#custom-system-icon, #memory, #cpu, #temperature, #temperature-gpu, #backlight, #battery {
+    background: transparent;
+    border: none;
+    margin: 0;
+    padding: 0 8px;
+    min-height: 20px;
+}
+
+#custom-system-icon {
+    color: {color1};
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* Hardware Colors */
+#memory          { color: {color2}; }
+#cpu             { color: {color1}; }
+#temperature     { color: {color3}; }
+#temperature-gpu { color: {color4}; }
+#backlight       { color: {color8}; }
+#battery         { color: {color9}; padding-left: 10px; }
+
+/* --- Text Colors --- */
 #clock                 { color: {color1}; }
 #window                { color: {color4}; }
-#custom-menu-icon      { color: {color3}; }
 #custom-updates        { color: {color4}; }
 #custom-spotify        { color: {color5}; }
-#custom-firefox        { color: {color4}; }
-#custom-steam          { color: {color13}; }
-#cpu                   { color: {color1}; }
-#memory                { color: {color2}; }
-#temperature           { color: {color3}; }
-#temperature-gpu       { color: {color4}; }
 #network               { color: {color1}; }
 #pulseaudio            { color: {color6}; }
-#pulseaudio-microphone { color: {color7}; }
-#backlight             { color: {color8}; }
-#battery               { color: {color9}; }
 #bluetooth             { color: {color14}; }
 #custom-screenshot     { color: {color6}; }
 #custom-power          { color: {color1}; }
+
 /* --- Workspaces --- */
 #workspaces button {
     background: transparent;
@@ -63,11 +81,11 @@ window#waybar {
 }
 #workspaces button.active { color: {color1}; }
 
-/* --- Tooltip --- */
+/* --- Tooltip (The Hover Box) --- */
 tooltip {
     background: {background};
     border: 2px solid {color1};
-    border-radius: 4px;
+    border-radius: 8px;
 }
 tooltip label {
     color: {foreground};
