@@ -123,9 +123,11 @@
   "hyprland/window": {
     "format": "󰣇  {}"
   },
-  "clock": {
-    "format": "{:%H:%M}"
-  },
+ "clock": {
+  "format": "{:%H:%M}",
+  "tooltip": true,
+ "tooltip-format": "{:%A, %d %B %Y}\n\n{calendar}"
+},
   "temperature": {
     "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
     "format": " {temperatureC}°C"
