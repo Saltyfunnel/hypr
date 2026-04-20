@@ -89,10 +89,14 @@
     "format": "{}",
     "interval": 5
   },
-  "custom/power": {
-    "format": "⏻",
-    "on-click": "systemctl poweroff"
-  },
+"custom/power": {
+  "format": "⏻",
+  "on-click": "systemctl poweroff",
+  "on-click-middle": "hyprctl dispatch exit",
+  "on-click-right": "systemctl reboot",
+  "tooltip": true,
+  "tooltip-format": "L: Shutdown\nM: Log out\nR: Reboot"
+},
   "pulseaudio": {
     "format": "{icon} {volume}%",
     "format-muted": "󰝟",
