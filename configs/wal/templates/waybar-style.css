@@ -19,18 +19,18 @@ window#waybar {
 #bluetooth, #custom-screenshot, #custom-power {
     background-color: {background};
     border: 3px solid {color1};
-    border-radius: 8px;
-    margin: 3px 1px;
-    padding: 0 10px;
-    min-height: 20px;
+    border-radius: 16px; /* smoother rounding */
+    margin: 4px 3px;     /* more breathing room */
+    padding: 0 12px;     /* helps the pill shape */
+    min-height: 24px;
 }
 
 /* --- THE HARDWARE PILL --- */
 #hardware {
     background-color: {background};
     border: 3px solid {color1};
-    border-radius: 8px;
-    margin: 3px 1px;
+    border-radius: 16px;
+    margin: 2px 6px;
     padding: 0px;
     transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
