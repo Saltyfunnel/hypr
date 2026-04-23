@@ -11,25 +11,24 @@ window#waybar {
     border: none;
 }
 
-/* --- Standard Modules --- */
+/* --- Standard Modules (Stand-alone pills) --- */
 #window, #clock, #workspaces,
 #custom-updates, #custom-spotify,
-#custom-firefox, #custom-steam,
-#network, #bluetooth, #custom-screenshot, #custom-power {
+#custom-firefox, #custom-steam {
     background-color: {background};
     border: 3px solid {color1};
-    border-radius: 16px; /* smoother rounding */
-    margin: 4px 3px;     /* more breathing room */
-    padding: 0 12px;     /* helps the pill shape */
+    border-radius: 16px;
+    margin: 4px 3px;
+    padding: 0 12px;
     min-height: 24px;
 }
 
-/* --- THE HARDWARE PILL --- */
+/* --- THE HARDWARE PILL (The Drawer Container) --- */
 #hardware {
     background-color: {background};
     border: 3px solid {color1};
     border-radius: 16px;
-    margin: 2px 6px;
+    margin: 4px 3px;
     padding: 0px;
     transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -38,43 +37,45 @@ window#waybar {
     box-shadow: 0 0 4px {color1};
 }
 
-#custom-system-icon, #memory, #cpu, #temperature, #temperature-gpu, #backlight, #battery, #pulseaudio, #pulseaudio-microphone {
+/* Internal modules inside the hardware drawer */
+#custom-power, #memory, #cpu, #temperature,
+#temperature-gpu, #backlight, #battery, #pulseaudio,
+#pulseaudio-microphone, #network, #bluetooth,
+#custom-screenshot {
     background: transparent;
     border: none;
     margin: 0;
     padding: 0 8px;
-    min-height: 20px;
+    min-height: 24px;
 }
 
-#custom-system-icon {
+/* The Anchor Icon (Power) */
+#custom-power {
     color: {color1};
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 14px;
+    padding-right: 14px;
 }
 
 /* Hardware Colors */
-#memory          { color: {color2}; }
-#cpu             { color: {color1}; }
-#temperature     { color: {color3}; }
-#temperature-gpu { color: {color4}; }
-#backlight       { color: {color8}; }
-#battery         { color: {color9}; padding-left: 10px; }
-#pulseaudio      { color: {color8}; }
-#pulseaudio-microphone  { color: {color8}; }
+#memory           { color: {color2}; }
+#cpu              { color: {color1}; }
+#temperature      { color: {color3}; }
+#temperature-gpu  { color: {color4}; }
+#backlight        { color: {color8}; }
+#battery          { color: {color9}; }
+#pulseaudio       { color: {color8}; }
+#pulseaudio-microphone { color: {color8}; }
+#network          { color: {color2}; }
+#bluetooth        { color: {color2}; }
+#custom-screenshot { color: {color2}; }
 
 /* --- Text Colors --- */
-#clock                 { color: {color1}; }
-#window                { color: {color4}; }
-#custom-updates        { color: {color4}; }
-#custom-spotify        { color: {color5}; }
-#network               { color: {color1}; }
-#pulseaudio            { color: {color6}; }
-#bluetooth             { color: {color14}; }
-#custom-screenshot     { color: {color6}; }
-#custom-power          { color: {color1}; }
-#custom-spotify        { color: {color10}; }
-#custom-firefox        { color: {color9}; }
-#custom-steam          { color: {color13}; }
+#clock            { color: {color1}; }
+#window           { color: {color4}; }
+#custom-updates   { color: {color4}; }
+#custom-spotify   { color: {color10}; }
+#custom-firefox   { color: {color9}; }
+#custom-steam     { color: {color13}; }
 
 /* --- Workspaces --- */
 #workspaces button {
@@ -85,7 +86,7 @@ window#waybar {
 }
 #workspaces button.active { color: {color1}; }
 
-/* --- Tooltip (The Hover Box) --- */
+/* --- Tooltip --- */
 tooltip {
     background: {background};
     border: 2px solid {color1};
