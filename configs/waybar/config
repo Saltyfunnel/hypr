@@ -17,12 +17,9 @@
     "custom/spotify",
     "custom/firefox",
     "custom/steam",
-    "group/hardware",
-    "network",
-    "bluetooth",
-    "custom/screenshot",
-    "custom/power"
+    "group/hardware"
   ],
+
   "group/hardware": {
     "orientation": "horizontal",
     "drawer": {
@@ -31,7 +28,7 @@
       "transition-left-to-right": false
     },
     "modules": [
-      "custom/system-icon",
+      "custom/power",
       "memory",
       "cpu",
       "temperature",
@@ -39,31 +36,33 @@
       "backlight",
       "battery",
       "pulseaudio",
-      "pulseaudio#microphone"
+      "pulseaudio#microphone",
+      "network",
+      "bluetooth",
+      "custom/screenshot"
     ]
   },
-  "custom/system-icon": {
-    "format": "󰘚",
-    "on-click": "kitty -e btop",
-    "tooltip": false
-  },
+
   "cpu": {
     "format": " {usage}%",
     "on-click": "kitty -e btop"
   },
+
   "memory": {
     "format": " {percentage}%",
     "on-click": "kitty -e btop"
   },
-   "custom/updates": {
+
+  "custom/updates": {
     "exec": "count=$(checkupdates 2>/dev/null | wc -l); aur=$(yay -Qua 2>/dev/null | wc -l); total=$((count + aur)); [ $total -gt 0 ] && echo \"󰚰 $total\" || echo ''",
     "return-type": "",
     "format": "{}",
     "interval": 3600,
     "on-click": "kitty -- yay",
     "tooltip": true,
-    "tooltip-format": "󰚰 Updates available\n\n click  run yay"
+    "tooltip-format": "󰚰 Updates available\n\n click run yay"
   },
+
   "custom/screenshot": {
     "format": "󰹑",
     "on-click": "~/.config/scripts/screenshot.sh area",
@@ -72,6 +71,7 @@
     "tooltip": true,
     "tooltip-format": "L: Select Area\nM: Window\nR: Fullscreen"
   },
+
   "custom/spotify": {
     "exec": "playerctl -p spotify metadata --format '󰓇 {{ artist }} - {{ title }}' 2>/dev/null || echo ''",
     "exec-if": "playerctl -p spotify status 2>/dev/null | grep -q 'Playing\\|Paused'",
@@ -79,24 +79,28 @@
     "interval": 3,
     "max-length": 25
   },
+
   "custom/firefox": {
     "exec": "pgrep -x firefox >/dev/null && echo '󰈹' || echo ''",
     "format": "{}",
     "interval": 5
   },
+
   "custom/steam": {
     "exec": "pgrep -x steam >/dev/null && echo '󰓓' || echo ''",
     "format": "{}",
     "interval": 5
   },
-"custom/power": {
-  "format": "⏻",
-  "on-click": "systemctl poweroff",
-  "on-click-middle": "hyprctl dispatch exit",
-  "on-click-right": "systemctl reboot",
-  "tooltip": true,
-  "tooltip-format": "L: Shutdown\nM: Log out\nR: Reboot"
-},
+
+  "custom/power": {
+    "format": "⏻",
+    "on-click": "systemctl poweroff",
+    "on-click-middle": "hyprctl dispatch exit",
+    "on-click-right": "systemctl reboot",
+    "tooltip": true,
+    "tooltip-format": "L: Shutdown\nM: Log out\nR: Reboot"
+  },
+
   "pulseaudio": {
     "format": "{icon} {volume}%",
     "format-muted": "󰝟",
@@ -105,45 +109,55 @@
     },
     "on-click": "pavucontrol"
   },
+
   "pulseaudio#microphone": {
     "format": "󰍬 {volume}%",
     "format-muted": "󰍭",
     "on-click": "pamixer --default-source -t"
   },
+
   "network": {
     "format-wifi": "󰤨",
     "format-ethernet": "󰈀",
     "format-disconnected": "󰤭",
     "on-click": "kitty -e nmtui"
   },
+
   "hyprland/workspaces": {
     "format": "{name}",
     "persistent-workspaces": { "*" : 3 }
   },
+
   "hyprland/window": {
-    "format": "󰣇  {}"
+    "format": "󰣇 {}"
   },
- "clock": {
-  "format": "{:%H:%M}",
-  "tooltip": true,
- "tooltip-format": "{:%A, %d %B %Y}\n\n{calendar}"
-},
+
+  "clock": {
+    "format": "{:%H:%M}",
+    "tooltip": true,
+    "tooltip-format": "{:%A, %d %B %Y}\n\n{calendar}"
+  },
+
   "temperature": {
     "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
     "format": " {temperatureC}°C"
   },
+
   "temperature#gpu": {
     "hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
     "format": "󱤓 {temperatureC}°C"
   },
+
   "battery": {
     "format": "{icon} {capacity}%",
     "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
   },
+
   "backlight": {
     "format": "{icon} {percent}%",
     "format-icons": ["󰃞", "󰃟", "󰃠"]
   },
+
   "bluetooth": {
     "format": "󰂯",
     "on-click": "blueman-manager"
