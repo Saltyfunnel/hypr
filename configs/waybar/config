@@ -18,8 +18,6 @@
     "custom/firefox",
     "custom/steam",
     "group/hardware",
-    "pulseaudio",
-    "pulseaudio#microphone",
     "network",
     "bluetooth",
     "custom/screenshot",
@@ -39,7 +37,9 @@
       "temperature",
       "temperature#gpu",
       "backlight",
-      "battery"
+      "battery",
+      "pulseaudio",
+      "pulseaudio#microphone"
     ]
   },
   "custom/system-icon": {
