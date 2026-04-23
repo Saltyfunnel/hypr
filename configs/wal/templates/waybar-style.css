@@ -15,8 +15,7 @@ window#waybar {
 #window, #clock, #workspaces,
 #custom-updates, #custom-spotify,
 #custom-firefox, #custom-steam,
-#pulseaudio, #pulseaudio-microphone, #network,
-#bluetooth, #custom-screenshot, #custom-power {
+#network, #bluetooth, #custom-screenshot, #custom-power {
     background-color: {background};
     border: 3px solid {color1};
     border-radius: 16px; /* smoother rounding */
@@ -39,7 +38,7 @@ window#waybar {
     box-shadow: 0 0 4px {color1};
 }
 
-#custom-system-icon, #memory, #cpu, #temperature, #temperature-gpu, #backlight, #battery {
+#custom-system-icon, #memory, #cpu, #temperature, #temperature-gpu, #backlight, #battery, #pulseaudio, #pulseaudio-microphone {
     background: transparent;
     border: none;
     margin: 0;
@@ -60,6 +59,8 @@ window#waybar {
 #temperature-gpu { color: {color4}; }
 #backlight       { color: {color8}; }
 #battery         { color: {color9}; padding-left: 10px; }
+#pulseaudio      { color: {color8}; }
+#pulseaudio-microphone  { color: {color8}; }
 
 /* --- Text Colors --- */
 #clock                 { color: {color1}; }
