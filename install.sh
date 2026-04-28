@@ -244,7 +244,7 @@ fi
 
 sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 python-pywalfox \
     > /tmp/hypr_install_log 2>&1 &
-spinner "$!" "Installing pywal16, pywalfox"
+spinner "$!" "Installing pywal16, pywalfox, nordzy-cursors"
 wait $! || print_err "AUR install failed  →  /tmp/hypr_install_log"
 print_ok "AUR packages installed"
 
