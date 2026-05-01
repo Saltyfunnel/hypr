@@ -321,40 +321,47 @@ print_ok "GTK4 dark theme configured"
 
 print_phase "GPU environment"
 
-GPU_ENV_FILE="$CONFIG_DIR/hypr/gpu-env.conf"
-sudo -u "$USER_NAME" bash -c "echo '# GPU environment — auto-generated' > '$GPU_ENV_FILE'"
+GPU_ENV_FILE="$CONFIG_DIR/hypr/gpu-env.lua"
+sudo -u "$USER_NAME" bash -c "echo '-- GPU environment — auto-generated' > '$GPU_ENV_FILE'"
 
 if echo "$GPU_INFO" | grep -qi nvidia; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
-env = LIBVA_DRIVER_NAME,nvidia
-env = XDG_SESSION_TYPE,wayland
-env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-env = GBM_BACKEND,nvidia-drm
-env = WLR_NO_HARDWARE_CURSORS,1
-env = __GL_GSYNC_ALLOWED,1
-env = __GL_VRR_ALLOWED,1
-env = QT_QPA_PLATFORM,wayland
-cursor { no_hardware_cursors = true }
+return {
+  LIBVA_DRIVER_NAME          = "nvidia",
+  XDG_SESSION_TYPE           = "wayland",
+  __GLX_VENDOR_LIBRARY_NAME  = "nvidia",
+  GBM_BACKEND                = "nvidia-drm",
+  WLR_NO_HARDWARE_CURSORS    = "1",
+  __GL_GSYNC_ALLOWED         = "1",
+  __GL_VRR_ALLOWED           = "1",
+  QT_QPA_PLATFORM            = "wayland",
+}
 EOF
 elif echo "$GPU_INFO" | grep -qi amd; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
-env = LIBVA_DRIVER_NAME,radeonsi
-env = XDG_SESSION_TYPE,wayland
-env = QT_QPA_PLATFORM,wayland
+return {
+  LIBVA_DRIVER_NAME = "radeonsi",
+  XDG_SESSION_TYPE  = "wayland",
+  QT_QPA_PLATFORM   = "wayland",
+}
 EOF
 elif echo "$GPU_INFO" | grep -qi intel; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
-env = LIBVA_DRIVER_NAME,iHD
-env = XDG_SESSION_TYPE,wayland
-env = QT_QPA_PLATFORM,wayland
+return {
+  LIBVA_DRIVER_NAME = "iHD",
+  XDG_SESSION_TYPE  = "wayland",
+  QT_QPA_PLATFORM   = "wayland",
+}
 EOF
 else
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
-env = XDG_SESSION_TYPE,wayland
-env = QT_QPA_PLATFORM,wayland
+return {
+  XDG_SESSION_TYPE = "wayland",
+  QT_QPA_PLATFORM  = "wayland",
+}
 EOF
 fi
-print_ok "GPU env written  →  hypr/gpu-env.conf"
+print_ok "GPU env written  →  hypr/gpu-env.lua"
 
 ################################################################################
 # SCRIPTS, WALLPAPERS & SHELL
