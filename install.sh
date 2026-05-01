@@ -244,7 +244,7 @@ fi
 
 sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 python-pywalfox \
     > /tmp/hypr_install_log 2>&1 &
-spinner "$!" "Installing pywal16, pywalfox"
+spinner "$!" "Installing pywal16, pywalfox, nordzy-cursors"
 wait $! || print_err "AUR install failed  →  /tmp/hypr_install_log"
 print_ok "AUR packages installed"
 
@@ -282,6 +282,7 @@ print_phase "Configuration files"
 OLD_SYMLINKS=(
     "$CONFIG_DIR/waybar/style.css"
     "$CONFIG_DIR/kitty/kitty.conf"
+    "$CONFIG_DIR/hypr/colors-hyprland.conf"
     "$CONFIG_DIR/mako/config"
     "$CONFIG_DIR/zed/themes/zed.json"
 )
@@ -315,53 +316,64 @@ gtk-application-prefer-dark-theme=1
 EOF"
 print_ok "GTK4 dark theme configured"
 
+if [[ ! -f "$CONFIGS_SRC/kitty/kitty.conf" ]]; then
+    sudo -u "$USER_NAME" cat > "$CONFIG_DIR/kitty/kitty.conf" << 'EOF'
+font_family      JetBrainsMono Nerd Font
+font_size        11.0
+window_padding_width 8
+confirm_os_window_close 0
+enable_audio_bell no
+tab_bar_edge bottom
+tab_bar_style powerline
+tab_powerline_style slanted
+repaint_delay 10
+input_delay 3
+sync_to_monitor yes
+include ~/.cache/wal/kitty-wal.conf
+EOF
+    print_ok "Default kitty config written"
+fi
+
 ################################################################################
 # GPU-SPECIFIC ENVIRONMENT
 ################################################################################
 
 print_phase "GPU environment"
 
-GPU_ENV_FILE="$CONFIG_DIR/hypr/gpu-env.lua"
-sudo -u "$USER_NAME" bash -c "echo '-- GPU environment — auto-generated' > '$GPU_ENV_FILE'"
+GPU_ENV_FILE="$CONFIG_DIR/hypr/gpu-env.conf"
+sudo -u "$USER_NAME" bash -c "echo '# GPU environment — auto-generated' > '$GPU_ENV_FILE'"
 
 if echo "$GPU_INFO" | grep -qi nvidia; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
-return {
-  LIBVA_DRIVER_NAME          = "nvidia",
-  XDG_SESSION_TYPE           = "wayland",
-  __GLX_VENDOR_LIBRARY_NAME  = "nvidia",
-  GBM_BACKEND                = "nvidia-drm",
-  WLR_NO_HARDWARE_CURSORS    = "1",
-  __GL_GSYNC_ALLOWED         = "1",
-  __GL_VRR_ALLOWED           = "1",
-  QT_QPA_PLATFORM            = "wayland",
-}
+env = LIBVA_DRIVER_NAME,nvidia
+env = XDG_SESSION_TYPE,wayland
+env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+env = GBM_BACKEND,nvidia-drm
+env = WLR_NO_HARDWARE_CURSORS,1
+env = __GL_GSYNC_ALLOWED,1
+env = __GL_VRR_ALLOWED,1
+env = QT_QPA_PLATFORM,wayland
+cursor { no_hardware_cursors = true }
 EOF
 elif echo "$GPU_INFO" | grep -qi amd; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
-return {
-  LIBVA_DRIVER_NAME = "radeonsi",
-  XDG_SESSION_TYPE  = "wayland",
-  QT_QPA_PLATFORM   = "wayland",
-}
+env = LIBVA_DRIVER_NAME,radeonsi
+env = XDG_SESSION_TYPE,wayland
+env = QT_QPA_PLATFORM,wayland
 EOF
 elif echo "$GPU_INFO" | grep -qi intel; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
-return {
-  LIBVA_DRIVER_NAME = "iHD",
-  XDG_SESSION_TYPE  = "wayland",
-  QT_QPA_PLATFORM   = "wayland",
-}
+env = LIBVA_DRIVER_NAME,iHD
+env = XDG_SESSION_TYPE,wayland
+env = QT_QPA_PLATFORM,wayland
 EOF
 else
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
-return {
-  XDG_SESSION_TYPE = "wayland",
-  QT_QPA_PLATFORM  = "wayland",
-}
+env = XDG_SESSION_TYPE,wayland
+env = QT_QPA_PLATFORM,wayland
 EOF
 fi
-print_ok "GPU env written  →  hypr/gpu-env.lua"
+print_ok "GPU env written  →  hypr/gpu-env.conf"
 
 ################################################################################
 # SCRIPTS, WALLPAPERS & SHELL
@@ -446,16 +458,20 @@ print_ok "Thunar 'Open Kitty Here' action configured"
 
 print_phase "Pywal symlinks"
 
-[[ -f "$CONFIG_DIR/wal/templates/waybar-style.css" ]] && \
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css" && \
+[[ -f "$CONFIG_DIR/wal/templates/waybar-style.css"     ]] && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css"     "$CONFIG_DIR/waybar/style.css"          && \
     print_ok "waybar/style.css"
 
-[[ -f "$CONFIG_DIR/wal/templates/mako-config" ]] && \
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config" && \
+[[ -f "$CONFIG_DIR/wal/templates/colors-hyprland.conf" ]] && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-hyprland.conf" "$CONFIG_DIR/hypr/colors-hyprland.conf" && \
+    print_ok "hypr/colors-hyprland.conf"
+
+[[ -f "$CONFIG_DIR/wal/templates/mako-config"          ]] && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config"          "$CONFIG_DIR/mako/config"               && \
     print_ok "mako/config"
 
-[[ -f "$CONFIG_DIR/wal/templates/zed.json" ]] && \
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-zed.json" "$CONFIG_DIR/zed/themes/zed.json" && \
+[[ -f "$CONFIG_DIR/wal/templates/zed.json"             ]] && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-zed.json"      "$CONFIG_DIR/zed/themes/zed.json"       && \
     print_ok "zed/themes/zed.json"
 
 ################################################################################
