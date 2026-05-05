@@ -7,25 +7,62 @@ from pathlib import Path
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 WALLPAPER_DIR = Path.home() / "Pictures/Wallpapers"
-GRID_COLS = 4
-TILE_W = 220
-TILE_H = int(TILE_W * 9 / 16)  # True 16:9 — 123px
-RADIUS = 10
-SPACING = 16
+FONT = "Hack Nerd Font"
 
+# ── Dimensions (mirrors app.py proportions) ───────────────────────────────────
+PREVIEW_W = 500   # left preview panel — same as app.py WALL_W
+WIN_W = 850
+WIN_H = 480
+THUMB_H = 56      # height of each thumb row in the right list
+THUMB_W = 80      # small thumbnail inside the row
+RADIUS = 8
+
+WAL_CACHE = Path.home() / ".cache/wal/colors.json"
+WAL_WALL  = Path.home() / ".cache/wal/wal"
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def load_pywal():
+    d = ("#1a1a1a", "#c0caf5", "#7aa2f7", "#bb9af7")
+    if not WAL_CACHE.exists():
+        return d
     try:
-        data = json.loads((Path.home() / ".cache/wal/colors.json").read_text())
-        c = data.get("colors", {})
+        data = json.loads(WAL_CACHE.read_text())
         return (
-            c.get("color0", "#1a1a1a"),
-            c.get("color7", "#ffffff"),
-            c.get("color4", "#3583f6"),
+            data["special"]["background"],
+            data["special"]["foreground"],
+            data["colors"].get("color4", d[2]),
+            data["colors"].get("color5", d[3]),
         )
     except Exception:
-        return "#1a1a1a", "#ffffff", "#3583f6"
+        return d
 
+
+def current_wall():
+    return WAL_WALL.read_text().strip() if WAL_WALL.exists() else None
+
+
+def mk_alpha(hex_c, a):
+    c = QtGui.QColor(hex_c)
+    c.setAlpha(a)
+    return c.name(QtGui.QColor.NameFormat.HexArgb)
+
+
+def load_preview(path, w, h):
+    """Scale + centre-crop an image to exactly w×h."""
+    if not path or not Path(path).exists():
+        return QtGui.QPixmap()
+    src = QtGui.QPixmap(str(path))
+    if src.isNull():
+        return QtGui.QPixmap()
+    scaled = src.scaledToHeight(h, QtCore.Qt.TransformationMode.SmoothTransformation)
+    if scaled.width() < w:
+        scaled = src.scaledToWidth(w, QtCore.Qt.TransformationMode.SmoothTransformation)
+    return scaled.copy((scaled.width() - w) // 2, 0, w, h)
+
+
+# ── Async thumb loader ────────────────────────────────────────────────────────
 
 class ThumbLoader(QtCore.QThread):
     loaded = QtCore.pyqtSignal(int, QtGui.QImage)
@@ -39,223 +76,300 @@ class ThumbLoader(QtCore.QThread):
             img = QtGui.QImage(str(wp))
             if not img.isNull():
                 img = img.scaled(
-                    TILE_W * 2,
-                    TILE_H * 2,
+                    THUMB_W * 2, THUMB_H * 2,
                     QtCore.Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                     QtCore.Qt.TransformationMode.SmoothTransformation,
                 )
             self.loaded.emit(i, img)
 
 
-class WallpaperTile(QtWidgets.QWidget):
-    clicked = QtCore.pyqtSignal(Path)
+# ── Single row in the right-hand list ────────────────────────────────────────
 
-    def __init__(self, path, accent, fg, bg):
-        super().__init__()
-        self.path = path
-        self.accent = QtGui.QColor(accent)
-        self.fg = QtGui.QColor(fg)
-        self.bg = QtGui.QColor(bg)
-        self.pixmap = QtGui.QPixmap()
-        self.hovered = False
-        # Fixed to exactly the image rect — no extra height for a label row
-        self.setFixedSize(TILE_W, TILE_H)
-        self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+class WallRow(QtWidgets.QWidget):
+    hovered   = QtCore.pyqtSignal(Path)   # emitted on enter
+    activated = QtCore.pyqtSignal(Path)   # emitted on click
 
-    def set_pixmap(self, img):
-        self.pixmap = QtGui.QPixmap.fromImage(img)
+    def __init__(self, path, accent, fg, active=False, parent=None):
+        super().__init__(parent)
+        self.path   = path
+        self._accent = accent
+        self._fg     = fg
+        self._active = active
+        self._hover  = False
+        self._thumb  = QtGui.QPixmap()
+
+        self.setFixedHeight(THUMB_H)
+        self.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+
+    # ── public slots ──────────────────────────────────────────────────────────
+
+    def set_thumb(self, img: QtGui.QImage):
+        self._thumb = QtGui.QPixmap.fromImage(img)
         self.update()
+
+    def set_active(self, state: bool):
+        self._active = state
+        self.update()
+
+    def update_colors(self, accent, fg):
+        self._accent, self._fg = accent, fg
+        self.update()
+
+    # ── events ────────────────────────────────────────────────────────────────
 
     def enterEvent(self, _):
-        self.hovered = True
+        self._hover = True
         self.update()
+        self.hovered.emit(self.path)
 
     def leaveEvent(self, _):
-        self.hovered = False
+        self._hover = False
         self.update()
 
     def mousePressEvent(self, e):
         if e.button() == QtCore.Qt.MouseButton.LeftButton:
-            self.clicked.emit(self.path)
+            self.activated.emit(self.path)
+
+    # ── paint ─────────────────────────────────────────────────────────────────
 
     def paintEvent(self, _):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
-        rect = QtCore.QRectF(0, 0, TILE_W, TILE_H)
-        clip = QtGui.QPainterPath()
-        clip.addRoundedRect(rect, RADIUS, RADIUS)
+        rect = self.rect().adjusted(2, 2, -8, -2)
 
-        # Thumbnail
-        p.save()
-        p.setClipPath(clip)
-        if not self.pixmap.isNull():
-            # Centre-crop the pixmap into the tile rect
-            src = self.pixmap
-            sw, sh = src.width(), src.height()
-            scale = max(TILE_W / sw, TILE_H / sh)
-            dw, dh = sw * scale, sh * scale
-            dx = (TILE_W - dw) / 2
-            dy = (TILE_H - dh) / 2
-            p.drawPixmap(QtCore.QRectF(dx, dy, dw, dh).toRect(), src)
+        # Row background
+        if self._hover or self._active:
+            p.setBrush(QtGui.QColor(mk_alpha(self._accent, 80 if self._hover else 50)))
+            p.setPen(QtGui.QPen(QtGui.QColor(self._accent), 1))
         else:
-            p.fillRect(rect.toRect(), QtGui.QColor(255, 255, 255, 12))
-        p.restore()
+            p.setBrush(QtGui.QColor(255, 255, 255, 8))
+            p.setPen(QtCore.Qt.PenStyle.NoPen)
+        p.drawRoundedRect(rect, 5, 5)
 
-        # Hover: dark scrim + filename at bottom
-        if self.hovered:
+        # Small thumbnail on the left of the row
+        thumb_rect = QtCore.QRect(rect.x() + 6, rect.y() + 4, THUMB_W, THUMB_H - 8)
+        if not self._thumb.isNull():
+            clip = QtGui.QPainterPath()
+            clip.addRoundedRect(QtCore.QRectF(thumb_rect), 4, 4)
             p.save()
             p.setClipPath(clip)
-            # Bottom gradient scrim
-            grad = QtGui.QLinearGradient(0, TILE_H * 0.45, 0, TILE_H)
-            grad.setColorAt(0, QtGui.QColor(0, 0, 0, 0))
-            grad.setColorAt(1, QtGui.QColor(0, 0, 0, 185))
-            p.fillRect(rect.toRect(), grad)
+            # Centre-crop thumb into thumb_rect
+            src = self._thumb
+            sw, sh = src.width(), src.height()
+            tw, th = thumb_rect.width(), thumb_rect.height()
+            scale = max(tw / sw, th / sh)
+            dw, dh = sw * scale, sh * scale
+            dx = thumb_rect.x() + (tw - dw) / 2
+            dy = thumb_rect.y() + (th - dh) / 2
+            p.drawPixmap(QtCore.QRectF(dx, dy, dw, dh).toRect(), src)
             p.restore()
-
-            # Filename label
-            p.setPen(QtGui.QColor(255, 255, 255, 230))
-            font = QtGui.QFont("Hack Nerd Font", 8, QtGui.QFont.Weight.Medium)
-            p.setFont(font)
-            fm = QtGui.QFontMetrics(font)
-            label = fm.elidedText(
-                self.path.stem,
-                QtCore.Qt.TextElideMode.ElideRight,
-                TILE_W - 16,
-            )
-            p.drawText(8, TILE_H - 9, label)
-
-            # Accent border
-            p.setPen(QtGui.QPen(self.accent, 2.5))
-            p.drawRoundedRect(rect.adjusted(1, 1, -1, -1), RADIUS, RADIUS)
         else:
-            # Subtle border
-            p.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255, 18), 1))
-            p.drawRoundedRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), RADIUS, RADIUS)
+            p.fillRect(thumb_rect, QtGui.QColor(255, 255, 255, 12))
 
+        # Filename text
+        text_x = rect.x() + THUMB_W + 16
+        p.setPen(QtGui.QColor("#ffffff"))
+        p.setFont(QtGui.QFont(FONT, 9, QtGui.QFont.Weight.Bold))
+        fm = QtGui.QFontMetrics(p.font())
+        name = fm.elidedText(self.path.stem, QtCore.Qt.TextElideMode.ElideRight,
+                              rect.width() - THUMB_W - 24)
+        p.drawText(text_x, rect.y() + 22, name)
+
+        # Suffix badge
+        p.setFont(QtGui.QFont(FONT, 7))
+        p.setPen(QtGui.QColor(mk_alpha(self._fg, 110)))
+        p.drawText(text_x, rect.y() + 36, self.path.suffix.upper().lstrip("."))
+
+        # Active indicator dot
+        if self._active:
+            p.setBrush(QtGui.QColor(self._accent))
+            p.setPen(QtCore.Qt.PenStyle.NoPen)
+            p.drawEllipse(rect.right() - 12, rect.center().y() - 4, 8, 8)
+
+
+# ── Main window ───────────────────────────────────────────────────────────────
 
 class WallpaperPicker(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
+        self.setFixedSize(WIN_W, WIN_H)
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        self.bg, self.fg, self.accent = load_pywal()
+        self.BG, self.FG, self.ACC, self.ACC2 = load_pywal()
+        self._current_wall = current_wall()
+        self._preview_path = self._current_wall  # track what's showing in preview
 
-        wallpapers = sorted(
-            {
-                *WALLPAPER_DIR.glob("*.[pj][pn]g"),
-                *WALLPAPER_DIR.glob("*.webp"),
-            }
-        )
+        wallpapers = sorted({
+            *WALLPAPER_DIR.glob("*.[pj][pn]g"),
+            *WALLPAPER_DIR.glob("*.webp"),
+        })
         if not wallpapers:
             sys.exit(1)
 
-        self._init_ui(wallpapers)
+        self.wallpapers = wallpapers
+        self._build_ui()
+        self._load_preview(self._current_wall)
 
-    def _init_ui(self, wallpapers):
-        main_layout = QtWidgets.QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 16, 20, 16)
-        main_layout.setSpacing(12)
+        # Pywal watcher — refresh colours if wal reruns
+        self.watcher = QtCore.QFileSystemWatcher(self)
+        for f in [WAL_CACHE, WAL_WALL]:
+            if Path(str(f)).exists():
+                self.watcher.addPath(str(f))
+        self.watcher.fileChanged.connect(self._refresh_theme)
 
-        # Header
-        header = QtWidgets.QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-
-        title = QtWidgets.QLabel("Wallpapers")
-        title.setStyleSheet(
-            f"color: {self.fg}; font-family: 'Hack Nerd Font'; "
-            f"font-size: 15px; font-weight: 700; background: transparent;"
-        )
-        header.addWidget(title)
-
-        count = QtWidgets.QLabel(f"{len(wallpapers)} images")
-        count.setStyleSheet(
-            f"color: {self.fg}88; font-family: 'Hack Nerd Font'; "
-            f"font-size: 11px; background: transparent;"
-        )
-        header.addWidget(count)
-        header.addStretch()
-
-        close_btn = QtWidgets.QPushButton("✕")
-        close_btn.setFixedSize(28, 28)
-        close_btn.clicked.connect(self.close)
-        close_btn.setStyleSheet(
-            f"border: none; color: {self.fg}; font-size: 13px; "
-            f"background: transparent; padding: 0;"
-        )
-        close_btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
-        header.addWidget(close_btn)
-        main_layout.addLayout(header)
-
-        # Scroll area
-        self.scroll = QtWidgets.QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
-        self.scroll.setHorizontalScrollBarPolicy(
-            QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        )
-        self.scroll.setVerticalScrollBarPolicy(
-            QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        )
-        self.scroll.setStyleSheet("background: transparent; border: none;")
-
-        container = QtWidgets.QWidget()
-        container.setStyleSheet("background: transparent;")
-        self.grid = QtWidgets.QGridLayout(container)
-        self.grid.setSpacing(SPACING)
-        self.grid.setContentsMargins(0, 0, 0, 8)
-
-        self.tiles = []
-        for i, wp in enumerate(wallpapers):
-            tile = WallpaperTile(wp, self.accent, self.fg, self.bg)
-            tile.clicked.connect(self._apply)
-            self.grid.addWidget(tile, i // GRID_COLS, i % GRID_COLS)
-            self.tiles.append(tile)
-
-        self.scroll.setWidget(container)
-        main_layout.addWidget(self.scroll)
-
-        # Window size: fits exactly 4 columns, shows ~3.5 rows to hint scrollability
-        win_w = TILE_W * GRID_COLS + SPACING * (GRID_COLS - 1) + 52
-        visible_rows = 3.6
-        win_h = int(TILE_H * visible_rows + SPACING * (visible_rows - 1)) + 80
-        self.setFixedSize(win_w, win_h)
-
-        screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
-        self.move(screen.center() - self.rect().center())
-
-        # Load thumbnails async
-        self.loader = ThumbLoader(
-            sorted({*WALLPAPER_DIR.glob("*.[pj][pn]g"), *WALLPAPER_DIR.glob("*.webp")})
-        )
-        self.loader.loaded.connect(lambda i, img: self.tiles[i].set_pixmap(img))
+        # Async thumbnails
+        self.loader = ThumbLoader(wallpapers)
+        self.loader.loaded.connect(self._on_thumb)
         self.loader.start()
 
-    def paintEvent(self, _):
-        p = QtGui.QPainter(self)
-        p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        self._center()
 
-        bg = QtGui.QColor(self.bg)
-        bg.setAlpha(242)
-        p.setBrush(bg)
-        p.setPen(QtGui.QPen(QtGui.QColor(self.fg + "22"), 1))
-        p.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 14, 14)
+    # ── UI construction ───────────────────────────────────────────────────────
 
-    def _apply(self, wp):
-        subprocess.run(
-            ["bash", str(Path.home() / ".config/scripts/setwall.sh"), str(wp)]
+    def _build_ui(self):
+        self.frame = QtWidgets.QFrame(self)
+        self.frame.setObjectName("MainFrame")
+        self.frame.setGeometry(0, 0, WIN_W, WIN_H)
+
+        # ── Left: big preview ─────────────────────────────────────────────────
+        self.preview_lbl = QtWidgets.QLabel(self.frame)
+        self.preview_lbl.setGeometry(0, 0, PREVIEW_W, WIN_H)
+
+        self.left_overlay = QtWidgets.QFrame(self.frame)
+        self.left_overlay.setObjectName("LeftOverlay")
+        self.left_overlay.setGeometry(0, 0, PREVIEW_W, WIN_H)
+
+        # Filename label in the bottom-left of the preview
+        self._fname_lbl = QtWidgets.QLabel("", self.frame)
+        self._fname_lbl.setObjectName("FnameLbl")
+        self._fname_lbl.setGeometry(18, WIN_H - 42, PREVIEW_W - 36, 28)
+
+        # Wallpaper count top-left
+        self._count_lbl = QtWidgets.QLabel(f"󰋩  {len(self.wallpapers)} wallpapers", self.frame)
+        self._count_lbl.setObjectName("CountLbl")
+        self._count_lbl.setGeometry(18, 18, PREVIEW_W - 36, 24)
+
+        # ── Right: scrollable list ────────────────────────────────────────────
+        self.scroll = QtWidgets.QScrollArea(self.frame)
+        self.scroll.setObjectName("Scroll")
+        self.scroll.setGeometry(PREVIEW_W + 10, 20, WIN_W - PREVIEW_W - 20, WIN_H - 40)
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll.viewport().setStyleSheet("background: transparent;")
+
+        self.list_container = QtWidgets.QWidget()
+        self.list_layout = QtWidgets.QVBoxLayout(self.list_container)
+        self.list_layout.setContentsMargins(5, 5, 5, 5)
+        self.list_layout.setSpacing(5)
+        self.list_layout.addStretch()
+        self.scroll.setWidget(self.list_container)
+
+        # Build rows
+        self.rows: list[WallRow] = []
+        for wp in self.wallpapers:
+            is_active = (self._current_wall == str(wp))
+            row = WallRow(wp, self.ACC, self.FG, active=is_active)
+            row.hovered.connect(self._on_hover)
+            row.activated.connect(self._apply)
+            self.list_layout.insertWidget(self.list_layout.count() - 1, row)
+            self.rows.append(row)
+
+        self._apply_style()
+
+    # ── Slots ─────────────────────────────────────────────────────────────────
+
+    def _on_thumb(self, i: int, img: QtGui.QImage):
+        if i < len(self.rows):
+            self.rows[i].set_thumb(img)
+
+    def _on_hover(self, path: Path):
+        self._load_preview(str(path))
+
+    def _load_preview(self, path):
+        if not path:
+            return
+        px = load_preview(path, PREVIEW_W, WIN_H)
+        if not px.isNull():
+            self.preview_lbl.setPixmap(px)
+        self._fname_lbl.setText(Path(path).stem)
+
+    def _apply(self, path: Path):
+        # Update active state on all rows
+        for row in self.rows:
+            row.set_active(row.path == path)
+        self._current_wall = str(path)
+        subprocess.Popen(
+            ["bash", str(Path.home() / ".config/scripts/setwall.sh"), str(path)]
         )
         self.close()
+
+    def _refresh_theme(self):
+        self.BG, self.FG, self.ACC, self.ACC2 = load_pywal()
+        for row in self.rows:
+            row.update_colors(self.ACC, self.FG)
+        self._apply_style()
+
+    # ── Painting & styling ────────────────────────────────────────────────────
+
+    def _apply_style(self):
+        self.setStyleSheet(f"""
+            #MainFrame {{
+                background: {mk_alpha(self.BG, 240)};
+                border: 1px solid {self.ACC};
+                border-radius: 10px;
+            }}
+            #LeftOverlay {{
+                background: rgba(0,0,0,80);
+                border-right: 1px solid {mk_alpha(self.ACC, 80)};
+                border-top-left-radius: 10px;
+                border-bottom-left-radius: 10px;
+            }}
+            #FnameLbl {{
+                font-family: "{FONT}";
+                font-size: 11px;
+                font-weight: bold;
+                color: #ffffff;
+                letter-spacing: 1px;
+                background: transparent;
+            }}
+            #CountLbl {{
+                font-family: "{FONT}";
+                font-size: 10px;
+                color: {self.FG};
+                background: transparent;
+                letter-spacing: 1px;
+            }}
+            QScrollBar:vertical {{
+                width: 2px;
+                background: transparent;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {self.ACC};
+            }}
+        """)
+
+    def paintEvent(self, _):
+        # Window chrome — rounded rect with border (matches app.py)
+        pass
 
     def keyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key.Key_Escape:
             self.close()
 
+    def _center(self):
+        qr = self.frameGeometry()
+        qr.moveCenter(
+            QtGui.QGuiApplication.primaryScreen().availableGeometry().center()
+        )
+        self.move(qr.topLeft())
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    app.setFont(QtGui.QFont("Hack Nerd Font", 10))
+    app.setFont(QtGui.QFont(FONT, 10))
     w = WallpaperPicker()
     w.show()
     sys.exit(app.exec())
