@@ -57,10 +57,9 @@ hl.config({
 })
 
 --------------------------------------------------------------------------------
--- look & feel
+-- pywal colors
 --------------------------------------------------------------------------------
 
--- pywal colors
 local wal = os.getenv("HOME") .. "/.cache/wal/colors"
 local colors = {}
 local wf = io.open(wal, "r")
@@ -74,6 +73,10 @@ end
 local color2 = colors[3] or "rgba(33ccffee)"
 local color4 = colors[5] or "rgba(00ff99ee)"
 local color8 = colors[9] or "rgba(595959aa)"
+
+--------------------------------------------------------------------------------
+-- look & feel
+--------------------------------------------------------------------------------
 
 hl.config({
   general = {
@@ -183,20 +186,20 @@ hl.bind("XF86AudioNext",        hl.dsp.exec_cmd("playerctl next"))
 hl.bind("XF86AudioPrev",        hl.dsp.exec_cmd("playerctl previous"))
 
 -- focus
-hl.bind(mod .. " + H", hl.dsp.window.move_focus("l"))
-hl.bind(mod .. " + L", hl.dsp.window.move_focus("r"))
-hl.bind(mod .. " + K", hl.dsp.window.move_focus("u"))
-hl.bind(mod .. " + J", hl.dsp.window.move_focus("d"))
+hl.bind(mod .. " + H", hl.dsp.focus({ direction = "left"  }))
+hl.bind(mod .. " + L", hl.dsp.focus({ direction = "right" }))
+hl.bind(mod .. " + K", hl.dsp.focus({ direction = "up"    }))
+hl.bind(mod .. " + J", hl.dsp.focus({ direction = "down"  }))
 
 -- workspaces
 for i = 1, 5 do
-  hl.bind(mod .. " + " .. i,         hl.dsp.workspace(i))
-  hl.bind(mod .. " + SHIFT + " .. i, hl.dsp.window.move_to_workspace(i))
+  hl.bind(mod .. " + " .. i,         hl.dsp.focus({ workspace = i }))
+  hl.bind(mod .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }))
 end
 
 -- scroll workspaces
-hl.bind(mod .. " + mouse_down", hl.dsp.workspace("e+1"))
-hl.bind(mod .. " + mouse_up",   hl.dsp.workspace("e-1"))
+hl.bind(mod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
+hl.bind(mod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 
 -- move/resize with mouse
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
