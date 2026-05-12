@@ -327,14 +327,14 @@ sudo -u "$USER_NAME" bash -c "echo '-- GPU environment — auto-generated' > '$G
 if echo "$GPU_INFO" | grep -qi nvidia; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
-  LIBVA_DRIVER_NAME          = "nvidia",
-  XDG_SESSION_TYPE           = "wayland",
-  __GLX_VENDOR_LIBRARY_NAME  = "nvidia",
-  GBM_BACKEND                = "nvidia-drm",
-  WLR_NO_HARDWARE_CURSORS    = "1",
-  __GL_GSYNC_ALLOWED         = "1",
-  __GL_VRR_ALLOWED           = "1",
-  QT_QPA_PLATFORM            = "wayland",
+  LIBVA_DRIVER_NAME         = "nvidia",
+  XDG_SESSION_TYPE          = "wayland",
+  __GLX_VENDOR_LIBRARY_NAME = "nvidia",
+  GBM_BACKEND               = "nvidia-drm",
+  WLR_NO_HARDWARE_CURSORS   = "1",
+  __GL_GSYNC_ALLOWED        = "1",
+  __GL_VRR_ALLOWED          = "1",
+  QT_QPA_PLATFORM           = "wayland",
 }
 EOF
 elif echo "$GPU_INFO" | grep -qi amd; then
