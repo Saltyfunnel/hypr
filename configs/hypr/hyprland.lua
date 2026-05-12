@@ -1,11 +1,26 @@
 -- hyprland.lua 2026
--- saltyfunnel/hpr
+-- saltyfunnel/hypr
+
+--------------------------------------------------------------------------------
+-- gpu environment
+--------------------------------------------------------------------------------
+
+local gpu_env = dofile(os.getenv("HOME") .. "/.config/hypr/gpu-env.lua")
+for k, v in pairs(gpu_env) do
+    hl.env(k, v)
+end
+
+--------------------------------------------------------------------------------
+-- environment
+--------------------------------------------------------------------------------
+
+hl.env("XCURSOR_THEME", "Nordzy-cursors")
+hl.env("XCURSOR_SIZE", "24")
 
 --------------------------------------------------------------------------------
 -- monitor
 --------------------------------------------------------------------------------
 
--- auto: preferred resolution/refresh on whatever is connected
 hl.monitor({
   output   = "",
   mode     = "preferred",
@@ -13,23 +28,6 @@ hl.monitor({
   scale    = 1,
 })
 
---------------------------------------------------------------------------------
--- gpu environment
---------------------------------------------------------------------------------
-
-local gpu_env = dofile(os.getenv("HOME") .. "/.config/hypr/gpu-env.lua")
-hl.config({ env = gpu_env })
-
---------------------------------------------------------------------------------
--- environment
---------------------------------------------------------------------------------
-
-hl.config({
-  env = {
-    XCURSOR_THEME = "Nordzy-cursors",
-    XCURSOR_SIZE  = "24",
-  }
-})
 --------------------------------------------------------------------------------
 -- autostart
 --------------------------------------------------------------------------------
@@ -55,6 +53,7 @@ hl.config({
     },
   }
 })
+
 --------------------------------------------------------------------------------
 -- look & feel
 --------------------------------------------------------------------------------
@@ -93,10 +92,10 @@ hl.config({
 
 hl.config({
   bezier = {
-    wind  = { 0.05, 0.9,  0.1, 1.05 },
-    winIn = { 0.1,  1.1,  0.1, 1.1  },
-    winOut= { 0.3,  -0.3, 0,   1    },
-    liner = { 1,    1,    1,   1    },
+    wind   = { 0.05, 0.9,  0.1, 1.05 },
+    winIn  = { 0.1,  1.1,  0.1, 1.1  },
+    winOut = { 0.3,  -0.3, 0,   1    },
+    liner  = { 1,    1,    1,   1    },
   },
 
   animation = {
@@ -110,22 +109,24 @@ hl.config({
     { name = "workspaces",  enable = true, speed = 5,  bezier = "wind"                    },
   },
 })
+
 --------------------------------------------------------------------------------
 -- window rules
 --------------------------------------------------------------------------------
 
 -- floating
-hl.window_rule({ match = { class = "pavucontrol"    }, float  = true })
-hl.window_rule({ match = { class = "blueman-manager"}, float  = true })
-hl.window_rule({ match = { title = "WallpaperPicker"}, float  = true })
-hl.window_rule({ match = { title = "WallpaperPicker"}, center = true })
+hl.window_rule({ match = { class = "pavucontrol"     }, float  = true })
+hl.window_rule({ match = { class = "blueman-manager" }, float  = true })
+hl.window_rule({ match = { title = "WallpaperPicker" }, float  = true })
+hl.window_rule({ match = { title = "WallpaperPicker" }, center = true })
 
 -- opacity
-hl.window_rule({ match = { class = "firefox"       }, opacity = "1.0"      })
-hl.window_rule({ match = { class = "dev.zed.Zed"   }, opacity = "0.90"     })
-hl.window_rule({ match = { class = "spotify"       }, opacity = "0.80"     })
-hl.window_rule({ match = { class = "kitty"         }, opacity = "0.80"     })
-hl.window_rule({ match = { class = "thunar"        }, opacity = "0.80 0.80"})
+hl.window_rule({ match = { class = "firefox"    }, opacity = "1.0"      })
+hl.window_rule({ match = { class = "dev.zed.Zed"}, opacity = "0.90"     })
+hl.window_rule({ match = { class = "spotify"    }, opacity = "0.80"     })
+hl.window_rule({ match = { class = "kitty"      }, opacity = "0.80"     })
+hl.window_rule({ match = { class = "thunar"     }, opacity = "0.80 0.80"})
+
 --------------------------------------------------------------------------------
 -- keybinds
 --------------------------------------------------------------------------------
@@ -172,8 +173,8 @@ hl.bind(mod .. " + J", hl.dsp.window.focus("d"))
 
 -- workspaces
 for i = 1, 5 do
-  hl.bind(mod .. " + " .. i,             hl.dsp.workspace(i))
-  hl.bind(mod .. " + SHIFT + " .. i,     hl.dsp.window.move_to_workspace(i))
+  hl.bind(mod .. " + " .. i,         hl.dsp.workspace(i))
+  hl.bind(mod .. " + SHIFT + " .. i, hl.dsp.window.move_to_workspace(i))
 end
 
 -- scroll workspaces
@@ -183,17 +184,10 @@ hl.bind(mod .. " + mouse_up",   hl.dsp.workspace("e-1"))
 -- move/resize with mouse
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
 --------------------------------------------------------------------------------
 -- pywal colors
 --------------------------------------------------------------------------------
-
-local function read_color(path)
-  local f = io.open(path, "r")
-  if not f then return nil end
-  local c = f:read("*l")
-  f:close()
-  return c and c:gsub("%s+", "") or nil
-end
 
 local wal = os.getenv("HOME") .. "/.cache/wal/colors"
 local colors = {}
@@ -205,7 +199,7 @@ if f then
   f:close()
 end
 
-local color2 = colors[3]  -- wal is 0-indexed, lua is 1-indexed so color2 = index 3
+local color2 = colors[3]
 local color4 = colors[5]
 local color8 = colors[9]
 
