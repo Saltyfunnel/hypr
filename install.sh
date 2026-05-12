@@ -242,9 +242,9 @@ else
     print_ok "yay already present"
 fi
 
-sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 python-pywalfox \
+sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 python-pywalfox nordzy-cursors\
     > /tmp/hypr_install_log 2>&1 &
-spinner "$!" "Installing pywal16, pywalfox"
+spinner "$!" "Installing pywal16, pywalfox, and nordzy cursors"
 wait $! || print_err "AUR install failed  →  /tmp/hypr_install_log"
 print_ok "AUR packages installed"
 
