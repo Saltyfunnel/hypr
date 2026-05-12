@@ -25,7 +25,7 @@ hl.monitor({
   output   = "",
   mode     = "preferred",
   position = "auto",
-  scale    = 1,
+  scale    = "auto",
 })
 
 --------------------------------------------------------------------------------
@@ -60,6 +60,21 @@ hl.config({
 -- look & feel
 --------------------------------------------------------------------------------
 
+-- pywal colors
+local wal = os.getenv("HOME") .. "/.cache/wal/colors"
+local colors = {}
+local wf = io.open(wal, "r")
+if wf then
+  for line in wf:lines() do
+    colors[#colors + 1] = line:gsub("%s+", "")
+  end
+  wf:close()
+end
+
+local color2 = colors[3] or "rgba(33ccffee)"
+local color4 = colors[5] or "rgba(00ff99ee)"
+local color8 = colors[9] or "rgba(595959aa)"
+
 hl.config({
   general = {
     gaps_in          = 2,
@@ -68,6 +83,10 @@ hl.config({
     resize_on_border = true,
     allow_tearing    = false,
     layout           = "dwindle",
+    col = {
+      active_border   = { colors = { color4, color2 }, angle = 45 },
+      inactive_border = color8,
+    },
   },
 
   decoration = {
@@ -86,48 +105,44 @@ hl.config({
   cursor = {
     no_hardware_cursors = false,
   },
+
+  animations = {
+    enabled = true,
+  },
 })
 
 --------------------------------------------------------------------------------
 -- animations
 --------------------------------------------------------------------------------
 
-hl.config({
-  bezier = {
-    wind   = { 0.05, 0.9,  0.1, 1.05 },
-    winIn  = { 0.1,  1.1,  0.1, 1.1  },
-    winOut = { 0.3,  -0.3, 0,   1    },
-    liner  = { 1,    1,    1,   1    },
-  },
+hl.curve("wind",   { type = "bezier", points = { { 0.05, 0.9  }, { 0.1, 1.05 } } })
+hl.curve("winIn",  { type = "bezier", points = { { 0.1,  1.1  }, { 0.1, 1.1  } } })
+hl.curve("winOut", { type = "bezier", points = { { 0.3,  -0.3 }, { 0,   1    } } })
+hl.curve("liner",  { type = "bezier", points = { { 1,    1    }, { 1,   1    } } })
 
-  animation = {
-    { name = "windows",     enable = true, speed = 6,  bezier = "wind",   style = "slide" },
-    { name = "windowsIn",   enable = true, speed = 6,  bezier = "winIn",  style = "slide" },
-    { name = "windowsOut",  enable = true, speed = 5,  bezier = "winOut", style = "slide" },
-    { name = "windowsMove", enable = true, speed = 5,  bezier = "wind",   style = "slide" },
-    { name = "border",      enable = true, speed = 1,  bezier = "liner"                   },
-    { name = "borderangle", enable = true, speed = 30, bezier = "liner",  style = "loop"  },
-    { name = "fade",        enable = true, speed = 10, bezier = "default"                 },
-    { name = "workspaces",  enable = true, speed = 5,  bezier = "wind"                    },
-  },
-})
+hl.animation({ leaf = "windows",     enabled = true, speed = 6,  bezier = "wind",   style = "slide" })
+hl.animation({ leaf = "windowsIn",   enabled = true, speed = 6,  bezier = "winIn",  style = "slide" })
+hl.animation({ leaf = "windowsOut",  enabled = true, speed = 5,  bezier = "winOut", style = "slide" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 5,  bezier = "wind",   style = "slide" })
+hl.animation({ leaf = "border",      enabled = true, speed = 1,  bezier = "liner"                   })
+hl.animation({ leaf = "borderangle", enabled = true, speed = 30, bezier = "liner",  style = "loop"  })
+hl.animation({ leaf = "fade",        enabled = true, speed = 10, bezier = "default"                 })
+hl.animation({ leaf = "workspaces",  enabled = true, speed = 5,  bezier = "wind"                    })
 
 --------------------------------------------------------------------------------
 -- window rules
 --------------------------------------------------------------------------------
 
--- floating
 hl.window_rule({ match = { class = "pavucontrol"     }, float  = true })
 hl.window_rule({ match = { class = "blueman-manager" }, float  = true })
 hl.window_rule({ match = { title = "WallpaperPicker" }, float  = true })
 hl.window_rule({ match = { title = "WallpaperPicker" }, center = true })
 
--- opacity
-hl.window_rule({ match = { class = "firefox"    }, opacity = "1.0"      })
-hl.window_rule({ match = { class = "dev.zed.Zed"}, opacity = "0.90"     })
-hl.window_rule({ match = { class = "spotify"    }, opacity = "0.80"     })
-hl.window_rule({ match = { class = "kitty"      }, opacity = "0.80"     })
-hl.window_rule({ match = { class = "thunar"     }, opacity = "0.80 0.80"})
+hl.window_rule({ match = { class = "firefox"     }, opacity = "1.0"       })
+hl.window_rule({ match = { class = "dev.zed.Zed" }, opacity = "0.90"      })
+hl.window_rule({ match = { class = "spotify"     }, opacity = "0.80"      })
+hl.window_rule({ match = { class = "kitty"       }, opacity = "0.80"      })
+hl.window_rule({ match = { class = "thunar"      }, opacity = "0.80 0.80" })
 
 --------------------------------------------------------------------------------
 -- keybinds
@@ -141,7 +156,7 @@ local fm   = "thunar"
 
 -- core
 hl.bind(mod .. " + Return", hl.dsp.exec_cmd(term))
-hl.bind(mod .. " + Escape", hl.dsp.exec_cmd("hyprctl dispatch exit"))
+hl.bind(mod .. " + Escape", hl.dsp.exit())
 hl.bind(mod .. " + Q",      hl.dsp.window.close())
 hl.bind(mod .. " + V",      hl.dsp.window.float({ action = "toggle" }))
 
@@ -160,18 +175,18 @@ hl.bind(mod .. " + ALT + E", hl.dsp.exec_cmd(
 ))
 
 -- media
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), { repeat_ = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { repeat_ = true })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), { repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { repeating = true })
 hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
 hl.bind("XF86AudioPlay",        hl.dsp.exec_cmd("playerctl play-pause"))
 hl.bind("XF86AudioNext",        hl.dsp.exec_cmd("playerctl next"))
 hl.bind("XF86AudioPrev",        hl.dsp.exec_cmd("playerctl previous"))
 
 -- focus
-hl.bind(mod .. " + H", hl.dsp.window.focus("l"))
-hl.bind(mod .. " + L", hl.dsp.window.focus("r"))
-hl.bind(mod .. " + K", hl.dsp.window.focus("u"))
-hl.bind(mod .. " + J", hl.dsp.window.focus("d"))
+hl.bind(mod .. " + H", hl.dsp.window.move_focus("l"))
+hl.bind(mod .. " + L", hl.dsp.window.move_focus("r"))
+hl.bind(mod .. " + K", hl.dsp.window.move_focus("u"))
+hl.bind(mod .. " + J", hl.dsp.window.move_focus("d"))
 
 -- workspaces
 for i = 1, 5 do
@@ -186,30 +201,3 @@ hl.bind(mod .. " + mouse_up",   hl.dsp.workspace("e-1"))
 -- move/resize with mouse
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
-
---------------------------------------------------------------------------------
--- pywal colors
---------------------------------------------------------------------------------
-
-local wal = os.getenv("HOME") .. "/.cache/wal/colors"
-local colors = {}
-local f = io.open(wal, "r")
-if f then
-  for line in f:lines() do
-    colors[#colors + 1] = line:gsub("%s+", "")
-  end
-  f:close()
-end
-
-local color2 = colors[3]
-local color4 = colors[5]
-local color8 = colors[9]
-
-if color2 and color4 and color8 then
-  hl.config({
-    general = {
-      col_active_border   = color4 .. " " .. color2 .. " 45deg",
-      col_inactive_border = color8,
-    }
-  })
-end
