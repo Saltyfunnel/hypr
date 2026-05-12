@@ -32,12 +32,14 @@ hl.monitor({
 -- autostart
 --------------------------------------------------------------------------------
 
-hl.exec_once("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
-hl.exec_once("/usr/lib/polkit-kde-authentication-agent-1")
-hl.exec_once("awww-daemon --format xrgb")
-hl.exec_once("waybar")
-hl.exec_once("mako")
-hl.exec_once("udiskie")
+hl.on("hyprland.start", function()
+  hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+  hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
+  hl.exec_cmd("awww-daemon --format xrgb")
+  hl.exec_cmd("waybar")
+  hl.exec_cmd("mako")
+  hl.exec_cmd("udiskie")
+end)
 
 --------------------------------------------------------------------------------
 -- input
