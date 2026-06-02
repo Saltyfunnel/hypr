@@ -143,7 +143,7 @@ hl.window_rule({ match = { title = "WallpaperPicker" }, center = true })
 -- Browser and Application Opacities
 hl.window_rule({ match = { class = "zen" }, opacity = "0.90 0.90 1.0 override" })
 hl.window_rule({ match = { class = "dev.zed.Zed" }, opacity = "0.90" })
-hl.window_rule({ match = { class = "spotify" }, opacity = "0.80" })
+hl.window_rule({ match = { class = "Spotify" }, opacity = "0.80" })
 hl.window_rule({ match = { class = "kitty" }, opacity = "0.80" })
 hl.window_rule({ match = { class = "thunar" }, opacity = "0.80 0.80" })
 
