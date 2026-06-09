@@ -24,19 +24,19 @@ WAL_CACHE = Path.home() / ".cache/wal/colors.json"
 WAL_WALL = Path.home() / ".cache/wal/wal"
 
 # Card dimensions
-CARD_W = 200  # base card width (before scale)
-CARD_H = 290  # base card height
+CARD_W = 160  # base card width (before scale)
+CARD_H = 240  # base card height
 SKEW = 0.15  # parallelogram lean (fraction of card width)
-CENTER_SCALE = 1.50  # multiplier for the focused card
-SIDE_SCALE = 0.78  # multiplier for adjacent cards
-SPACING = 200  # px between card centres
-VISIBLE = 3  # cards each side of centre that are drawn
+CENTER_SCALE = 1.45  # multiplier for the focused card
+SIDE_SCALE = 0.80  # multiplier for adjacent cards
+SPACING = 130  # px between card centres
+VISIBLE = 8  # cards each side of centre that are drawn
 
 # Animation
 ANIM_MS = 300
 
 # Window
-WIN_H = 500
+WIN_H = 520
 
 # ── Pywal helpers ─────────────────────────────────────────────────────────────
 
@@ -138,7 +138,10 @@ class Carousel(QtWidgets.QWidget):
                 if str(p) == cw:
                     self._index = i
                     break
+        # Animated float — unbounded continuous position (never wraps)
         self._pos = float(self._index)
+        self._start_pos = self._pos  # pos at init
+        self._step = 0  # cumulative signed steps from init
 
         # Animation
         self._anim = QtCore.QPropertyAnimation(self, b"position")
@@ -158,9 +161,8 @@ class Carousel(QtWidgets.QWidget):
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
 
         screen = QtGui.QGuiApplication.primaryScreen().availableGeometry()
-        self.WIN_W = min(screen.width(), (VISIBLE * 2 + 1) * SPACING + CARD_W * 2)
+        self.WIN_W = 1100
         self.resize(self.WIN_W, WIN_H)
-        # Centre on screen exactly like old wall.py
         qr = self.frameGeometry()
         qr.moveCenter(screen.center())
         self.move(qr.topLeft())
@@ -205,11 +207,15 @@ class Carousel(QtWidgets.QWidget):
     # ── Navigation ────────────────────────────────────────────────────────────
 
     def _scroll_to(self, idx: int):
-        idx = idx % self.n
-        self._index = idx
+        # Keep _pos as a continuous float — never jump it across the wrap point.
+        # _step tracks cumulative steps from start; _pos follows without wrapping.
+        self._step += idx - self._index  # signed delta (+1 right, -1 left)
+        self._index = idx % self.n
+
+        target = self._start_pos + self._step
         self._anim.stop()
         self._anim.setStartValue(self._pos)
-        self._anim.setEndValue(float(idx))
+        self._anim.setEndValue(target)
         self._anim.start()
         self._rebuild_bg()
 
@@ -306,10 +312,14 @@ class Carousel(QtWidgets.QWidget):
 
         # ── Draw cards back-to-front (farthest first) ─────────────────────────
         # Build list of (visual_distance, index) for all visible cards
+        # animated_offset: how far _pos has travelled past the current target
+        target_pos = self._start_pos + self._step
+        anim_offset = self._pos - target_pos  # between -1 and 0 during scroll
+
         cards = []
         for di in range(-VISIBLE, VISIBLE + 1):
             idx = (self._index + di) % self.n
-            visual_dist = di - (self._pos - self._index)  # signed float distance
+            visual_dist = di + anim_offset  # signed float distance from centre
             cards.append((visual_dist, idx))
 
         # Sort: draw farthest from centre first so centre is on top
@@ -328,7 +338,7 @@ class Carousel(QtWidgets.QWidget):
                 scale = SIDE_SCALE * max(0.0, 1.0 - beyond * 0.22)
 
             # ── Opacity ───────────────────────────────────────────────────────
-            alpha = int(255 * max(0.0, 1.0 - adist * 0.38))
+            alpha = int(255 * max(0.0, 1.0 - adist * 0.15))
             if alpha <= 0:
                 continue
 
