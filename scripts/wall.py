@@ -17,28 +17,31 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 WALLPAPER_DIR = (
     Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / "Pictures/Wallpapers"
 )
-FONT     = "Hack Nerd Font"
-SETWALL  = Path.home() / ".config/scripts/setwall.sh"
+FONT = "Hack Nerd Font"
+SETWALL = Path.home() / ".config/scripts/setwall.sh"
 WAL_CACHE = Path.home() / ".cache/wal/colors.json"
-WAL_WALL  = Path.home() / ".cache/wal/wal"
+WAL_WALL = Path.home() / ".cache/wal/wal"
 
 # Card dimensions
-CARD_W       = 160    # base card width (before scale)
-CARD_H       = 240    # base card height
-SKEW         = 0.15   # parallelogram lean (fraction of card width)
-CENTER_SCALE = 1.45   # multiplier for the focused card
-SIDE_SCALE   = 0.80   # multiplier for adjacent cards
-SPACING      = 130    # px between card centres
-VISIBLE      = 6      # cards each side of centre that are drawn (was 8; beyond 6 are invisible anyway)
+CARD_W = 160  # base card width (before scale)
+CARD_H = 240  # base card height
+SKEW = 0.15  # parallelogram lean (fraction of card width)
+CENTER_SCALE = 1.45  # multiplier for the focused card
+SIDE_SCALE = 0.80  # multiplier for adjacent cards
+SPACING = 130  # px between card centres
+VISIBLE = (
+    6  # cards each side of centre that are drawn (was 8; beyond 6 are invisible anyway)
+)
 
-# Animation
-ANIM_MS = 300
+# Animation — spring strength (0.12 = gentle, 0.22 = snappy)
+SPRING = 0.16
 
 # Window
 WIN_W = 1100
 WIN_H = 520
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def load_pywal() -> tuple[str, str, str, str]:
     defaults = ("#1a1a1a", "#c0caf5", "#7aa2f7", "#bb9af7")
@@ -77,11 +80,12 @@ def scaled_crop(path: Path, w: int, h: int) -> QtGui.QPixmap:
         blank.fill(QtGui.QColor(30, 30, 40))
         return blank
     scaled = px.scaled(
-        w, h,
+        w,
+        h,
         QtCore.Qt.AspectRatioMode.KeepAspectRatioByExpanding,
         QtCore.Qt.TransformationMode.SmoothTransformation,
     )
-    x = (scaled.width()  - w) // 2
+    x = (scaled.width() - w) // 2
     y = (scaled.height() - h) // 2
     return scaled.copy(x, y, w, h)
 
@@ -89,6 +93,7 @@ def scaled_crop(path: Path, w: int, h: int) -> QtGui.QPixmap:
 # ── Cached fonts ──────────────────────────────────────────────────────────────
 
 _FONT_CACHE: dict[tuple, QtGui.QFont] = {}
+
 
 def get_font(size: int, bold: bool = False) -> QtGui.QFont:
     key = (size, bold)
@@ -102,15 +107,17 @@ def get_font(size: int, bold: bool = False) -> QtGui.QFont:
 
 # ── Async thumbnail loader ────────────────────────────────────────────────────
 
+
 class ThumbLoader(QtCore.QThread):
     """Loads thumbnails in a background thread, emitting (index, pixmap) per image."""
+
     loaded = QtCore.pyqtSignal(int, QtGui.QPixmap)
 
     def __init__(self, images: list[Path], centre: int = 0):
         super().__init__()
-        self.images  = images
+        self.images = images
         self._centre = centre
-        self._stop   = False
+        self._stop = False
 
     def stop(self):
         self._stop = True
@@ -131,8 +138,10 @@ class ThumbLoader(QtCore.QThread):
 
 # ── Background loader ─────────────────────────────────────────────────────────
 
+
 class BgLoader(QtCore.QThread):
     """Loads and scales a single background image without blocking the main thread."""
+
     ready = QtCore.pyqtSignal(QtGui.QPixmap)
 
     def __init__(self, path: Path):
@@ -146,16 +155,17 @@ class BgLoader(QtCore.QThread):
 
 # ── Carousel widget ───────────────────────────────────────────────────────────
 
+
 class Carousel(QtWidgets.QWidget):
     def __init__(self, images: list[Path]):
         super().__init__()
         self.setWindowTitle("WallpaperPicker")
         self.images = images
-        self.n      = len(images)
+        self.n = len(images)
 
-        self.thumbs:    dict[int, QtGui.QPixmap] = {}
-        self.bg_pixmap: QtGui.QPixmap | None     = None
-        self._bg_loader: BgLoader | None         = None
+        self.thumbs: dict[int, QtGui.QPixmap] = {}
+        self.bg_pixmap: QtGui.QPixmap | None = None
+        self._bg_loader: BgLoader | None = None
 
         # Find index of current wallpaper
         cw = current_wall()
@@ -166,15 +176,17 @@ class Carousel(QtWidgets.QWidget):
                     self._index = i
                     break
 
-        # Continuous unbounded float position — never wraps, so animation is smooth
-        self._pos        = float(self._index)
-        self._start_pos  = self._pos
-        self._step       = 0   # cumulative signed steps from _start_pos
+        # _pos: animated float index of the visual centre card.
+        # _target: where _pos is heading (advances by ±1 per scroll step).
+        # We use a spring/lerp loop via QTimer rather than QPropertyAnimation
+        # so repaints are frame-locked and rapid scrolls accumulate smoothly.
+        self._pos = float(self._index)
+        self._target = float(self._index)
 
-        # Animation
-        self._anim = QtCore.QPropertyAnimation(self, b"position")
-        self._anim.setEasingCurve(QtCore.QEasingCurve.Type.OutCubic)
-        self._anim.setDuration(ANIM_MS)
+        # Frame timer — fires every ~8 ms (~120 fps ceiling), stops when at rest
+        self._anim_timer = QtCore.QTimer(self)
+        self._anim_timer.setInterval(8)
+        self._anim_timer.timeout.connect(self._anim_tick)
 
         # Pywal colours
         self.BG, self.FG, self.ACC, self.ACC2 = load_pywal()
@@ -207,16 +219,17 @@ class Carousel(QtWidgets.QWidget):
                 self._watcher.addPath(str(f))
         self._watcher.fileChanged.connect(self._refresh_theme)
 
-    # ── Qt property (enables QPropertyAnimation) ──────────────────────────────
+    # ── Animation tick ────────────────────────────────────────────────────────
 
-    def _get_position(self) -> float:
-        return self._pos
-
-    def _set_position(self, v: float):
-        self._pos = v
+    def _anim_tick(self):
+        """Spring-lerp _pos toward _target each timer tick; stop when close enough."""
+        diff = self._target - self._pos
+        if abs(diff) < 0.0005:
+            self._pos = self._target
+            self._anim_timer.stop()
+        else:
+            self._pos += diff * SPRING
         self.update()
-
-    position = QtCore.pyqtProperty(float, _get_position, _set_position)
 
     # ── Slots ─────────────────────────────────────────────────────────────────
 
@@ -239,7 +252,8 @@ class Carousel(QtWidgets.QWidget):
         # Prefer an already-loaded thumb if available and large enough — good enough as bg
         if idx in self.thumbs:
             self.bg_pixmap = self.thumbs[idx].scaled(
-                WIN_W, WIN_H,
+                WIN_W,
+                WIN_H,
                 QtCore.Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 QtCore.Qt.TransformationMode.SmoothTransformation,
             )
@@ -258,15 +272,14 @@ class Carousel(QtWidgets.QWidget):
     # ── Navigation ────────────────────────────────────────────────────────────
 
     def _scroll_to(self, new_index: int):
+        # Advance _target by the signed delta so rapid presses accumulate
+        # rather than restarting — the spring catches up naturally.
         delta = new_index - self._index
-        self._step  += delta
-        self._index  = new_index % self.n
+        self._index = new_index % self.n
+        self._target += delta
 
-        target = self._start_pos + self._step
-        self._anim.stop()
-        self._anim.setStartValue(self._pos)
-        self._anim.setEndValue(target)
-        self._anim.start()
+        if not self._anim_timer.isActive():
+            self._anim_timer.start()
 
         self._load_bg(self._index)
 
@@ -284,10 +297,12 @@ class Carousel(QtWidgets.QWidget):
             for cmd in (
                 ["awww", "img", str(path), "--transition-type", "fade"],
                 ["swww", "img", str(path)],
-                ["feh",  "--bg-fill", str(path)],
+                ["feh", "--bg-fill", str(path)],
             ):
                 try:
-                    subprocess.Popen(cmd, stderr=subprocess.DEVNULL, start_new_session=True)
+                    subprocess.Popen(
+                        cmd, stderr=subprocess.DEVNULL, start_new_session=True
+                    )
                     break
                 except FileNotFoundError:
                     continue
@@ -297,11 +312,15 @@ class Carousel(QtWidgets.QWidget):
 
     def keyPressEvent(self, e: QtGui.QKeyEvent):
         k = e.key()
-        if k in (QtCore.Qt.Key.Key_Left,  QtCore.Qt.Key.Key_H, QtCore.Qt.Key.Key_A):
+        if k in (QtCore.Qt.Key.Key_Left, QtCore.Qt.Key.Key_H, QtCore.Qt.Key.Key_A):
             self.go_left()
         elif k in (QtCore.Qt.Key.Key_Right, QtCore.Qt.Key.Key_L, QtCore.Qt.Key.Key_D):
             self.go_right()
-        elif k in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter, QtCore.Qt.Key.Key_Space):
+        elif k in (
+            QtCore.Qt.Key.Key_Return,
+            QtCore.Qt.Key.Key_Enter,
+            QtCore.Qt.Key.Key_Space,
+        ):
             self._apply()
         elif k == QtCore.Qt.Key.Key_Escape:
             self.close()
@@ -317,33 +336,33 @@ class Carousel(QtWidgets.QWidget):
         if e.button() != QtCore.Qt.MouseButton.LeftButton:
             return
 
-        mx   = e.position().x()
-        cx   = WIN_W / 2
-        best = None          # (abs_dist_from_click, signed_offset)
+        mx = e.position().x()
+        cx = WIN_W / 2
+        best = None  # (abs_dist_from_click, signed_offset)
 
         # Test every rendered card and find the closest one to the click
-        target_pos  = self._start_pos + self._step
-        anim_offset = self._pos - target_pos
+        # anim_offset: how far _pos has travelled past the nearest integer
+        anim_offset = self._pos - round(self._pos)
 
         for di in range(-VISIBLE, VISIBLE + 1):
-            idx_mod  = (self._index + di) % self.n
-            vdist    = di + anim_offset
-            adist    = abs(vdist)
+            idx_mod = (self._index + di) % self.n
+            vdist = di - anim_offset
+            adist = abs(vdist)
             if adist > VISIBLE + 0.5:
                 continue
 
             # Replicate the same scale/skew from paintEvent
-            t      = min(adist, 1.0)
-            scale  = CENTER_SCALE + (SIDE_SCALE - CENTER_SCALE) * t
+            t = min(adist, 1.0)
+            scale = CENTER_SCALE + (SIDE_SCALE - CENTER_SCALE) * t
             if adist > 1.0:
                 scale = SIDE_SCALE * max(0.0, 1.0 - (adist - 1.0) * 0.22)
 
-            cw       = int(CARD_W * scale)
-            skew_px  = int(cw * SKEW)
-            total_w  = cw + skew_px
+            cw = int(CARD_W * scale)
+            skew_px = int(cw * SKEW)
+            total_w = cw + skew_px
             x_centre = cx + vdist * SPACING
-            x_left   = x_centre - total_w / 2
-            x_right  = x_centre + total_w / 2
+            x_left = x_centre - total_w / 2
+            x_right = x_centre + total_w / 2
 
             if x_left <= mx <= x_right:
                 dist = abs(mx - x_centre)
@@ -360,7 +379,7 @@ class Carousel(QtWidgets.QWidget):
             self._scroll_to(self._index + offset)
 
     def closeEvent(self, e):
-        # Clean up background threads before closing
+        self._anim_timer.stop()
         self._loader.stop()
         if self._bg_loader and self._bg_loader.isRunning():
             self._bg_loader.quit()
@@ -374,9 +393,9 @@ class Carousel(QtWidgets.QWidget):
         p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         p.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
-        W, H  = WIN_W, WIN_H
-        cx    = W / 2
-        cy    = H / 2
+        W, H = WIN_W, WIN_H
+        cx = W / 2
+        cy = H / 2
 
         # ── Background ────────────────────────────────────────────────────────
         if self.bg_pixmap:
@@ -386,21 +405,24 @@ class Carousel(QtWidgets.QWidget):
         if self.n == 0:
             p.setPen(QtGui.QColor(220, 220, 220))
             p.drawText(
-                self.rect(), QtCore.Qt.AlignmentFlag.AlignCenter,
+                self.rect(),
+                QtCore.Qt.AlignmentFlag.AlignCenter,
                 f"No wallpapers found in\n{WALLPAPER_DIR}",
             )
             return
 
         # ── Build card list ───────────────────────────────────────────────────
-        target_pos  = self._start_pos + self._step
-        anim_offset = self._pos - target_pos
+        # anim_offset: fractional overshoot of _pos past the nearest integer.
+        # Subtracting it from di gives each card its correct visual position
+        # during animation — positive when scrolling right, negative when left.
+        anim_offset = self._pos - round(self._pos)
 
         cards = []
         for di in range(-VISIBLE, VISIBLE + 1):
-            idx       = (self._index + di) % self.n
-            vdist     = di + anim_offset
-            adist     = abs(vdist)
-            alpha_f   = max(0.0, 1.0 - adist * 0.17)
+            idx = (self._index + di) % self.n
+            vdist = di - anim_offset
+            adist = abs(vdist)
+            alpha_f = max(0.0, 1.0 - adist * 0.17)
             if alpha_f <= 0.01:
                 continue
             cards.append((adist, vdist, idx, int(alpha_f * 255)))
@@ -410,27 +432,27 @@ class Carousel(QtWidgets.QWidget):
 
         for adist, vdist, idx, alpha in cards:
             # ── Scale ─────────────────────────────────────────────────────────
-            t     = min(adist, 1.0)
+            t = min(adist, 1.0)
             scale = CENTER_SCALE + (SIDE_SCALE - CENTER_SCALE) * t
             if adist > 1.0:
                 scale = SIDE_SCALE * max(0.0, 1.0 - (adist - 1.0) * 0.22)
 
-            cw      = int(CARD_W * scale)
-            ch      = int(CARD_H * scale)
+            cw = int(CARD_W * scale)
+            ch = int(CARD_H * scale)
             skew_px = int(cw * SKEW)
             total_w = cw + skew_px
 
             x_centre = cx + vdist * SPACING
             y_centre = cy
             x0 = x_centre - total_w / 2
-            y0 = y_centre - ch   / 2
+            y0 = y_centre - ch / 2
 
             # ── Parallelogram path ────────────────────────────────────────────
             path = QtGui.QPainterPath()
             path.moveTo(x0 + skew_px, y0)
             path.lineTo(x0 + skew_px + cw, y0)
-            path.lineTo(x0 + cw,           y0 + ch)
-            path.lineTo(x0,                y0 + ch)
+            path.lineTo(x0 + cw, y0 + ch)
+            path.lineTo(x0, y0 + ch)
             path.closeSubpath()
 
             p.save()
@@ -441,18 +463,18 @@ class Carousel(QtWidgets.QWidget):
             if idx in self.thumbs:
                 src = self.thumbs[idx]
                 sw, sh = src.width(), src.height()
-                s  = max(total_w / sw, ch / sh)
+                s = max(total_w / sw, ch / sh)
                 dw = sw * s
                 dh = sh * s
                 dx = x0 + (total_w - dw) / 2
-                dy = y0 + (ch      - dh) / 2
+                dy = y0 + (ch - dh) / 2
                 p.drawPixmap(QtCore.QRectF(dx, dy, dw, dh).toRect(), src)
             else:
                 # Animated shimmer placeholder while loading
                 grad = QtGui.QLinearGradient(x0, y0, x0 + total_w, y0)
-                grad.setColorAt(0.0, QtGui.QColor(30,  30, 45))
-                grad.setColorAt(0.5, QtGui.QColor(50,  50, 70))
-                grad.setColorAt(1.0, QtGui.QColor(30,  30, 45))
+                grad.setColorAt(0.0, QtGui.QColor(30, 30, 45))
+                grad.setColorAt(0.5, QtGui.QColor(50, 50, 70))
+                grad.setColorAt(1.0, QtGui.QColor(30, 30, 45))
                 p.fillPath(path, QtGui.QBrush(grad))
 
             # ── Side-card darkening ───────────────────────────────────────────
@@ -506,6 +528,7 @@ class Carousel(QtWidgets.QWidget):
 
 
 # ── Entry ─────────────────────────────────────────────────────────────────────
+
 
 def main():
     images = load_images(WALLPAPER_DIR)
