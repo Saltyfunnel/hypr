@@ -185,7 +185,7 @@ UTILITY_PACKAGES=(
 FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
 )
-APP_PACKAGES=(mpv imv pavucontrol btop gnome-disk-utility steam)
+APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam)
 DEV_PACKAGES=(git base-devel wget curl nano jq)
 FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascadia-code-nerd)
 MEDIA_PACKAGES=(poppler imagemagick ffmpeg chafa)
@@ -242,9 +242,9 @@ else
     print_ok "yay already present"
 fi
 
-sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 zen-browser-bin nordzy-cursors localsend-bin libreoffice-fresh \
+sudo -u "$USER_NAME" yay -S --noconfirm python-pywal16 nordzy-cursors localsend-bin \
     > /tmp/hypr_install_log 2>&1 &
-spinner "$!" "Installing pywal16, zen browser, localsend, libreoffice and nordzy cursors"
+spinner "$!" "Installing pywal16, localsend, and nordzy cursors"
 wait $! || print_err "AUR install failed  →  /tmp/hypr_install_log"
 print_ok "AUR packages installed"
 
