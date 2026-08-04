@@ -111,6 +111,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_SRC="$REPO_ROOT/scripts"
 CONFIGS_SRC="$REPO_ROOT/configs"
 WALLPAPERS_SRC="$REPO_ROOT/Pictures/Wallpapers"
+DESKTOP_ENTRIES_SRC="$REPO_ROOT/desktop-entries"
 
 print_banner
 
@@ -273,6 +274,8 @@ done
 sudo -u "$USER_NAME" mkdir -p "$WAL_CACHE"
 sudo -u "$USER_NAME" mkdir -p "$USER_HOME/Pictures/Wallpapers"
 sudo -u "$USER_NAME" mkdir -p "$USER_HOME/.local/share/icons"
+sudo -u "$USER_NAME" mkdir -p "$USER_HOME/.local/share/applications"
+print_item "${DIM}$USER_HOME/.local/share/applications${RST}"
 print_ok "Directory tree created"
 
 ################################################################################
@@ -297,7 +300,9 @@ print_ok "Stale symlinks & conflicting files cleared"
 [[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
 [[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
 [[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
-[[ -d "$CONFIGS_SRC/spotify-player" ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/spotify-player/'* '$CONFIG_DIR/spotify-player/'"                  "spotify_player config"
+[[ -d "$CONFIGS_SRC/spotify-player"          ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/spotify-player/'* '$CONFIG_DIR/spotify-player/'"          "spotify_player config"
+[[ -f "$DESKTOP_ENTRIES_SRC/spotify-player.desktop" ]] && run_command "sudo -u $USER_NAME cp '$DESKTOP_ENTRIES_SRC/spotify-player.desktop' '$USER_HOME/.local/share/applications/spotify-player.desktop'" "Spotify Player desktop entry"
+
 # mako/config is intentionally NOT copied — managed by pywal symlink
 
 # GTK dark theme
@@ -384,7 +389,7 @@ sudo -u "$USER_NAME" cat > "$USER_HOME/.bashrc" << 'EOF'
 [[ -f ~/.cache/wal/sequences ]] && cat ~/.cache/wal/sequences
 command -v starship >/dev/null && eval "$(starship init bash)"
 command -v fastfetch >/dev/null && fastfetch
-export PATH="$PATH:$HOME/.local/bin"
+export PATH="$PATH:$HOME/.local/bin:$HOME/.cargo/bin"
 alias ls='ls --color=auto'
 alias ll='ls -lah --color=auto'
 alias grep='grep --color=auto'
@@ -489,6 +494,7 @@ _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
 _row "system updated"                        "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
 _row "pywal16"                                "pipx (PyPI, no AUR)"
+_row "spotify_player"                         "cargo (crates.io, no AUR)"
 _row "dotfiles deployed"                     "~/.config/*"
 _row "gpu environment"                       "hypr/gpu-env.conf"
 _row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
@@ -524,6 +530,7 @@ _bind "super + v"             "toggle float"
 _bind "super + h/j/k/l"      "focus ← ↓ ↑ →"
 _bind "super + [1–5]"         "switch workspace"
 _bind "super+shift + [1–5]"  "move to workspace"
+_bind "super+shift + s"       "spotify_player (kitty popup)"
 
 echo ""
 hr
