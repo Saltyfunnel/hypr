@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Syncs spotify_player's pywal theme palette + component styling to the current wallpaper colors.
+
 set -euo pipefail
 
 COLORS_JSON="$HOME/.cache/wal/colors.json"
@@ -40,4 +42,25 @@ bright_blue = "$c4"
 bright_magenta = "$c5"
 bright_cyan = "$c6"
 bright_white = "$c15"
+
+[themes.component_style]
+block_title = { fg = "$c4", modifiers = ["Bold"] }
+border = { fg = "$c8" }
+playback_status = { fg = "$c4", modifiers = ["Bold"] }
+playback_track = { fg = "$fg", modifiers = ["Bold"] }
+playback_artists = { fg = "$c4", modifiers = ["Bold"] }
+playback_album = { fg = "$c3" }
+playback_genres = { fg = "$c8", modifiers = ["Italic"] }
+playback_metadata = { fg = "$c8" }
+playback_progress_bar = { bg = "$c8", fg = "$c4" }
+playback_progress_bar_unfilled = { bg = "$c0" }
+current_playing = { fg = "$c2", modifiers = ["Bold"] }
+page_desc = { fg = "$c4", modifiers = ["Bold"] }
+playlist_desc = { fg = "$c8", modifiers = ["Dim"] }
+table_header = { fg = "$c4" }
+selection = { fg = "$bg", bg = "$c4", modifiers = ["Bold"] }
+secondary_row = {}
+like = { fg = "$c1" }
+lyrics_played = { modifiers = ["Dim"] }
+lyrics_playing = { fg = "$c2", modifiers = ["Bold"] }
 EOF
