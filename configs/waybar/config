@@ -66,19 +66,23 @@
   "custom/screenshot": {
     "format": "󰹑",
     "on-click": "~/.config/scripts/screenshot.sh area",
-    "on-click-right": "~/.config/scripts/screenshot.sh full",
+    "on-click-right": "~/.config/scripts/screenshot.sh screen",
     "on-click-middle": "~/.config/scripts/screenshot.sh window",
     "tooltip": true,
     "tooltip-format": "L: Select Area\nM: Window\nR: Fullscreen"
-  },
+},
 
-  "custom/spotify": {
-    "exec": "playerctl -p spotify metadata --format '󰓇 {{ artist }} - {{ title }}' 2>/dev/null || echo ''",
-    "exec-if": "playerctl -p spotify status 2>/dev/null | grep -q 'Playing\\|Paused'",
+"custom/spotify": {
+    "exec": "playerctl -p spotify_player metadata --format '󰓇 {{ artist }} - {{ title }}' 2>/dev/null || echo ''",
+    "exec-if": "playerctl -p spotify_player status 2>/dev/null | grep -q 'Playing\\|Paused'",
     "format": "{}",
     "interval": 3,
-    "max-length": 25
-  },
+    "max-length": 25,
+    "on-click": "playerctl -p spotify_player play-pause",
+    "on-click-right": "playerctl -p spotify_player next",
+    "tooltip": true,
+    "tooltip-format": "L: Play/Pause\nR: Next track"
+},
 
   "custom/firefox": {
     "exec": "pgrep -x firefox >/dev/null && echo '󰈹' || echo ''",
