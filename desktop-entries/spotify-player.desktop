@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Spotify Player
+Comment=Terminal Spotify client
+Exec=kitty --class spotify-player -e spotify_player
+Icon=spotify-client
+Terminal=false
+Categories=Audio;Music;Player;
