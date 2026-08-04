@@ -143,9 +143,9 @@ hl.window_rule({ match = { title = "WallpaperPicker" }, center = true })
 -- Browser and Application Opacities
 hl.window_rule({ match = { class = "firefox" }, opacity = "0.90 0.90 1.0 override" })
 hl.window_rule({ match = { class = "dev.zed.Zed" }, opacity = "0.90" })
-hl.window_rule({ match = { class = "Spotify" }, opacity = "0.80" })
 hl.window_rule({ match = { class = "kitty" }, opacity = "0.80" })
 hl.window_rule({ match = { class = "thunar" }, opacity = "0.80 0.80" })
+hl.window_rule({ match = { class = "spotify-player" }, opacity = "0.80 0.80" })
 
 --------------------------------------------------------------------------------
 -- keybinds
@@ -170,7 +170,7 @@ hl.bind(mod .. " + D", hl.dsp.exec_cmd("python3 ~/.config/scripts/app.py"))
 hl.bind(mod .. " + C", hl.dsp.exec_cmd(ed))
 hl.bind(mod .. " + B", hl.dsp.exec_cmd(br))
 hl.bind(mod .. " + I", hl.dsp.exec_cmd(term .. " -e btop"))
-hl.bind(mod .. " + S", hl.dsp.exec_cmd("spotify"))
+hl.bind(mod .. " + S", hl.dsp.exec_cmd(term .. " --class spotify-player -e spotify_player"))
 
 -- trash
 hl.bind(mod .. " + ALT + E", hl.dsp.exec_cmd(
