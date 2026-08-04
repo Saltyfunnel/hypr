@@ -22,12 +22,12 @@ play_icon = "▶"
 pause_icon = "▌▌"
 liked_icon = "♥"
 explicit_icon = "(E)"
-border_type = "Plain"
-progress_bar_type = "Rectangle"
+border_type = "Rounded"
+progress_bar_type = "Line"
 progress_bar_position = "Bottom"
 genre_num = 2
 cover_img_length = 0
-cover_img_width = 5
+cover_img_width = 8
 enable_media_control = true
 enable_streaming = "Always"
 enable_audio_visualization = false
@@ -41,19 +41,15 @@ enable_mouse_scroll_volume = true
 custom_queue = true
 enable_relative_line_number = false
 pause_on_startup = false
-
 [notify_format]
 summary = "{track} • {artists}"
 body = "{album}"
-
 [layout]
 playback_window_position = "Top"
-playback_window_height = 6
-
+playback_window_height = 7
 [layout.library]
-playlist_percent = 40
-album_percent = 40
-
+playlist_percent = 45
+album_percent = 35
 [device]
 name = "spotify-player"
 device_type = "speaker"
