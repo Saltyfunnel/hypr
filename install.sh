@@ -186,7 +186,7 @@ FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
 )
 APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam)
-DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx)
+DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx rust alsa-lib pkgconf ueberzugpp)
 FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascadia-code-nerd)
 MEDIA_PACKAGES=(poppler imagemagick ffmpeg chafa)
 COMPRESSION_PACKAGES=(unzip p7zip tar gzip xz bzip2 unrar trash-cli)
@@ -236,6 +236,21 @@ wait $! || print_err "pywal16 install failed  →  /tmp/hypr_install_log"
 print_ok "pywal16 installed via pipx (PyPI, not AUR)"
 
 ################################################################################
+# SPOTIFY_PLAYER (CARGO — NO AUR)
+################################################################################
+
+print_phase "spotify_player (cargo)"
+
+sudo -u "$USER_NAME" bash -c 'export PATH="$HOME/.cargo/bin:$PATH"; cargo install spotify_player --features streaming,image,media-control,notify' \
+    > /tmp/hypr_install_log 2>&1 &
+spinner "$!" "Building spotify_player via cargo"
+wait $! || print_err "spotify_player install failed  →  /tmp/hypr_install_log"
+print_ok "spotify_player installed via cargo (crates.io, not AUR)"
+
+sudo -u "$USER_NAME" bash -c "grep -qxF 'export PATH=\"\$HOME/.cargo/bin:\$PATH\"' '$USER_HOME/.bashrc' || echo 'export PATH=\"\$HOME/.cargo/bin:\$PATH\"' >> '$USER_HOME/.bashrc'"
+print_ok "cargo bin added to PATH"
+
+################################################################################
 # DIRECTORY STRUCTURE
 ################################################################################
 
@@ -247,7 +262,7 @@ CONFIG_DIRS=(
     "$CONFIG_DIR/mako"    "$CONFIG_DIR/scripts"
     "$CONFIG_DIR/wal/templates"  "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
-    "$CONFIG_DIR/zed/themes"
+    "$CONFIG_DIR/zed/themes" "$CONFIG_DIR/spotify-player"
 )
 
 for dir in "${CONFIG_DIRS[@]}"; do
@@ -282,7 +297,7 @@ print_ok "Stale symlinks & conflicting files cleared"
 [[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
 [[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
 [[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
-
+[[ -d "$CONFIGS_SRC/spotify-player" ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/spotify-player/'* '$CONFIG_DIR/spotify-player/'"                  "spotify_player config"
 # mako/config is intentionally NOT copied — managed by pywal symlink
 
 # GTK dark theme
