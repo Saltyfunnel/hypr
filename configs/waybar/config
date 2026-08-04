@@ -54,14 +54,14 @@
   },
 
   "custom/updates": {
-    "exec": "count=$(checkupdates 2>/dev/null | wc -l); aur=$(yay -Qua 2>/dev/null | wc -l); total=$((count + aur)); [ $total -gt 0 ] && echo \"󰚰 $total\" || echo ''",
+    "exec": "count=$(checkupdates 2>/dev/null | wc -l); [ $count -gt 0 ] && echo \"󰚰 $count\" || echo ''",
     "return-type": "",
     "format": "{}",
     "interval": 3600,
-    "on-click": "kitty -- yay",
+    "on-click": "kitty -e sudo pacman -Syu",
     "tooltip": true,
-    "tooltip-format": "󰚰 Updates available\n\n click run yay"
-  },
+    "tooltip-format": "󰚰 Updates available\n\n click to run pacman -Syu"
+},
 
   "custom/screenshot": {
     "format": "󰹑",
