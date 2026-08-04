@@ -14,6 +14,10 @@ ln -sf "$WALL" ~/.cache/current-wallpaper
 [[ -f "$HOME/.config/scripts/recolor_folders.sh" ]] && \
     bash "$HOME/.config/scripts/recolor_folders.sh" &
 
+# spotify_player theme sync
+[[ -f "$HOME/.config/scripts/spotify-player-theme.sh" ]] && \
+    bash "$HOME/.config/scripts/spotify-player-theme.sh" &
+
 # Restart waybar + mako
 killall waybar 2>/dev/null; waybar &
 killall mako 2>/dev/null; sleep 0.1; mako & disown
