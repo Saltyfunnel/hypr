@@ -82,10 +82,10 @@ print_phase() {
     echo ""
 }
 
-print_ok()      { echo -e "    ${BGRN}✓${RST}  $1"; }
-print_err()     { echo -e "\n    ${BRED}✗  ${BLD}$1${RST}\n" >&2; exit 1; }
-print_info()    { echo -e "    ${BBLK}↳${RST}  ${DIM}$1${RST}"; }
-print_item()    { echo -e "    ${BBLK}•${RST}  $1"; }
+print_ok()     { echo -e "    ${BGRN}✓${RST}  $1"; }
+print_err()    { echo -e "\n    ${BRED}✗  ${BLD}$1${RST}\n" >&2; exit 1; }
+print_info()   { echo -e "    ${BBLK}↳${RST}  ${DIM}$1${RST}"; }
+print_item()   { echo -e "    ${BBLK}•${RST}  $1"; }
 
 run_command() {
     local cmd="$1" desc="$2"
@@ -175,7 +175,7 @@ fi
 print_phase "Package Installation"
 
 CORE_PACKAGES=(
-    hyprland waybar awww mako zed ly pacman-contrib
+    hyprland waybar awww mako zed sddm qt6-5compat pacman-contrib
     xdg-desktop-portal-hyprland
 )
 TERMINAL_PACKAGES=(kitty starship fastfetch)
@@ -293,7 +293,7 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                   ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                               "Hyprland config"
+[[ -d "$CONFIGS_SRC/hypr"                    ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                               "Hyprland config"
 [[ -d "$CONFIGS_SRC/waybar"                  ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                          "Waybar config"
 [[ -f "$CONFIGS_SRC/kitty/kitty.conf"        ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"             "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
@@ -472,9 +472,11 @@ print_phase "Pywal symlinks"
 
 print_phase "Services & permissions"
 
-systemctl enable ly@tty2.service        2>/dev/null && print_ok "ly enabled"             || true
-systemctl enable bluetooth.service      2>/dev/null && print_ok "bluetooth enabled"      || true
-systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled" || true
+systemctl disable ly@tty2.service       2>/dev/null || true
+systemctl disable ly.service            2>/dev/null || true
+systemctl enable sddm.service           2>/dev/null && print_ok "sddm enabled"             || true
+systemctl enable bluetooth.service      2>/dev/null && print_ok "bluetooth enabled"        || true
+systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"   || true
 
 chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
 print_ok "Ownership set"
@@ -494,14 +496,14 @@ _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
 _row "system updated"                        "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
 _row "pywal16"                                "pipx (PyPI, no AUR)"
-_row "spotify_player"                         "cargo (crates.io, no AUR)"
+_row "spotify_player"                        "cargo (crates.io, no AUR)"
 _row "dotfiles deployed"                     "~/.config/*"
 _row "gpu environment"                       "hypr/gpu-env.conf"
-_row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
+_row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
 _row "colloid-dynamic icons"                 "~/.local/share/icons"
 _row "pywal symlinks"                        "wal → cache"
 _row "zed theme"                             "zed/themes/zed.json"
-_row "ly · bluetooth · NetworkManager"      "systemctl enable"
+_row "sddm · bluetooth · NetworkManager"     "systemctl enable"
 
 echo ""
 hr
@@ -510,8 +512,8 @@ echo ""
 echo -e "    ${BLD}next${RST}"
 echo ""
 echo -e "    ${BCYN}1${RST}  ${DIM}reboot${RST}                    ${BBLK}sudo reboot${RST}"
-echo -e "    ${BCYN}2${RST}  ${DIM}select session at ly${RST}       ${BBLK}Hyprland${RST}"
-echo -e "    ${BCYN}3${RST}  ${DIM}set your wallpaper${RST}         ${BBLK}wal -i ~/Pictures/Wallpapers/<img>${RST}"
+echo -e "    ${BCYN}2${RST}  ${DIM}select session at sddm${RST}      ${BBLK}Hyprland${RST}"
+echo -e "    ${BCYN}3${RST}  ${DIM}set your wallpaper${RST}          ${BBLK}wal -i ~/Pictures/Wallpapers/<img>${RST}"
 
 echo ""
 hr
@@ -525,11 +527,11 @@ _bind "super + d"             "launcher"
 _bind "super + q"             "close window"
 _bind "super + f"             "file manager"
 _bind "super + w"             "wallpaper picker"
-_bind "super + b / c / i"    "browser · editor · monitor"
+_bind "super + b / c / i"     "browser · editor · monitor"
 _bind "super + v"             "toggle float"
-_bind "super + h/j/k/l"      "focus ← ↓ ↑ →"
+_bind "super + h/j/k/l"       "focus ← ↓ ↑ →"
 _bind "super + [1–5]"         "switch workspace"
-_bind "super+shift + [1–5]"  "move to workspace"
+_bind "super+shift + [1–5]"   "move to workspace"
 _bind "super+shift + s"       "spotify_player (kitty popup)"
 
 echo ""
