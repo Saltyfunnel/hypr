@@ -18,7 +18,7 @@ BBLU="\e[94m"; BMAG="\e[95m"; BCYN="\e[96m"; BWHT="\e[97m"
 BLD="\e[1m"; DIM="\e[2m"; ITL="\e[3m"; UND="\e[4m"
 
 STEP=0
-TOTAL_STEPS=10
+TOTAL_STEPS=9
 
 ################################################################################
 # HELPER FUNCTIONS
@@ -186,7 +186,7 @@ UTILITY_PACKAGES=(
 FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
 )
-APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam)
+APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam spotify-launcher)
 DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx rust alsa-lib pkgconf ueberzugpp)
 FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascadia-code-nerd)
 MEDIA_PACKAGES=(poppler imagemagick ffmpeg chafa)
@@ -237,21 +237,6 @@ wait $! || print_err "pywal16 install failed  →  /tmp/hypr_install_log"
 print_ok "pywal16 installed via pipx (PyPI, not AUR)"
 
 ################################################################################
-# SPOTIFY_PLAYER (CARGO — NO AUR)
-################################################################################
-
-print_phase "spotify_player (cargo)"
-
-sudo -u "$USER_NAME" bash -c 'export PATH="$HOME/.cargo/bin:$PATH"; cargo install spotify_player --features streaming,image,media-control,notify' \
-    > /tmp/hypr_install_log 2>&1 &
-spinner "$!" "Building spotify_player via cargo"
-wait $! || print_err "spotify_player install failed  →  /tmp/hypr_install_log"
-print_ok "spotify_player installed via cargo (crates.io, not AUR)"
-
-sudo -u "$USER_NAME" bash -c "grep -qxF 'export PATH=\"\$HOME/.cargo/bin:\$PATH\"' '$USER_HOME/.bashrc' || echo 'export PATH=\"\$HOME/.cargo/bin:\$PATH\"' >> '$USER_HOME/.bashrc'"
-print_ok "cargo bin added to PATH"
-
-################################################################################
 # DIRECTORY STRUCTURE
 ################################################################################
 
@@ -263,7 +248,7 @@ CONFIG_DIRS=(
     "$CONFIG_DIR/mako"    "$CONFIG_DIR/scripts"
     "$CONFIG_DIR/wal/templates"  "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
-    "$CONFIG_DIR/zed/themes" "$CONFIG_DIR/spotify-player"
+    "$CONFIG_DIR/zed/themes"
 )
 
 for dir in "${CONFIG_DIRS[@]}"; do
@@ -300,8 +285,6 @@ print_ok "Stale symlinks & conflicting files cleared"
 [[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
 [[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
 [[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
-[[ -d "$CONFIGS_SRC/spotify-player"          ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/spotify-player/'* '$CONFIG_DIR/spotify-player/'"          "spotify_player config"
-[[ -f "$DESKTOP_ENTRIES_SRC/spotify-player.desktop" ]] && run_command "sudo -u $USER_NAME cp '$DESKTOP_ENTRIES_SRC/spotify-player.desktop' '$USER_HOME/.local/share/applications/spotify-player.desktop'" "Spotify Player desktop entry"
 
 # mako/config is intentionally NOT copied — managed by pywal symlink
 
@@ -494,7 +477,6 @@ _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
 _row "system updated"                        "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
 _row "pywal16"                               "pipx (PyPI, no AUR)"
-_row "spotify_player"                        "cargo (crates.io, no AUR)"
 _row "dotfiles deployed"                     "~/.config/*"
 _row "gpu environment"                       "hypr/gpu-env.conf"
 _row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
@@ -509,7 +491,7 @@ echo ""
 
 echo -e "    ${BLD}next${RST}"
 echo ""
-echo -e "    ${BCYN}1${RST}  ${DIM}reboot${RST}                     ${BBLK}sudo reboot${RST}"
+echo -e "    ${BCYN}1${RST}  ${DIM}reboot${RST}                      ${BBLK}sudo reboot${RST}"
 echo -e "    ${BCYN}2${RST}  ${DIM}select session at sddm${RST}      ${BBLK}Hyprland${RST}"
 echo -e "    ${BCYN}3${RST}  ${DIM}set your wallpaper${RST}          ${BBLK}wal -i ~/Pictures/Wallpapers/<img>${RST}"
 
@@ -530,7 +512,6 @@ _bind "super + v"              "toggle float"
 _bind "super + h/j/k/l"        "focus ← ↓ ↑ →"
 _bind "super + [1–5]"          "switch workspace"
 _bind "super+shift + [1–5]"    "move to workspace"
-_bind "super+shift + s"        "spotify_player (kitty popup)"
 
 echo ""
 hr
