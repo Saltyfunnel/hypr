@@ -472,10 +472,8 @@ print_phase "Pywal symlinks"
 
 print_phase "Services & permissions"
 
-systemctl disable ly@tty2.service       2>/dev/null || true
-systemctl disable ly.service            2>/dev/null || true
-systemctl enable sddm.service           2>/dev/null && print_ok "sddm enabled"             || true
-systemctl enable bluetooth.service      2>/dev/null && print_ok "bluetooth enabled"        || true
+systemctl enable sddm.service            2>/dev/null && print_ok "sddm enabled"             || true
+systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"        || true
 systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"   || true
 
 chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
@@ -495,7 +493,7 @@ echo ""
 _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
 _row "system updated"                        "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
-_row "pywal16"                                "pipx (PyPI, no AUR)"
+_row "pywal16"                               "pipx (PyPI, no AUR)"
 _row "spotify_player"                        "cargo (crates.io, no AUR)"
 _row "dotfiles deployed"                     "~/.config/*"
 _row "gpu environment"                       "hypr/gpu-env.conf"
@@ -511,7 +509,7 @@ echo ""
 
 echo -e "    ${BLD}next${RST}"
 echo ""
-echo -e "    ${BCYN}1${RST}  ${DIM}reboot${RST}                    ${BBLK}sudo reboot${RST}"
+echo -e "    ${BCYN}1${RST}  ${DIM}reboot${RST}                     ${BBLK}sudo reboot${RST}"
 echo -e "    ${BCYN}2${RST}  ${DIM}select session at sddm${RST}      ${BBLK}Hyprland${RST}"
 echo -e "    ${BCYN}3${RST}  ${DIM}set your wallpaper${RST}          ${BBLK}wal -i ~/Pictures/Wallpapers/<img>${RST}"
 
@@ -523,16 +521,16 @@ _bind() { printf "    ${BBLK}%-22s${RST}${DIM}%s${RST}\n" "$1" "$2"; }
 echo -e "    ${BLD}bindings${RST}"
 echo ""
 _bind "super + return"        "terminal"
-_bind "super + d"             "launcher"
-_bind "super + q"             "close window"
-_bind "super + f"             "file manager"
-_bind "super + w"             "wallpaper picker"
-_bind "super + b / c / i"     "browser · editor · monitor"
-_bind "super + v"             "toggle float"
-_bind "super + h/j/k/l"       "focus ← ↓ ↑ →"
-_bind "super + [1–5]"         "switch workspace"
-_bind "super+shift + [1–5]"   "move to workspace"
-_bind "super+shift + s"       "spotify_player (kitty popup)"
+_bind "super + d"              "launcher"
+_bind "super + q"              "close window"
+_bind "super + f"              "file manager"
+_bind "super + w"              "wallpaper picker"
+_bind "super + b / c / i"      "browser · editor · monitor"
+_bind "super + v"              "toggle float"
+_bind "super + h/j/k/l"        "focus ← ↓ ↑ →"
+_bind "super + [1–5]"          "switch workspace"
+_bind "super+shift + [1–5]"    "move to workspace"
+_bind "super+shift + s"        "spotify_player (kitty popup)"
 
 echo ""
 hr
