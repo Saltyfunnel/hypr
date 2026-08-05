@@ -188,9 +188,16 @@ return function(user)
     end
 
     -- ANSI text has no alpha channel, so opacity is simulated by blending
-    -- the RESOURCES color with the Kitty background at several levels.
-    local foreground = { 142, 164, 162 } -- #8ea4a2
-    local background = { 24, 22, 22 }    -- #181616
+    -- the art color with the background at several levels. Both colors are
+    -- pulled from pywal's exported env vars (~/.cache/wal/colors.sh), so the
+    -- art tracks whatever theme is currently active instead of a fixed pair.
+    local function hexToRgb(hex)
+        hex = hex:gsub("#", "")
+        return { tonumber(hex:sub(1, 2), 16), tonumber(hex:sub(3, 4), 16), tonumber(hex:sub(5, 6), 16) }
+    end
+
+    local foreground = hexToRgb(os.getenv("color6") or "#8ea4a2")
+    local background = hexToRgb(os.getenv("background") or "#181616")
     local alphaLevels = { 0.25, 0.4, 0.55, 0.7, 0.85, 1.0 }
 
     local function alphaColor(alpha)
