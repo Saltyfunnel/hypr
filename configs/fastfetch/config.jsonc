@@ -6,58 +6,14 @@
     },
 
     "display": {
-        "separator": "",
-        "brightColor": false,
-        "disableLinewrap": true,
-        "color": {
-            "keys": "90",
-            "title": "97",
-            "output": "97",
-            "separator": "90"
-        },
-        "size": {
-            "binaryPrefix": "iec",
-            "ndigits": 1
-        },
-        "duration": {
-            "abbreviation": true
-        },
-        "percent": {
-            "type": ["num"],
-            "ndigits": 0
-        }
+        "separator": ""
     },
 
     "modules": [
-        { "type": "os",       "format": "lua:SYS = ..." },
-        { "type": "kernel",   "format": "lua:KERNEL = ..." },
-        { "type": "wm",       "format": "lua:WM = ..." },
-        { "type": "terminal", "format": "lua:TERM = ..." },
-        { "type": "host",     "format": "lua:HOST = ..." },
-        { "type": "cpu",      "format": "lua:CPU = ..." },
-        { "type": "gpu",      "format": "lua:GPU = ..." },
-        { "type": "display",  "format": "lua:DISPLAY = ..." },
-        { "type": "memory",   "format": "lua:MEM = ..." },
-        {
-            "type": "disk",
-            "folders": "/",
-            "format": "lua:ROOT = ..."
-        },
-        { "type": "battery", "format": "lua:BAT = ..." },
         {
             "type": "command",
-            "text": "awk 'FILENAME ~ /charge_full$/ { full += $1 } FILENAME ~ /charge_full_design$/ { design += $1 } END { if (design > 0) printf \"%.0f%%\", full * 100 / design }' /sys/class/power_supply/BAT*/charge_full /sys/class/power_supply/BAT*/charge_full_design",
-            "format": "lua:local value = ...; HEALTH = value.result"
-        },
-        { "type": "uptime",   "format": "lua:UP = ..." },
-        { "type": "packages", "format": "lua:PKG = ..." },
-        { "type": "localip",  "format": "lua:IP = ..." },
-        { "type": "wifi",     "format": "lua:WIFI = ..." },
-        { "type": "datetime", "format": "lua:DATE = ..." },
-        {
-            "type": "title",
             "key": " ",
-            "format": "lua:local user = ...; return dofile(user.homeDir .. '.config/fastfetch/render.lua')(user)"
+            "text": "lua ~/.config/fastfetch/render.lua"
         }
     ]
 }
