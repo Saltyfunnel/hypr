@@ -49,6 +49,13 @@ ICON_OVERRIDES = {
 # Strip desktop field codes (%f %F %u %U %c %k %i %d %D %n %N %v %m)
 _FIELD_RE = re.compile(r"%[fFuUckidDnNvm]")
 
+# Row stagger fade-in — per-row delay step and cap on how many rows get staggered
+ROW_FADE_STEP_MS = 18
+ROW_FADE_MAX_STAGGER = 12
+
+# Window open animation duration
+OPEN_ANIM_MS = 240
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def load_pywal():
@@ -121,6 +128,9 @@ def get_font(size: int, bold: bool = False) -> QtGui.QFont:
 # ── App Row ───────────────────────────────────────────────────────────────────
 
 class AppRow(QtWidgets.QWidget):
+    """A single app entry. Selection highlight now lives in a separate sliding
+    indicator widget owned by Launcher — this row only draws its own hover state."""
+
     launched = QtCore.pyqtSignal(dict)
 
     def __init__(self, app: dict, accent: str, fg: str, parent=None):
@@ -129,7 +139,9 @@ class AppRow(QtWidgets.QWidget):
         self._accent = accent
         self._fg = fg
         self._hover = False
-        self._selected = False
+        self._opacity = 1.0
+        self._fade_timer: QtCore.QTimer | None = None
+        self._fade_start = None
 
         self.setFixedHeight(ITEM_H)
         self.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
@@ -149,15 +161,30 @@ class AppRow(QtWidgets.QWidget):
         self._name = app.get("Name", "")
         self._exec_display = truncate(clean_exec(app.get("Exec", "")), 38)
 
-    def set_selected(self, val: bool):
-        if self._selected != val:
-            self._selected = val
-            self.update()
-
     def update_colors(self, accent: str, fg: str):
         self._accent = accent
         self._fg = fg
         self.update()
+
+    def start_fade_in(self, delay_ms: int = 0):
+        """Fade this row in from transparent, after an optional stagger delay."""
+        self._opacity = 0.0
+        QtCore.QTimer.singleShot(delay_ms, self._begin_fade)
+
+    def _begin_fade(self):
+        self._fade_start = QtCore.QTime.currentTime()
+        self._fade_timer = QtCore.QTimer(self)
+        self._fade_timer.setInterval(12)
+        self._fade_timer.timeout.connect(self._fade_tick)
+        self._fade_timer.start()
+
+    def _fade_tick(self):
+        elapsed = self._fade_start.msecsTo(QtCore.QTime.currentTime())
+        t = min(1.0, elapsed / 180.0)
+        self._opacity = 1 - (1 - t) ** 3  # ease-out cubic
+        self.update()
+        if t >= 1.0:
+            self._fade_timer.stop()
 
     def enterEvent(self, _):
         self._hover = True
@@ -173,12 +200,10 @@ class AppRow(QtWidgets.QWidget):
     def paintEvent(self, _):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        p.setOpacity(self._opacity)
         rect = self.rect().adjusted(2, 2, -8, -2)
 
-        if self._selected:
-            p.setBrush(QtGui.QColor(mk_alpha(self._accent, 120)))
-            p.setPen(QtGui.QPen(QtGui.QColor(self._accent), 1.5))
-        elif self._hover:
+        if self._hover:
             p.setBrush(QtGui.QColor(mk_alpha(self._accent, 70)))
             p.setPen(QtGui.QPen(QtGui.QColor(self._accent), 1))
         else:
@@ -213,6 +238,8 @@ class Launcher(QtWidgets.QWidget):
 
         self._selected_idx = -1   # keyboard selection index into self._rows
         self._rows: list[AppRow] = []
+        self._indicator_anim: QtCore.QPropertyAnimation | None = None
+        self._wall_anim: QtCore.QPropertyAnimation | None = None
 
         # Watch pywal files for live theme updates
         self.watcher = QtCore.QFileSystemWatcher(self)
@@ -255,6 +282,30 @@ class Launcher(QtWidgets.QWidget):
         self._search.textChanged.connect(self._on_search_changed)
         self._search.installEventFilter(self)   # capture arrow keys before Qt eats them
 
+        # Glowing pulse ring for the search box, breathes while focused
+        self._search_glow = QtWidgets.QGraphicsDropShadowEffect(self._search)
+        self._search_glow.setOffset(0, 0)
+        self._search_glow.setBlurRadius(0)
+        self._search_glow.setColor(QtGui.QColor("#7aa2f7"))
+        self._search.setGraphicsEffect(self._search_glow)
+
+        glow_up = QtCore.QPropertyAnimation(self._search_glow, b"blurRadius", self)
+        glow_up.setDuration(700)
+        glow_up.setStartValue(6)
+        glow_up.setEndValue(24)
+        glow_up.setEasingCurve(QtCore.QEasingCurve.Type.InOutSine)
+
+        glow_down = QtCore.QPropertyAnimation(self._search_glow, b"blurRadius", self)
+        glow_down.setDuration(700)
+        glow_down.setStartValue(24)
+        glow_down.setEndValue(6)
+        glow_down.setEasingCurve(QtCore.QEasingCurve.Type.InOutSine)
+
+        self._glow_group = QtCore.QSequentialAnimationGroup(self)
+        self._glow_group.addAnimation(glow_up)
+        self._glow_group.addAnimation(glow_down)
+        self._glow_group.setLoopCount(-1)
+
         # Shortcut buttons
         icon_container = QtWidgets.QWidget(self.frame)
         icon_container.setGeometry(35, WIN_H - 65, WALL_W - 60, 45)
@@ -284,6 +335,11 @@ class Launcher(QtWidgets.QWidget):
         self.list_layout.setSpacing(4)
         self.scroll.setWidget(self.list_container)
 
+        # Sliding selection indicator — glides between rows instead of snapping
+        self._sel_indicator = QtWidgets.QFrame(self.list_container)
+        self._sel_indicator.setObjectName("SelIndicator")
+        self._sel_indicator.hide()
+
         # Boot
         self._refresh_theme()
         self._find_apps()
@@ -294,7 +350,36 @@ class Launcher(QtWidgets.QWidget):
         self._tick()
         self._center()
         self._search.setFocus()
+
+        # Fade + grow-in on open
+        self.opacity_effect = QtWidgets.QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.opacity_effect)
+        self.opacity_effect.setOpacity(0.0)
+
+        shrink = 0.90
+        sw, sh = int(WIN_W * shrink), int(WIN_H * shrink)
+        start_rect = QtCore.QRect((WIN_W - sw) // 2, (WIN_H - sh) // 2, sw, sh)
+        full_rect = QtCore.QRect(0, 0, WIN_W, WIN_H)
+        self.frame.setGeometry(start_rect)
+
+        fade_anim = QtCore.QPropertyAnimation(self.opacity_effect, b"opacity", self)
+        fade_anim.setDuration(OPEN_ANIM_MS)
+        fade_anim.setStartValue(0.0)
+        fade_anim.setEndValue(1.0)
+        fade_anim.setEasingCurve(QtCore.QEasingCurve.Type.OutCubic)
+
+        grow_anim = QtCore.QPropertyAnimation(self.frame, b"geometry", self)
+        grow_anim.setDuration(OPEN_ANIM_MS)
+        grow_anim.setStartValue(start_rect)
+        grow_anim.setEndValue(full_rect)
+        grow_anim.setEasingCurve(QtCore.QEasingCurve.Type.OutCubic)
+
+        self._open_anim = QtCore.QParallelAnimationGroup(self)
+        self._open_anim.addAnimation(fade_anim)
+        self._open_anim.addAnimation(grow_anim)
+
         self.show()
+        QtCore.QTimer.singleShot(0, self._open_anim.start)
 
     # ── Theme ────────────────────────────────────────────────────────────────
 
@@ -302,10 +387,35 @@ class Launcher(QtWidgets.QWidget):
         self.BG, self.FG, self.ACC, self.ACC2 = load_pywal()
         px = load_wall(wal_path(), WALL_W, WIN_H, align=WALL_ALIGN)
         if not px.isNull():
+            old_px = self.left_img.pixmap()
             self.left_img.setPixmap(px)
+            if old_px is not None and not old_px.isNull():
+                self._crossfade_wall(old_px)
+        self._search_glow.setColor(QtGui.QColor(self.ACC))
         for row in self._rows:
             row.update_colors(self.ACC, self.FG)
         self._apply_style()
+
+    def _crossfade_wall(self, old_px: QtGui.QPixmap):
+        """Briefly overlay the previous wallpaper crop and fade it out, revealing
+        the freshly set one underneath — avoids a jarring hard-cut on theme change."""
+        overlay = QtWidgets.QLabel(self.frame)
+        overlay.setPixmap(old_px)
+        overlay.setGeometry(self.left_img.geometry())
+        overlay.show()
+        overlay.stackUnder(self.left_overlay)
+
+        effect = QtWidgets.QGraphicsOpacityEffect(overlay)
+        overlay.setGraphicsEffect(effect)
+
+        anim = QtCore.QPropertyAnimation(effect, b"opacity", self)
+        anim.setDuration(400)
+        anim.setStartValue(1.0)
+        anim.setEndValue(0.0)
+        anim.setEasingCurve(QtCore.QEasingCurve.Type.OutCubic)
+        anim.finished.connect(overlay.deleteLater)
+        anim.start(QtCore.QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+        self._wall_anim = anim
 
     def _apply_style(self):
         self.setStyleSheet(f"""
@@ -356,6 +466,11 @@ class Launcher(QtWidgets.QWidget):
             #ScBtn:hover {{
                 background: {self.ACC};
                 color: #fff;
+            }}
+            #SelIndicator {{
+                background: {mk_alpha(self.ACC, 55)};
+                border: 1px solid {self.ACC};
+                border-radius: 5px;
             }}
             QScrollBar:vertical {{
                 width: 2px;
@@ -421,6 +536,8 @@ class Launcher(QtWidgets.QWidget):
         self._rebuild(apps)
 
     def _rebuild(self, apps: list[dict]):
+        self._sel_indicator.hide()
+
         # Clear existing rows
         while self.list_layout.count():
             item = self.list_layout.takeAt(0)
@@ -434,14 +551,21 @@ class Launcher(QtWidgets.QWidget):
             apps,
             key=lambda a: (-self.usage.get(a["Name"], 0), a["Name"].lower()),
         )
-        for app in srt:
+        for i, app in enumerate(srt):
             row = AppRow(app, self.ACC, self.FG)
             row.launched.connect(self._execute)
             self.list_layout.addWidget(row)
             self._rows.append(row)
 
+            # Staggered fade-in — earlier rows appear first, capped so long
+            # lists don't take forever to finish revealing themselves
+            delay = min(i, ROW_FADE_MAX_STAGGER) * ROW_FADE_STEP_MS
+            row.start_fade_in(delay)
+
         # Trailing spacer so items stack from top
         self.list_layout.addStretch()
+        self.list_layout.activate()
+        self._sel_indicator.lower()
 
     # ── Search & keyboard nav ────────────────────────────────────────────────
 
@@ -450,7 +574,32 @@ class Launcher(QtWidgets.QWidget):
         self._rebuild(filtered)
         # Auto-select first result when searching
         if filtered:
-            self._set_selection(0)
+            QtCore.QTimer.singleShot(0, lambda: self._set_selection(0))
+
+    def _move_indicator(self, idx: int, animate: bool = True):
+        if not (0 <= idx < len(self._rows)):
+            self._sel_indicator.hide()
+            return
+
+        row = self._rows[idx]
+        r = row.geometry()
+        target = QtCore.QRect(r.x() + 2, r.y() + 2, r.width() - 10, r.height() - 4)
+
+        if not animate or not self._sel_indicator.isVisible():
+            self._sel_indicator.setGeometry(target)
+            self._sel_indicator.show()
+            self._sel_indicator.lower()
+            self.scroll.ensureWidgetVisible(row)
+            return
+
+        anim = QtCore.QPropertyAnimation(self._sel_indicator, b"geometry", self)
+        anim.setDuration(160)
+        anim.setEasingCurve(QtCore.QEasingCurve.Type.OutCubic)
+        anim.setStartValue(self._sel_indicator.geometry())
+        anim.setEndValue(target)
+        anim.start(QtCore.QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+        self._indicator_anim = anim
+        self.scroll.ensureWidgetVisible(row)
 
     def _set_selection(self, idx: int):
         if self._rows:
@@ -461,31 +610,34 @@ class Launcher(QtWidgets.QWidget):
         if self._selected_idx == idx:
             return
 
-        if 0 <= self._selected_idx < len(self._rows):
-            self._rows[self._selected_idx].set_selected(False)
         self._selected_idx = idx
-        if 0 <= idx < len(self._rows):
-            self._rows[idx].set_selected(True)
-            self.scroll.ensureWidgetVisible(self._rows[idx])
+        self._move_indicator(idx)
 
     def eventFilter(self, obj, event):
-        if obj is self._search and event.type() == QtCore.QEvent.Type.KeyPress:
-            key = event.key()
-            if key == QtCore.Qt.Key.Key_Down:
-                self._set_selection(max(self._selected_idx, 0) + 1)
-                return True
-            if key == QtCore.Qt.Key.Key_Up:
-                self._set_selection(self._selected_idx - 1)
-                return True
-            if key in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter):
-                if 0 <= self._selected_idx < len(self._rows):
-                    self._execute(self._rows[self._selected_idx]._app)
-                elif self._rows:
-                    self._execute(self._rows[0]._app)
-                return True
-            if key == QtCore.Qt.Key.Key_Escape:
-                QtWidgets.QApplication.quit()
-                return True
+        if obj is self._search:
+            etype = event.type()
+            if etype == QtCore.QEvent.Type.FocusIn:
+                self._glow_group.start()
+            elif etype == QtCore.QEvent.Type.FocusOut:
+                self._glow_group.stop()
+                self._search_glow.setBlurRadius(0)
+            elif etype == QtCore.QEvent.Type.KeyPress:
+                key = event.key()
+                if key == QtCore.Qt.Key.Key_Down:
+                    self._set_selection(max(self._selected_idx, 0) + 1)
+                    return True
+                if key == QtCore.Qt.Key.Key_Up:
+                    self._set_selection(self._selected_idx - 1)
+                    return True
+                if key in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter):
+                    if 0 <= self._selected_idx < len(self._rows):
+                        self._execute(self._rows[self._selected_idx]._app)
+                    elif self._rows:
+                        self._execute(self._rows[0]._app)
+                    return True
+                if key == QtCore.Qt.Key.Key_Escape:
+                    QtWidgets.QApplication.quit()
+                    return True
         return super().eventFilter(obj, event)
 
     def keyPressEvent(self, event):
