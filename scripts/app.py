@@ -44,7 +44,6 @@ ICON_OVERRIDES = {
     "htop": "󰓅",
     "nvim": "󰕷",
     "vim":  "󰕷",
-    "Spotify Player": "\uf1bc",
 }
 
 # Strip desktop field codes (%f %F %u %U %c %k %i %d %D %n %N %v %m)
