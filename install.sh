@@ -110,7 +110,7 @@ WAL_CACHE="$CACHE_DIR/wal"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_SRC="$REPO_ROOT/scripts"
 CONFIGS_SRC="$REPO_ROOT/configs"
-WALLPAPERS_SRC="$REPO_ROOT/Pictures/Wallpapers"
+WALLPAPERS_REPO="https://github.com/Saltyfunnel/Wallpapers.git"
 DESKTOP_ENTRIES_SRC="$REPO_ROOT/desktop-entries"
 
 print_banner
@@ -279,7 +279,7 @@ for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null ||
 print_ok "Stale symlinks & conflicting files cleared"
 
 [[ -d "$CONFIGS_SRC/hypr"                    ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                               "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"                  ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                          "Waybar config"
+[[ -d "$CONFIGS_SRC/waybar"                  ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                             "Waybar config"
 [[ -f "$CONFIGS_SRC/kitty/kitty.conf"        ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"             "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
 [[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
@@ -363,9 +363,11 @@ print_phase "Scripts, wallpapers & shell"
     run_command "sudo -u $USER_NAME cp -rf '$SCRIPTS_SRC/'* '$CONFIG_DIR/scripts/' && chmod +x '$CONFIG_DIR/scripts/'* 2>/dev/null || true" \
     "User scripts"
 
-[[ -d "$WALLPAPERS_SRC" ]] && \
-    run_command "sudo -u $USER_NAME cp -rf '$WALLPAPERS_SRC/'* '$USER_HOME/Pictures/Wallpapers/'" \
-    "Wallpapers"
+WALLPAPER_TMP="/tmp/wallpapers-src"
+rm -rf "$WALLPAPER_TMP"
+run_command "sudo -u $USER_NAME git clone --depth 1 '$WALLPAPERS_REPO' '$WALLPAPER_TMP'" "Cloning Wallpapers repository"
+run_command "sudo -u $USER_NAME cp -rf '$WALLPAPER_TMP/'* '$USER_HOME/Pictures/Wallpapers/' && rm -rf '$USER_HOME/Pictures/Wallpapers/.git'" "Deploying Wallpapers"
+rm -rf "$WALLPAPER_TMP"
 
 sudo -u "$USER_NAME" cat > "$USER_HOME/.bashrc" << 'EOF'
 #!/bin/bash
