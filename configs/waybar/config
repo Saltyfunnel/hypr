@@ -1,5 +1,4 @@
 {
-
   "layer": "top",
   "position": "top",
   "mod": "dock",
@@ -15,9 +14,8 @@
   ],
   "modules-right": [
     "custom/updates",
-    "custom/spotify",
-    "custom/firefox",
-    "custom/steam",
+    "mpris",
+    "tray",
     "group/hardware"
   ],
   "group/hardware": {
@@ -42,6 +40,23 @@
       "custom/screenshot"
     ]
   },
+  "tray": {
+    "icon-size": 16,
+    "spacing": 8,
+    "show-passive-items": true
+  },
+  "mpris": {
+    "format": "{player_icon} {artist} - {title}",
+    "format-paused": "{status_icon} {artist} - {title}",
+    "player-icons": {
+      "default": "󰎆",
+      "spotify": "󰓇"
+    },
+    "status-icons": {
+      "paused": "󰏤"
+    },
+    "max-length": 25
+  },
   "cpu": {
     "format": " {usage}%",
     "on-click": "kitty -e btop"
@@ -58,7 +73,7 @@
     "on-click": "kitty -e sudo pacman -Syu",
     "tooltip": true,
     "tooltip-format": "󰚰 Updates available\n\n click to run pacman -Syu"
-},
+  },
   "custom/screenshot": {
     "format": "󰹑",
     "on-click": "~/.config/scripts/screenshot.sh area",
@@ -66,32 +81,15 @@
     "on-click-middle": "~/.config/scripts/screenshot.sh window",
     "tooltip": true,
     "tooltip-format": "L: Select Area\nM: Window\nR: Fullscreen"
-},
-  "custom/spotify": {
-    "exec": "playerctl -p spotify metadata --format '󰓇 {{ artist }} - {{ title }}' 2>/dev/null || echo ''",
-    "exec-if": "playerctl -p spotify status 2>/dev/null | grep -q 'Playing\\|Paused'",
-    "format": "{}",
-    "interval": 3,
-    "max-length": 25
   },
-  "custom/firefox": {
-    "exec": "pgrep -x firefox >/dev/null && echo '󰈹' || echo ''",
-    "format": "{}",
-    "interval": 5
-  },
-  "custom/steam": {
-    "exec": "pgrep -x steam >/dev/null && echo '󰓓' || echo ''",
-    "format": "{}",
-    "interval": 5
-  },
- "custom/power": {
+  "custom/power": {
     "format": "⏻",
     "on-click": "systemctl poweroff",
     "on-click-middle": "hyprctl dispatch 'hl.dsp.exit()'",
     "on-click-right": "systemctl reboot",
     "tooltip": true,
     "tooltip-format": "L: Shutdown\nM: Log out\nR: Reboot"
-},
+  },
   "pulseaudio": {
     "format": "{icon} {volume}%",
     "format-muted": "󰝟",
@@ -113,7 +111,7 @@
   },
   "hyprland/workspaces": {
     "format": "{name}",
-    "persistent-workspaces": { "*" : 3 }
+    "persistent-workspaces": { "*": 3 }
   },
   "hyprland/window": {
     "format": "󰣇 {}"
