@@ -34,7 +34,7 @@ An automated Arch Linux setup script that installs and configures a complete Hyp
 ## Quick Start
 
 ```bash
-git clone [https://github.com/Saltyfunnel/hypr.git](https://github.com/Saltyfunnel/hypr.git)
+git clone https://github.com/Saltyfunnel/hypr
 cd hypr
 chmod +x install.sh
 sudo ./install.sh
