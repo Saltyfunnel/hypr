@@ -13,8 +13,7 @@ window#waybar {
 
 /* --- Standard Modules (Stand-alone pills) --- */
 #window, #clock, #workspaces,
-#custom-updates, #custom-spotify,
-#custom-firefox, #custom-steam {
+#custom-updates, #mpris, #tray {
     background-color: {background};
     border: 3px solid {color1};
     border-radius: 16px;
@@ -69,13 +68,23 @@ window#waybar {
 #bluetooth        { color: {color2}; }
 #custom-screenshot { color: {color2}; }
 
-/* --- Text Colors --- */
+/* --- Text & Module Colors --- */
 #clock            { color: {color1}; }
 #window           { color: {color4}; }
 #custom-updates   { color: {color4}; }
-#custom-spotify   { color: {color10}; }
-#custom-firefox   { color: {color9}; }
-#custom-steam     { color: {color13}; }
+#mpris            { color: {color10}; }
+
+/* System Tray Items */
+#tray {
+    padding: 0 10px;
+}
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+    background-color: {color1};
+}
 
 /* --- Workspaces --- */
 #workspaces button {
