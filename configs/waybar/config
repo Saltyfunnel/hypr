@@ -102,11 +102,16 @@
     "format-muted": "󰍭",
     "on-click": "pamixer --default-source -t"
   },
-  "network": {
+"network": {
     "format-wifi": "󰤨",
     "format-ethernet": "󰈀",
     "format-disconnected": "󰤭",
-    "on-click": "kitty -e nmtui"
+    "on-click": "kitty -e nmtui",
+    "tooltip": true,
+    "tooltip-format": "󰈀 {ifname} via {gwaddr}",
+    "tooltip-format-wifi": "󰤨 {essid} ({signalStrength}%)\nIP: {ipaddr}\nInterface: {ifname}",
+    "tooltip-format-ethernet": "󰈀 {ifname}\nIP: {ipaddr}\nGateway: {gwaddr}",
+    "tooltip-format-disconnected": "󰤭 Disconnected"
   },
   "hyprland/workspaces": {
     "format": "{name}",
