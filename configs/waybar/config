@@ -15,7 +15,8 @@
   "modules-right": [
     "custom/updates",
     "mpris",
-    "tray",
+    "custom/firefox",
+    "custom/steam",
     "group/hardware"
   ],
   "group/hardware": {
@@ -40,22 +41,20 @@
       "custom/screenshot"
     ]
   },
-  "tray": {
-    "icon-size": 16,
-    "spacing": 8,
-    "show-passive-items": true
-  },
   "mpris": {
-    "format": "{player_icon} {artist} - {title}",
-    "format-paused": "{status_icon} {artist} - {title}",
-    "player-icons": {
-      "default": "󰎆",
-      "spotify": "󰓇"
-    },
-    "status-icons": {
-      "paused": "󰏤"
-    },
+    "format": "󰓇 {artist} - {title}",
+    "format-paused": "󰏤 {artist} - {title}",
     "max-length": 25
+  },
+  "custom/firefox": {
+    "exec": "pgrep -x firefox >/dev/null && echo '󰈹' || echo ''",
+    "format": "{}",
+    "interval": 5
+  },
+  "custom/steam": {
+    "exec": "pgrep -x steam >/dev/null && echo '󰓓' || echo ''",
+    "format": "{}",
+    "interval": 5
   },
   "cpu": {
     "format": " {usage}%",
