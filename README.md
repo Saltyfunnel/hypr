@@ -4,6 +4,15 @@ An automated Arch Linux setup script that installs and configures a complete Hyp
 
 ---
 
+## Previews
+
+<p align="center">
+  <img src="screenshot/1.jpg" alt="Desktop Preview 1" width="48%">
+  <img src="screenshot/2.jpg" alt="Desktop Preview 2" width="48%">
+</p>
+
+---
+
 ## Features
 
 * **GPU Auto-Detection:** Automatically detects Nvidia, AMD, or Intel graphics cards and installs appropriate drivers and Wayland environment variables.
@@ -25,16 +34,7 @@ An automated Arch Linux setup script that installs and configures a complete Hyp
 ## Quick Start
 
 ```bash
-git clone https://github.com/Saltyfunnel/hypr.git
+git clone [https://github.com/Saltyfunnel/hypr.git](https://github.com/Saltyfunnel/hypr.git)
 cd hypr
 chmod +x install.sh
 sudo ./install.sh
-```
-
----
-
-## Post-Installation
-
-1. Reboot your system (`sudo reboot`).
-2. Select **Hyprland** at the SDDM login screen.
-3. Use the `SUPER + W` keybinding to select a wallpaper. Selec
