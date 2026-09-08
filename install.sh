@@ -200,7 +200,7 @@ FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascad
 MEDIA_PACKAGES=(poppler imagemagick ffmpeg chafa)
 COMPRESSION_PACKAGES=(unzip p7zip tar gzip xz bzip2 unrar trash-cli)
 PYTHON_PACKAGES=(python-pyqt5 python-pyqt6 python-pillow python-opencv)
-QT_PACKAGES=(qt5-wayland qt6-wayland qt6-svg qt6-declarative qt5-graphicaleffects qt5-quickcontrols)
+QT_PACKAGES=(qt5-wayland qt6-wayland qt6-svg qt6-declarative qt5-graphicaleffects qt5-quickcontrols qt5-quickcontrols2)
 
 ALL_PACKAGES=(
     "${CORE_PACKAGES[@]}" "${TERMINAL_PACKAGES[@]}" "${UTILITY_PACKAGES[@]}"
@@ -374,14 +374,81 @@ if [[ "$THEME_SDDM_CHOICE" =~ ^[Yy]$ ]]; then
     print_phase "SDDM pywal colors setup"
 
     SDDM_THEME_DIR="/usr/share/sddm/themes/custom-hypr-theme"
-    
-    # Clone a verified public SDDM theme repository (prevent prompt if repo is missing)
-    if [[ ! -f "$SDDM_THEME_DIR/Main.qml" ]]; then
-        rm -rf "$SDDM_THEME_DIR"
-        GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/MarianArlt/sddm-sugar-dark.git "$SDDM_THEME_DIR" 2>/dev/null || true
-    fi
-
+    rm -rf "$SDDM_THEME_DIR"
+    mkdir -p "$SDDM_THEME_DIR"
     mkdir -p /etc/sddm.conf.d
+
+    # Inline minimal QML SDDM Theme
+    cat > "$SDDM_THEME_DIR/Main.qml" << 'EOF'
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+
+Rectangle {
+    id: root
+    width: 1600
+    height: 900
+    color: config.background || "#1a1a1a"
+
+    ColumnLayout {
+        anchors.centerIn: parent
+        spacing: 15
+
+        Text {
+            text: "Welcome back"
+            color: config.foreground || "#ffffff"
+            font.pixelSize: 24
+            font.family: "Hack Nerd Font"
+            Layout.alignment: Qt.AlignHCenter
+        }
+
+        TextField {
+            id: username
+            placeholderText: "Username"
+            text: sddm.lastUser
+            font.family: "Hack Nerd Font"
+            Layout.preferredWidth: 250
+        }
+
+        TextField {
+            id: password
+            placeholderText: "Password"
+            echoMode: TextInput.Password
+            font.family: "Hack Nerd Font"
+            Layout.preferredWidth: 250
+            focus: true
+            onAccepted: sddm.login(username.text, password.text, sessionSelect.currentIndex)
+        }
+
+        ComboBox {
+            id: sessionSelect
+            model: sessionModel
+            textRole: "name"
+            font.family: "Hack Nerd Font"
+            Layout.preferredWidth: 250
+        }
+
+        Button {
+            text: "Login"
+            Layout.alignment: Qt.AlignHCenter
+            onClicked: sddm.login(username.text, password.text, sessionSelect.currentIndex)
+        }
+    }
+}
+EOF
+
+    # Metadata file for SDDM theme recognition
+    cat > "$SDDM_THEME_DIR/metadata.desktop" << 'EOF'
+[SDDM Theme]
+Name=custom-hypr-theme
+Description=Pywal Minimal SDDM Theme
+Author=Custom
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf.user
+Theme-Id=custom-hypr-theme
+EOF
 
     # Link pywal colors into SDDM theme directory
     sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/sddm-theme.conf" "$SDDM_THEME_DIR/theme.conf.user" 2>/dev/null || true
@@ -396,7 +463,7 @@ Font="Hack Nerd Font"
 [General]
 InputMethod=
 EOF
-    print_ok "SDDM configured to use pywal color scheme"
+    print_ok "SDDM configured to use minimal pywal color scheme"
 
     # Inject SDDM color update hook into setwall.sh
     SETWALL_REPO_PATH="$SCRIPTS_SRC/setwall.sh"
