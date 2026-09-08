@@ -378,7 +378,7 @@ if [[ "$THEME_SDDM_CHOICE" =~ ^[Yy]$ ]]; then
     mkdir -p "$SDDM_THEME_DIR"
     mkdir -p /etc/sddm.conf.d
 
-    # Inline minimal QML SDDM Theme
+    # Generate pywal-aware custom Main.qml inline
     cat > "$SDDM_THEME_DIR/Main.qml" << 'EOF'
 import QtQuick 2.15
 import QtQuick.Controls 2.15
@@ -388,16 +388,17 @@ Rectangle {
     id: root
     width: 1600
     height: 900
-    color: config.background || "#1a1a1a"
+    color: config.background || "#101010"
 
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: 15
+        spacing: 18
 
         Text {
             text: "Welcome back"
-            color: config.foreground || "#ffffff"
-            font.pixelSize: 24
+            color: config.color4 || config.foreground || "#ffffff"
+            font.pixelSize: 28
+            font.bold: true
             font.family: "Hack Nerd Font"
             Layout.alignment: Qt.AlignHCenter
         }
@@ -407,7 +408,14 @@ Rectangle {
             placeholderText: "Username"
             text: sddm.lastUser
             font.family: "Hack Nerd Font"
-            Layout.preferredWidth: 250
+            Layout.preferredWidth: 280
+            color: config.foreground || "#ffffff"
+            background: Rectangle {
+                color: config.color0 || "#202020"
+                border.color: username.activeFocus ? (config.color4 || "#888888") : (config.color8 || "#444444")
+                border.width: 2
+                radius: 6
+            }
         }
 
         TextField {
@@ -415,8 +423,15 @@ Rectangle {
             placeholderText: "Password"
             echoMode: TextInput.Password
             font.family: "Hack Nerd Font"
-            Layout.preferredWidth: 250
+            Layout.preferredWidth: 280
             focus: true
+            color: config.foreground || "#ffffff"
+            background: Rectangle {
+                color: config.color0 || "#202020"
+                border.color: password.activeFocus ? (config.color4 || "#888888") : (config.color8 || "#444444")
+                border.width: 2
+                radius: 6
+            }
             onAccepted: sddm.login(username.text, password.text, sessionSelect.currentIndex)
         }
 
@@ -425,12 +440,31 @@ Rectangle {
             model: sessionModel
             textRole: "name"
             font.family: "Hack Nerd Font"
-            Layout.preferredWidth: 250
+            Layout.preferredWidth: 280
+            delegate: ItemDelegate {
+                text: modelData.name
+                font.family: "Hack Nerd Font"
+                width: sessionSelect.width
+            }
         }
 
         Button {
             text: "Login"
+            font.family: "Hack Nerd Font"
+            font.bold: true
             Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: 120
+            contentItem: Text {
+                text: parent.text
+                font: parent.font
+                color: config.background || "#101010"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: config.color4 || config.foreground || "#ffffff"
+                radius: 6
+            }
             onClicked: sddm.login(username.text, password.text, sessionSelect.currentIndex)
         }
     }
