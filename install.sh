@@ -509,6 +509,11 @@ EOF
     if [[ -f "$TARGET_SETWALL" ]]; then
         cat >> "$TARGET_SETWALL" << 'EOF'
 
+# Maintain permissions for SDDM user access (MUST run after pywal16 creates/overwrites files)
+chmod 755 ~/.cache
+chmod 755 ~/.cache/wal 2>/dev/null || true
+chmod 644 ~/.cache/wal/colors.json 2>/dev/null || true
+
 # Update SDDM pywal colors (Appended dynamically by install.sh)
 if [[ -f "$HOME/.cache/wal/sddm-theme.conf" && -d "/usr/share/sddm/themes/custom-hypr-theme" ]]; then
     sudo cp "$HOME/.cache/wal/sddm-theme.conf" /usr/share/sddm/themes/custom-hypr-theme/theme.conf.user 2>/dev/null || true
@@ -516,7 +521,7 @@ fi
 EOF
         chown "$USER_NAME:$USER_NAME" "$TARGET_SETWALL"
         chmod +x "$TARGET_SETWALL"
-        print_ok "Appended SDDM update hook into $TARGET_SETWALL"
+        print_ok "Appended SDDM update hook and cache permissions into $TARGET_SETWALL"
     fi
 fi
 
