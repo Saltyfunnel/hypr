@@ -200,7 +200,7 @@ FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascad
 MEDIA_PACKAGES=(poppler imagemagick ffmpeg chafa)
 COMPRESSION_PACKAGES=(unzip p7zip tar gzip xz bzip2 unrar trash-cli)
 PYTHON_PACKAGES=(python-pyqt5 python-pyqt6 python-pillow python-opencv)
-QT_PACKAGES=(qt5-wayland qt6-wayland qt6-svg qt6-declarative)
+QT_PACKAGES=(qt5-wayland qt6-wayland qt6-svg qt6-declarative qt5-graphicaleffects qt5-quickcontrols)
 
 ALL_PACKAGES=(
     "${CORE_PACKAGES[@]}" "${TERMINAL_PACKAGES[@]}" "${UTILITY_PACKAGES[@]}"
