@@ -2,24 +2,28 @@
 
 set -euo pipefail
 
-# Configuration
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
 THEME_NAME="pywal-sddm"
 THEME_DIR="/usr/share/sddm/themes/${THEME_NAME}"
 SDDM_CONF_DIR="/etc/sddm.conf.d"
 CURRENT_USER="$(whoami)"
 USER_HOME="${HOME}"
+SETWALL_SCRIPT="${USER_HOME}/.config/scripts/setwall.sh" # Update path if different
 
-echo "==> Installing SDDM and Qt dependencies..."
+echo "==> [SDDM Setup] Starting SDDM + pywal16 integration..."
+
+# 1. Install required packages
+echo "==> [SDDM Setup] Installing required system packages..."
 sudo pacman -S --needed --noconfirm sddm qt5-quickcontrols qt5-quickcontrols2 qt5-graphicaleffects
 
-echo "==> Setting up ${THEME_NAME} for user: ${CURRENT_USER}"
-
-# 1. Create theme directory
-echo "==> Creating SDDM theme directory at ${THEME_DIR}..."
+# 2. Create SDDM theme directory
+echo "==> [SDDM Setup] Creating theme directory at ${THEME_DIR}..."
 sudo mkdir -p "${THEME_DIR}"
 
-# 2. Generate Main.qml
-echo "==> Writing Main.qml..."
+# 3. Write Main.qml
+echo "==> [SDDM Setup] Writing Main.qml..."
 sudo bash -c "cat << 'EOF' > '${THEME_DIR}/Main.qml'
 import QtQuick 2.15
 import QtQuick.Controls 2.15
@@ -39,13 +43,12 @@ Rectangle {
     // Path to pywal16 JSON
     readonly property string pywalJsonPath: \"file://${USER_HOME}/.cache/wal/colors.json\"
 
-    // Function to load pywal colors asynchronously using standard JavaScript XMLHttpRequest
     function loadWalColors() {
         var xhr = new XMLHttpRequest();
         xhr.open(\"GET\", root.pywalJsonPath, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE) {
-                if (xhr.status === 200 || xhr.status === 0) { // status 0 is valid for local file:// URLs
+                if (xhr.status === 200 || xhr.status === 0) {
                     try {
                         var colors = JSON.parse(xhr.responseText);
                         if (colors.special) {
@@ -140,7 +143,7 @@ Rectangle {
                 onAccepted: sddm.login(usernameInput.text, passwordInput.text, sessionSelect.currentIndex)
             }
 
-            // Session Selector (Hyprland / Desktop selection)
+            // Session Selector
             ComboBox {
                 id: sessionSelect
                 Layout.fillWidth: true
@@ -177,8 +180,8 @@ Rectangle {
 }
 EOF"
 
-# 3. Generate metadata.desktop
-echo "==> Writing metadata.desktop..."
+# 4. Write metadata.desktop
+echo "==> [SDDM Setup] Writing metadata.desktop..."
 sudo bash -c "cat << 'EOF' > '${THEME_DIR}/metadata.desktop'
 [SddmGreeterTheme]
 Name=${THEME_NAME}
@@ -189,8 +192,16 @@ ConfigFile=theme.conf
 MainScript=Main.qml
 EOF"
 
-# 4. Set directory permissions for pywal cache accessibility
-echo "==> Adjusting permissions on ~/.cache/wal so SDDM can read colors.json..."
+# 5. Enable SDDM Theme
+echo "==> [SDDM Setup] Configuring SDDM to use ${THEME_NAME}..."
+sudo mkdir -p "${SDDM_CONF_DIR}"
+sudo bash -c "cat << 'EOF' > '${SDDM_CONF_DIR}/theme.conf'
+[Theme]
+Current=${THEME_NAME}
+EOF"
+
+# 6. Set current permissions on .cache
+echo "==> [SDDM Setup] Applying immediate permissions to ~/.cache/wal..."
 chmod 755 "${USER_HOME}"
 chmod 755 "${USER_HOME}/.cache" || true
 if [ -d "${USER_HOME}/.cache/wal" ]; then
@@ -198,12 +209,23 @@ if [ -d "${USER_HOME}/.cache/wal" ]; then
     [ -f "${USER_HOME}/.cache/wal/colors.json" ] && chmod 644 "${USER_HOME}/.cache/wal/colors.json"
 fi
 
-# 5. Enable theme in SDDM configuration
-echo "==> Enabling theme in ${SDDM_CONF_DIR}/theme.conf..."
-sudo mkdir -p "${SDDM_CONF_DIR}"
-sudo bash -c "cat << 'EOF' > '${SDDM_CONF_DIR}/theme.conf'
-[Theme]
-Current=${THEME_NAME}
-EOF"
+# 7. Inject SDDM permissions fix into setwall.sh automatically
+if [ -f "${SETWALL_SCRIPT}" ]; then
+    echo "==> [SDDM Setup] Patching setwall.sh at ${SETWALL_SCRIPT}..."
+    if ! grep -q "chmod 644 ~/.cache/wal/colors.json" "${SETWALL_SCRIPT}"; then
+        # Insert chmod commands right after the 'wal -i' command
+        sed -i '/wal -i/a \
+\
+# Maintain permissions for SDDM user access\
+chmod 755 ~/.cache 2>/dev/null || true\
+chmod 755 ~/.cache/wal 2>/dev/null || true\
+chmod 644 ~/.cache/wal/colors.json 2>/dev/null || true' "${SETWALL_SCRIPT}"
+        echo "==> [SDDM Setup] Successfully patched setwall.sh!"
+    else
+        echo "==> [SDDM Setup] setwall.sh already contains SDDM permission logic. Skipping patch."
+    fi
+else
+    echo "==> [SDDM Setup] Warning: setwall.sh not found at ${SETWALL_SCRIPT}. Remember to add permissions logic to setwall manually."
+fi
 
-echo "==> Installation complete!"
+echo "==> [SDDM Setup] SDDM Pywal16 installation finished!"
