@@ -491,32 +491,13 @@ echo ""
 hr
 echo ""
 
-echo -e "    ${BLD}next${RST}"
-echo ""
-echo -e "    ${BCYN}1${RST}  ${DIM}reboot${RST}                      ${BBLK}sudo reboot${RST}"
-echo -e "    ${BCYN}2${RST}  ${DIM}select session at sddm${RST}      ${BBLK}Hyprland${RST}"
-echo -e "    ${BCYN}3${RST}  ${DIM}set your wallpaper${RST}          ${BBLK}wal -i ~/Pictures/Wallpapers/<img>${RST}"
+read -r -p "    $(echo -e "${BCYN}reboot system now? [Y/n]:${RST} ")" REBOOT_CHOICE
+REBOOT_CHOICE=${REBOOT_CHOICE:-Y}
 
-echo ""
-hr
-echo ""
+if [[ "$REBOOT_CHOICE" =~ ^[Yy]$ ]]; then
+    echo ""
+    print_ok "Rebooting..."
+    reboot
+fi
 
-_bind() { printf "    ${BBLK}%-22s${RST}${DIM}%s${RST}\n" "$1" "$2"; }
-echo -e "    ${BLD}bindings${RST}"
-echo ""
-_bind "super + return"        "terminal"
-_bind "super + d"              "launcher"
-_bind "super + q"              "close window"
-_bind "super + f"              "file manager"
-_bind "super + w"              "wallpaper picker"
-_bind "super + b / c / i"      "browser · editor · monitor"
-_bind "super + v"              "toggle float"
-_bind "super + h/j/k/l"        "focus ← ↓ ↑ →"
-_bind "super + [1–5]"          "switch workspace"
-_bind "super+shift + [1–5]"    "move to workspace"
-
-echo ""
-hr
-echo ""
-center "${DIM}${BBLK}happy ricing${RST}"
 echo ""
