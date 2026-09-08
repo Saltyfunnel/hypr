@@ -18,7 +18,7 @@ BBLU="\e[94m"; BMAG="\e[95m"; BCYN="\e[96m"; BWHT="\e[97m"
 BLD="\e[1m"; DIM="\e[2m"; ITL="\e[3m"; UND="\e[4m"
 
 STEP=0
-TOTAL_STEPS=9
+TOTAL_STEPS=10
 
 ################################################################################
 # HELPER FUNCTIONS
@@ -131,6 +131,14 @@ if ! echo "$USER_PASS" | su -c "true" "$USER_NAME" 2>/dev/null; then
     print_err "Incorrect password"
 fi
 
+# Initial user preferences prompts
+echo ""
+read -r -p "    $(echo -e "${BCYN}install extra app packages? (firefox, mpv, spotify, steam, etc.) [Y/n]:${RST} ")" INSTALL_APPS_CHOICE
+INSTALL_APPS_CHOICE=${INSTALL_APPS_CHOICE:-Y}
+
+read -r -p "    $(echo -e "${BCYN}theme SDDM login manager with pywal colors? [Y/n]:${RST} ")" THEME_SDDM_CHOICE
+THEME_SDDM_CHOICE=${THEME_SDDM_CHOICE:-Y}
+
 SUDOERS_TMP="/etc/sudoers.d/hypr-install-tmp"
 echo "$USER_NAME ALL=(ALL) NOPASSWD: ALL" > "$SUDOERS_TMP"
 chmod 0440 "$SUDOERS_TMP"
@@ -192,14 +200,18 @@ FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascad
 MEDIA_PACKAGES=(poppler imagemagick ffmpeg chafa)
 COMPRESSION_PACKAGES=(unzip p7zip tar gzip xz bzip2 unrar trash-cli)
 PYTHON_PACKAGES=(python-pyqt5 python-pyqt6 python-pillow python-opencv)
-QT_PACKAGES=(qt5-wayland qt6-wayland)
+QT_PACKAGES=(qt5-wayland qt6-wayland qt6-svg qt6-declarative)
 
 ALL_PACKAGES=(
     "${CORE_PACKAGES[@]}" "${TERMINAL_PACKAGES[@]}" "${UTILITY_PACKAGES[@]}"
-    "${FILE_PACKAGES[@]}" "${APP_PACKAGES[@]}" "${DEV_PACKAGES[@]}"
-    "${FONT_PACKAGES[@]}" "${MEDIA_PACKAGES[@]}" "${COMPRESSION_PACKAGES[@]}"
-    "${PYTHON_PACKAGES[@]}" "${QT_PACKAGES[@]}"
+    "${FILE_PACKAGES[@]}" "${DEV_PACKAGES[@]}" "${FONT_PACKAGES[@]}"
+    "${MEDIA_PACKAGES[@]}" "${COMPRESSION_PACKAGES[@]}" "${PYTHON_PACKAGES[@]}"
+    "${QT_PACKAGES[@]}"
 )
+
+if [[ "$INSTALL_APPS_CHOICE" =~ ^[Yy]$ ]]; then
+    ALL_PACKAGES+=("${APP_PACKAGES[@]}")
+fi
 
 echo ""
 declare -A GROUP_LABELS=(
@@ -207,7 +219,6 @@ declare -A GROUP_LABELS=(
     ["Terminal"]="${TERMINAL_PACKAGES[*]}"
     ["Utilities"]="${UTILITY_PACKAGES[*]}"
     ["Files"]="${FILE_PACKAGES[*]}"
-    ["Apps"]="${APP_PACKAGES[*]}"
     ["Dev Tools"]="${DEV_PACKAGES[*]}"
     ["Fonts"]="${FONT_PACKAGES[*]}"
     ["Media"]="${MEDIA_PACKAGES[*]}"
@@ -216,8 +227,12 @@ declare -A GROUP_LABELS=(
     ["Qt/Wayland"]="${QT_PACKAGES[*]}"
 )
 
-for label in "Core WM" "Terminal" "Utilities" "Files" "Apps" "Dev Tools" "Fonts" "Media" "Archives" "Python" "Qt/Wayland"; do
-    echo -e "  ${BBLU}${label}${RST}  ${DIM}${GROUP_LABELS[$label]}${RST}"
+if [[ "$INSTALL_APPS_CHOICE" =~ ^[Yy]$ ]]; then
+    GROUP_LABELS["Apps"]="${APP_PACKAGES[*]}"
+fi
+
+for label in "Core WM" "Terminal" "Utilities" "Files" ${INSTALL_APPS_CHOICE:+"Apps"} "Dev Tools" "Fonts" "Media" "Archives" "Python" "Qt/Wayland"; do
+    [[ -n "${GROUP_LABELS[$label]:-}" ]] && echo -e "  ${BBLU}${label}${RST}  ${DIM}${GROUP_LABELS[$label]}${RST}"
 done
 echo ""
 
@@ -285,8 +300,6 @@ print_ok "Stale symlinks & conflicting files cleared"
 [[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
 [[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
 [[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
-
-# mako/config is intentionally NOT copied — managed by pywal symlink
 
 # GTK dark theme
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
@@ -388,6 +401,33 @@ EOF
 print_ok "Shell configured"
 
 ################################################################################
+# SDDM THEMING (PYWAL COLORS ONLY)
+################################################################################
+
+if [[ "$THEME_SDDM_CHOICE" =~ ^[Yy]$ ]]; then
+    print_phase "SDDM pywal colors setup"
+
+    SDDM_THEME_DIR="/usr/share/sddm/themes/custom-hypr-theme"
+    mkdir -p "$SDDM_THEME_DIR"
+    mkdir -p /etc/sddm.conf.d
+
+    # Link pywal colors into SDDM theme directory
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/sddm-theme.conf" "$SDDM_THEME_DIR/theme.conf.user" 2>/dev/null || true
+
+    # Configure SDDM to utilize custom-hypr-theme styling
+    cat > /etc/sddm.conf.d/theme.conf << EOF
+[Theme]
+Current=custom-hypr-theme
+CursorTheme=Colloid-Dynamic-Dark
+Font="Hack Nerd Font"
+
+[General]
+InputMethod=
+EOF
+    print_ok "SDDM configured to use pywal color scheme"
+fi
+
+################################################################################
 # COLLOID ICON THEME
 ################################################################################
 
@@ -476,13 +516,14 @@ echo ""
 echo ""
 
 _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
-_row "system updated"                        "pacman -Syu"
+_row "system updated"                         "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
 _row "pywal16"                               "pipx (PyPI, no AUR)"
 _row "dotfiles deployed"                     "~/.config/*"
-_row "gpu environment"                       "hypr/gpu-env.conf"
+_row "gpu environment"                        "hypr/gpu-env.conf"
 _row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
 _row "colloid-dynamic icons"                 "~/.local/share/icons"
+[[ "$THEME_SDDM_CHOICE" =~ ^[Yy]$ ]] && _row "sddm pywal colors" "/etc/sddm.conf.d/theme.conf"
 _row "pywal symlinks"                        "wal → cache"
 _row "zed theme"                             "zed/themes/zed.json"
 _row "sddm · bluetooth · NetworkManager"     "systemctl enable"
