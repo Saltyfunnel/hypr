@@ -375,11 +375,10 @@ if [[ "$THEME_SDDM_CHOICE" =~ ^[Yy]$ ]]; then
 
     SDDM_THEME_DIR="/usr/share/sddm/themes/custom-hypr-theme"
     
-    # Ensure a fully functional theme repository with Main.qml is cloned
+    # Clone a verified public SDDM theme repository (prevent prompt if repo is missing)
     if [[ ! -f "$SDDM_THEME_DIR/Main.qml" ]]; then
         rm -rf "$SDDM_THEME_DIR"
-        git clone --depth 1 https://github.com/hanschen/sddm-pywal.git "$SDDM_THEME_DIR" 2>/dev/null || \
-        git clone --depth 1 https://github.com/mwt/sddm-paper.git "$SDDM_THEME_DIR" 2>/dev/null || true
+        GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/MarianArlt/sddm-sugar-dark.git "$SDDM_THEME_DIR" 2>/dev/null || true
     fi
 
     mkdir -p /etc/sddm.conf.d
@@ -427,7 +426,7 @@ print_phase "Scripts, wallpapers & shell"
 
 WALLPAPER_TMP="/tmp/wallpapers-src"
 rm -rf "$WALLPAPER_TMP"
-run_command "sudo -u $USER_NAME git clone --depth 1 '$WALLPAPERS_REPO' '$WALLPAPER_TMP'" "Cloning Wallpapers repository"
+run_command "sudo -u $USER_NAME GIT_TERMINAL_PROMPT=0 git clone --depth 1 '$WALLPAPERS_REPO' '$WALLPAPER_TMP'" "Cloning Wallpapers repository"
 run_command "sudo -u $USER_NAME cp -rf '$WALLPAPER_TMP/'* '$USER_HOME/Pictures/Wallpapers/' && rm -rf '$USER_HOME/Pictures/Wallpapers/.git'" "Deploying Wallpapers"
 rm -rf "$WALLPAPER_TMP"
 
@@ -457,7 +456,7 @@ print_phase "Colloid icon theme"
 
 COLLOID_SRC="$CONFIG_DIR/colloid-src"
 if [ ! -d "$COLLOID_SRC" ]; then
-    run_command "sudo -u $USER_NAME git clone --depth 1 https://github.com/Saltyfunnel/colloid.git '$COLLOID_SRC'" \
+    run_command "sudo -u $USER_NAME GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Saltyfunnel/colloid.git '$COLLOID_SRC'" \
         "Cloning Colloid icon theme"
 fi
 
