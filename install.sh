@@ -279,10 +279,10 @@ print_item "${DIM}$USER_HOME/.local/share/applications${RST}"
 print_ok "Directory tree created"
 
 ################################################################################
-# CONFIGURATION FILES
+# CONFIGURATION FILES & SCRIPTS
 ################################################################################
 
-print_phase "Configuration files"
+print_phase "Configuration files & user scripts"
 
 OLD_SYMLINKS=(
     "$CONFIG_DIR/waybar/style.css"
@@ -300,6 +300,11 @@ print_ok "Stale symlinks & conflicting files cleared"
 [[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
 [[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
 [[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
+
+# Copy user scripts FIRST so setwall.sh is guaranteed to exist at target destination
+if [[ -d "$SCRIPTS_SRC" ]]; then
+    run_command "sudo -u $USER_NAME cp -rf '$SCRIPTS_SRC/'* '$CONFIG_DIR/scripts/' && chmod +x '$CONFIG_DIR/scripts/'*" "Deploying user scripts"
+fi
 
 # GTK dark theme
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
@@ -367,7 +372,7 @@ fi
 print_ok "GPU env written  →  hypr/gpu-env.lua"
 
 ################################################################################
-# SDDM THEMING & SETWALL HOOK
+# SDDM THEMING & SETWALL HOOK (AFTER SCRIPTS ARE COPIED)
 ################################################################################
 
 if [[ "$THEME_SDDM_CHOICE" =~ ^[Yy]$ ]]; then
@@ -499,31 +504,27 @@ InputMethod=
 EOF
     print_ok "SDDM configured to use minimal pywal color scheme"
 
-    # Inject SDDM color update hook into setwall.sh
-    SETWALL_REPO_PATH="$SCRIPTS_SRC/setwall.sh"
-    if [[ -f "$SETWALL_REPO_PATH" ]]; then
-        sed -i '/# Update SDDM pywal colors/d' "$SETWALL_REPO_PATH"
-        sed -i '/sddm-theme.conf/d' "$SETWALL_REPO_PATH"
+    # Append hook directly to the DEPLOYED setwall.sh after copy completion
+    TARGET_SETWALL="$CONFIG_DIR/scripts/setwall.sh"
+    if [[ -f "$TARGET_SETWALL" ]]; then
+        cat >> "$TARGET_SETWALL" << 'EOF'
 
-        sed -i '/recolor_folders.sh/a \
-\
-# Update SDDM pywal colors\
-[[ -f "$HOME/.cache/wal/sddm-theme.conf" ]] && \\\
-    sudo cp "$HOME/.cache/wal/sddm-theme.conf" /usr/share/sddm/themes/custom-hypr-theme/theme.conf.user' "$SETWALL_REPO_PATH"
-
-        print_ok "Injected SDDM update hook into setwall.sh"
+# Update SDDM pywal colors (Appended dynamically by install.sh)
+if [[ -f "$HOME/.cache/wal/sddm-theme.conf" && -d "/usr/share/sddm/themes/custom-hypr-theme" ]]; then
+    sudo cp "$HOME/.cache/wal/sddm-theme.conf" /usr/share/sddm/themes/custom-hypr-theme/theme.conf.user 2>/dev/null || true
+fi
+EOF
+        chown "$USER_NAME:$USER_NAME" "$TARGET_SETWALL"
+        chmod +x "$TARGET_SETWALL"
+        print_ok "Appended SDDM update hook into $TARGET_SETWALL"
     fi
 fi
 
 ################################################################################
-# SCRIPTS, WALLPAPERS & SHELL
+# WALLPAPERS & SHELL
 ################################################################################
 
-print_phase "Scripts, wallpapers & shell"
-
-[[ -d "$SCRIPTS_SRC" ]] && \
-    run_command "sudo -u $USER_NAME cp -rf '$SCRIPTS_SRC/'* '$CONFIG_DIR/scripts/' && chmod +x '$CONFIG_DIR/scripts/'* 2>/dev/null || true" \
-    "User scripts"
+print_phase "Wallpapers & shell"
 
 WALLPAPER_TMP="/tmp/wallpapers-src"
 rm -rf "$WALLPAPER_TMP"
