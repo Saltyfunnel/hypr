@@ -367,6 +367,55 @@ fi
 print_ok "GPU env written  →  hypr/gpu-env.lua"
 
 ################################################################################
+# SDDM THEMING & SETWALL HOOK
+################################################################################
+
+if [[ "$THEME_SDDM_CHOICE" =~ ^[Yy]$ ]]; then
+    print_phase "SDDM pywal colors setup"
+
+    SDDM_THEME_DIR="/usr/share/sddm/themes/custom-hypr-theme"
+    
+    # Ensure a fully functional theme repository with Main.qml is cloned
+    if [[ ! -f "$SDDM_THEME_DIR/Main.qml" ]]; then
+        rm -rf "$SDDM_THEME_DIR"
+        git clone --depth 1 https://github.com/hanschen/sddm-pywal.git "$SDDM_THEME_DIR" 2>/dev/null || \
+        git clone --depth 1 https://github.com/mwt/sddm-paper.git "$SDDM_THEME_DIR" 2>/dev/null || true
+    fi
+
+    mkdir -p /etc/sddm.conf.d
+
+    # Link pywal colors into SDDM theme directory
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/sddm-theme.conf" "$SDDM_THEME_DIR/theme.conf.user" 2>/dev/null || true
+
+    # Configure SDDM to use custom-hypr-theme
+    cat > /etc/sddm.conf.d/theme.conf << EOF
+[Theme]
+Current=custom-hypr-theme
+CursorTheme=Colloid-Dynamic-Dark
+Font="Hack Nerd Font"
+
+[General]
+InputMethod=
+EOF
+    print_ok "SDDM configured to use pywal color scheme"
+
+    # Inject SDDM color update hook into setwall.sh
+    SETWALL_REPO_PATH="$SCRIPTS_SRC/setwall.sh"
+    if [[ -f "$SETWALL_REPO_PATH" ]]; then
+        sed -i '/# Update SDDM pywal colors/d' "$SETWALL_REPO_PATH"
+        sed -i '/sddm-theme.conf/d' "$SETWALL_REPO_PATH"
+
+        sed -i '/recolor_folders.sh/a \
+\
+# Update SDDM pywal colors\
+[[ -f "$HOME/.cache/wal/sddm-theme.conf" ]] && \\\
+    sudo cp "$HOME/.cache/wal/sddm-theme.conf" /usr/share/sddm/themes/custom-hypr-theme/theme.conf.user' "$SETWALL_REPO_PATH"
+
+        print_ok "Injected SDDM update hook into setwall.sh"
+    fi
+fi
+
+################################################################################
 # SCRIPTS, WALLPAPERS & SHELL
 ################################################################################
 
@@ -399,59 +448,6 @@ alias mv='mv -i'
 alias cp='cp -i'
 EOF
 print_ok "Shell configured"
-
-################################################################################
-# SDDM THEMING & SETWALL HOOK
-################################################################################
-
-if [[ "$THEME_SDDM_CHOICE" =~ ^[Yy]$ ]]; then
-    print_phase "SDDM pywal colors setup"
-
-    SDDM_THEME_DIR="/usr/share/sddm/themes/custom-hypr-theme"
-    
-    # Copy SDDM default theme structure so Main.qml exists
-    if [[ -d "/usr/share/sddm/themes/maldives" ]]; then
-        cp -r /usr/share/sddm/themes/maldives "$SDDM_THEME_DIR"
-    elif [[ -d "/usr/share/sddm/themes/elarun" ]]; then
-        cp -r /usr/share/sddm/themes/elarun "$SDDM_THEME_DIR"
-    else
-        mkdir -p "$SDDM_THEME_DIR"
-    fi
-
-    mkdir -p /etc/sddm.conf.d
-
-    # Link pywal colors into SDDM theme directory
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/sddm-theme.conf" "$SDDM_THEME_DIR/theme.conf.user" 2>/dev/null || true
-
-    # Configure SDDM to use custom-hypr-theme
-    cat > /etc/sddm.conf.d/theme.conf << EOF
-[Theme]
-Current=custom-hypr-theme
-CursorTheme=Colloid-Dynamic-Dark
-Font="Hack Nerd Font"
-
-[General]
-InputMethod=
-EOF
-    print_ok "SDDM configured to use pywal color scheme"
-
-    # Inject SDDM color update hook into setwall.sh
-    SETWALL_PATH="$CONFIG_DIR/scripts/setwall.sh"
-    if [[ -f "$SETWALL_PATH" ]]; then
-        # Clean previous injection lines if rerunning script
-        sudo -u "$USER_NAME" sed -i '/# Update SDDM pywal colors/d' "$SETWALL_PATH"
-        sudo -u "$USER_NAME" sed -i '/sddm-theme.conf/d' "$SETWALL_PATH"
-
-        # Inject fresh update hook after recolor_folders line
-        sudo -u "$USER_NAME" sed -i '/recolor_folders.sh/a \
-\
-# Update SDDM pywal colors\
-[[ -f "$HOME/.cache/wal/sddm-theme.conf" ]] && \\\
-    sudo cp "$HOME/.cache/wal/sddm-theme.conf" /usr/share/sddm/themes/custom-hypr-theme/theme.conf.user' "$SETWALL_PATH"
-
-        print_ok "Injected SDDM update hook into setwall.sh"
-    fi
-fi
 
 ################################################################################
 # COLLOID ICON THEME
