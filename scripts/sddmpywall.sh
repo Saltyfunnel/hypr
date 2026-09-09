@@ -15,6 +15,10 @@ GLOBAL_WAL_CACHE="/var/cache/wal"
 
 echo "==> [SDDM Setup] Starting SDDM + pywal16 integration for user: ${CURRENT_USER}..."
 
+# 0. Unlock user account if locked by pam_faillock
+echo "==> [SDDM Setup] Unlocking account ${CURRENT_USER}..."
+sudo faillock --user "${CURRENT_USER}" --reset 2>/dev/null || true
+
 # 1. Install required packages
 echo "==> [SDDM Setup] Installing required system packages..."
 sudo pacman -S --needed --noconfirm sddm qt5-quickcontrols qt5-quickcontrols2 qt5-graphicaleffects
@@ -23,13 +27,19 @@ sudo pacman -S --needed --noconfirm sddm qt5-quickcontrols qt5-quickcontrols2 qt
 echo "==> [SDDM Setup] Creating directories..."
 sudo mkdir -p "${THEME_DIR}"
 sudo mkdir -p "${GLOBAL_WAL_CACHE}"
+
+# Allow the user to write directly to /var/cache/wal so setwall.sh doesn't need sudo
+sudo chown -R "${CURRENT_USER}:${CURRENT_USER}" "${GLOBAL_WAL_CACHE}"
 sudo chmod 755 "${GLOBAL_WAL_CACHE}"
 
-# Sync current colors to global cache if available
+# Sync current colors to global cache if available, or initialize safe fallback
 if [ -f "${USER_HOME}/.cache/wal/colors.json" ]; then
-    sudo cp "${USER_HOME}/.cache/wal/colors.json" "${GLOBAL_WAL_CACHE}/colors.json"
-    sudo chmod 644 "${GLOBAL_WAL_CACHE}/colors.json"
+    cp "${USER_HOME}/.cache/wal/colors.json" "${GLOBAL_WAL_CACHE}/colors.json"
+else
+    echo '{"special":{"background":"#1a1b26","foreground":"#c0caf5"},"colors":{"color0":"#24283b","color4":"#7aa2f7"}}' > "${GLOBAL_WAL_CACHE}/colors.json"
 fi
+
+chmod 644 "${GLOBAL_WAL_CACHE}/colors.json"
 
 # 3. Write Main.qml using /var/cache/wal/colors.json
 echo "==> [SDDM Setup] Writing Main.qml..."
@@ -209,22 +219,27 @@ sudo bash -c "cat << 'EOF' > '${SDDM_CONF_DIR}/theme.conf'
 Current=${THEME_NAME}
 EOF"
 
-# 6. Inject global cache sync into setwall.sh
+# 6. Inject global cache sync into setwall.sh safely (No sudo required during wallpaper changes)
 if [ -f "${SETWALL_SCRIPT}" ]; then
     echo "==> [SDDM Setup] Patching setwall.sh at ${SETWALL_SCRIPT}..."
     if ! grep -q "/var/cache/wal/colors.json" "${SETWALL_SCRIPT}"; then
-        sed -i '/wal -i/a \
-\
-# Sync colors to global cache for SDDM access\
-sudo mkdir -p /var/cache/wal 2>/dev/null || true\
-sudo cp ~/.cache/wal/colors.json /var/cache/wal/colors.json 2>/dev/null || true\
-sudo chmod 644 /var/cache/wal/colors.json 2>/dev/null || true' "${SETWALL_SCRIPT}"
-        echo "==> [SDDM Setup] Successfully patched setwall.sh!"
+        cat << 'HOOK' >> "${SETWALL_SCRIPT}"
+
+# Sync colors to global cache for SDDM access
+if [ -f "$HOME/.cache/wal/colors.json" ]; then
+    cp -f "$HOME/.cache/wal/colors.json" /var/cache/wal/colors.json 2>/dev/null || true
+    chmod 644 /var/cache/wal/colors.json 2>/dev/null || true
+fi
+HOOK
+        echo "==> [SDDM Setup] Successfully appended sync hook to ${SETWALL_SCRIPT}!"
     else
         echo "==> [SDDM Setup] setwall.sh already contains global sync logic. Skipping patch."
     fi
 else
     echo "==> [SDDM Setup] Warning: setwall.sh not found at ${SETWALL_SCRIPT}."
 fi
+
+echo "==> [SDDM Setup] Restarting SDDM..."
+sudo systemctl restart sddm
 
 echo "==> [SDDM Setup] SDDM Pywal16 installation finished!"
