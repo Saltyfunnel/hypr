@@ -142,6 +142,27 @@ echo ""
 hr
 
 ################################################################################
+# PACMAN CONFIGURATION (ILoveCandy, Color, ParallelDownloads)
+################################################################################
+
+print_phase "Configuring pacman.conf"
+
+# Enable Color
+sed -i 's/^#Color/Color/' /etc/pacman.conf
+
+# Enable ParallelDownloads
+sed -i 's/^#ParallelDownloads = 5/ParallelDownloads = 5/' /etc/pacman.conf
+
+# Enable ILoveCandy under [options]
+if grep -q "^#ILoveCandy" /etc/pacman.conf; then
+    sed -i 's/^#ILoveCandy/ILoveCandy/' /etc/pacman.conf
+elif ! grep -q "^ILoveCandy" /etc/pacman.conf; then
+    sed -i '/^\[options\]/a ILoveCandy' /etc/pacman.conf
+fi
+
+print_ok "pacman.conf updated (ILoveCandy, Color, ParallelDownloads)"
+
+################################################################################
 # SYSTEM UPDATE & DRIVERS
 ################################################################################
 
@@ -243,9 +264,9 @@ print_ok "pywal16 installed via pipx (PyPI, not AUR)"
 print_phase "Directory Structure"
 
 CONFIG_DIRS=(
-    "$CONFIG_DIR/hypr"    "$CONFIG_DIR/waybar"
-    "$CONFIG_DIR/kitty"   "$CONFIG_DIR/fastfetch"
-    "$CONFIG_DIR/mako"    "$CONFIG_DIR/scripts"
+    "$CONFIG_DIR/hypr"        "$CONFIG_DIR/waybar"
+    "$CONFIG_DIR/kitty"       "$CONFIG_DIR/fastfetch"
+    "$CONFIG_DIR/mako"        "$CONFIG_DIR/scripts"
     "$CONFIG_DIR/wal/templates"  "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
     "$CONFIG_DIR/zed/themes"
@@ -476,13 +497,14 @@ echo ""
 echo ""
 
 _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
-_row "system updated"                         "pacman -Syu"
+_row "pacman configured"                    "ILoveCandy, Color, ParallelDownloads"
+_row "system updated"                       "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
-_row "pywal16"                               "pipx (PyPI, no AUR)"
+_row "pywal16"                              "pipx (PyPI, no AUR)"
 _row "dotfiles deployed"                     "~/.config/*"
 _row "gpu environment"                        "hypr/gpu-env.conf"
 _row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
-_row "colloid-dynamic icons"                 "~/.local/share/icons"
+_row "colloid-dynamic icons"                  "~/.local/share/icons"
 _row "pywal symlinks"                        "wal → cache"
 _row "zed theme"                             "zed/themes/zed.json"
 _row "sddm · bluetooth · NetworkManager"     "systemctl enable"
