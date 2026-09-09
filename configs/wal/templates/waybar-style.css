@@ -69,6 +69,30 @@ window#waybar {
 #bluetooth        { color: {color2}; }
 #custom-screenshot { color: {color2}; }
 
+/* Dynamic Battery States */
+#battery.charging, #battery.plugged {
+    color: {color10};
+}
+
+#battery.warning {
+    color: {color11};
+}
+
+#battery.critical:not(.charging) {
+    color: {color9};
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+@keyframes blink {
+    to {
+        color: #ffffff;
+    }
+}
+
 /* --- Text Colors --- */
 #clock            { color: {color1}; }
 #window           { color: {color4}; }
