@@ -19,7 +19,10 @@ WALLPAPER_DIR = (
 )
 FONT = "Hack Nerd Font"
 SETWALL = Path.home() / ".config/scripts/setwall.sh"
-WAL_CACHE = Path.home() / ".cache/wal/colors.json"
+
+# pywal16 compatibility check path locations
+WAL_CACHE_JSON = Path.home() / ".cache/wal/colors.json"
+WAL_CACHE_ALT = Path.home() / ".cache/wal/colors-wal.json"
 WAL_WALL = Path.home() / ".cache/wal/wal"
 
 # Card dimensions
@@ -43,18 +46,27 @@ WIN_H = 520
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
+def get_wal_cache_file() -> Path | None:
+    if WAL_CACHE_JSON.exists():
+        return WAL_CACHE_JSON
+    if WAL_CACHE_ALT.exists():
+        return WAL_CACHE_ALT
+    return None
+
+
 def load_pywal() -> tuple[str, str, str, str]:
     defaults = ("#1a1a1a", "#c0caf5", "#7aa2f7", "#bb9af7")
-    if not WAL_CACHE.exists():
+    cache_file = get_wal_cache_file()
+    if not cache_file:
         return defaults
     try:
-        d = json.loads(WAL_CACHE.read_text())
-        return (
-            d["special"]["background"],
-            d["special"]["foreground"],
-            d["colors"].get("color4", defaults[2]),
-            d["colors"].get("color5", defaults[3]),
-        )
+        d = json.loads(cache_file.read_text())
+        bg = d.get("special", {}).get("background", defaults[0])
+        fg = d.get("special", {}).get("foreground", defaults[1])
+        colors = d.get("colors", {})
+        accent1 = colors.get("color4", defaults[2])
+        accent2 = colors.get("color5", defaults[3])
+        return bg, fg, accent1, accent2
     except Exception:
         return defaults
 
@@ -178,8 +190,6 @@ class Carousel(QtWidgets.QWidget):
 
         # _pos: animated float index of the visual centre card.
         # _target: where _pos is heading (advances by ±1 per scroll step).
-        # We use a spring/lerp loop via QTimer rather than QPropertyAnimation
-        # so repaints are frame-locked and rapid scrolls accumulate smoothly.
         self._pos = float(self._index)
         self._target = float(self._index)
 
@@ -188,7 +198,7 @@ class Carousel(QtWidgets.QWidget):
         self._anim_timer.setInterval(8)
         self._anim_timer.timeout.connect(self._anim_tick)
 
-        # Pywal colours
+        # Pywal / pywal16 colours
         self.BG, self.FG, self.ACC, self.ACC2 = load_pywal()
 
         # Window
@@ -204,7 +214,7 @@ class Carousel(QtWidgets.QWidget):
         screen = QtGui.QGuiApplication.primaryScreen().availableGeometry()
         self.move(screen.center() - self.rect().center())
 
-        # Kick off background load (async — no stutter on open)
+        # Kick off background load
         self._load_bg(self._index)
 
         # Load thumbnails from background thread
@@ -214,8 +224,9 @@ class Carousel(QtWidgets.QWidget):
 
         # Pywal file watcher
         self._watcher = QtCore.QFileSystemWatcher(self)
-        for f in [WAL_CACHE, WAL_WALL]:
-            if Path(str(f)).exists():
+        watch_files = [WAL_CACHE_JSON, WAL_CACHE_ALT, WAL_WALL]
+        for f in watch_files:
+            if f.exists():
                 self._watcher.addPath(str(f))
         self._watcher.fileChanged.connect(self._refresh_theme)
 
@@ -249,7 +260,6 @@ class Carousel(QtWidgets.QWidget):
 
     def _load_bg(self, idx: int):
         """Start an async background image load for the given index."""
-        # Prefer an already-loaded thumb if available and large enough — good enough as bg
         if idx in self.thumbs:
             self.bg_pixmap = self.thumbs[idx].scaled(
                 WIN_W,
@@ -260,7 +270,6 @@ class Carousel(QtWidgets.QWidget):
             self.update()
             return
 
-        # Stop any previous bg load
         if self._bg_loader and self._bg_loader.isRunning():
             self._bg_loader.ready.disconnect()
             self._bg_loader.quit()
@@ -272,8 +281,6 @@ class Carousel(QtWidgets.QWidget):
     # ── Navigation ────────────────────────────────────────────────────────────
 
     def _scroll_to(self, new_index: int):
-        # Advance _target by the signed delta so rapid presses accumulate
-        # rather than restarting — the spring catches up naturally.
         delta = new_index - self._index
         self._index = new_index % self.n
         self._target += delta
@@ -332,26 +339,21 @@ class Carousel(QtWidgets.QWidget):
             self.go_left()
 
     def mousePressEvent(self, e: QtGui.QMouseEvent):
-        """Click a visible card to jump to it; click the centre card to apply."""
         if e.button() != QtCore.Qt.MouseButton.LeftButton:
             return
 
         mx = e.position().x()
         cx = WIN_W / 2
-        best = None  # (abs_dist_from_click, signed_offset)
+        best = None
 
-        # Test every rendered card and find the closest one to the click
-        # anim_offset: how far _pos has travelled past the nearest integer
         anim_offset = self._pos - round(self._pos)
 
         for di in range(-VISIBLE, VISIBLE + 1):
-            idx_mod = (self._index + di) % self.n
             vdist = di - anim_offset
             adist = abs(vdist)
             if adist > VISIBLE + 0.5:
                 continue
 
-            # Replicate the same scale/skew from paintEvent
             t = min(adist, 1.0)
             scale = CENTER_SCALE + (SIDE_SCALE - CENTER_SCALE) * t
             if adist > 1.0:
@@ -412,9 +414,6 @@ class Carousel(QtWidgets.QWidget):
             return
 
         # ── Build card list ───────────────────────────────────────────────────
-        # anim_offset: fractional overshoot of _pos past the nearest integer.
-        # Subtracting it from di gives each card its correct visual position
-        # during animation — positive when scrolling right, negative when left.
         anim_offset = self._pos - round(self._pos)
 
         cards = []
@@ -427,11 +426,9 @@ class Carousel(QtWidgets.QWidget):
                 continue
             cards.append((adist, vdist, idx, int(alpha_f * 255)))
 
-        # Draw farthest-from-centre first so centre is on top
         cards.sort(key=lambda t: t[0], reverse=True)
 
         for adist, vdist, idx, alpha in cards:
-            # ── Scale ─────────────────────────────────────────────────────────
             t = min(adist, 1.0)
             scale = CENTER_SCALE + (SIDE_SCALE - CENTER_SCALE) * t
             if adist > 1.0:
@@ -470,7 +467,6 @@ class Carousel(QtWidgets.QWidget):
                 dy = y0 + (ch - dh) / 2
                 p.drawPixmap(QtCore.QRectF(dx, dy, dw, dh).toRect(), src)
             else:
-                # Animated shimmer placeholder while loading
                 grad = QtGui.QLinearGradient(x0, y0, x0 + total_w, y0)
                 grad.setColorAt(0.0, QtGui.QColor(30, 30, 45))
                 grad.setColorAt(0.5, QtGui.QColor(50, 50, 70))
