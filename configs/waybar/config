@@ -36,8 +36,8 @@
       "battery",
       "pulseaudio",
       "pulseaudio#microphone",
-      "network",
       "bluetooth",
+      "tray",
       "custom/screenshot"
     ]
   },
@@ -102,17 +102,6 @@
     "format-muted": "󰍭",
     "on-click": "pamixer --default-source -t"
   },
-  "network": {
-    "format-wifi": "󰤨",
-    "format-ethernet": "󰈀",
-    "format-disconnected": "󰤭",
-    "on-click": "kitty -e nmtui",
-    "tooltip": true,
-    "tooltip-format": "󰈀 {ifname} via {gwaddr}",
-    "tooltip-format-wifi": "󰤨 {essid} ({signalStrength}%)\nIP: {ipaddr}\nInterface: {ifname}",
-    "tooltip-format-ethernet": "󰈀 {ifname}\nIP: {ipaddr}\nGateway: {gwaddr}",
-    "tooltip-format-disconnected": "󰤭 Disconnected"
-  },
   "hyprland/workspaces": {
     "format": "{name}",
     "persistent-workspaces": { "*": 3 }
@@ -153,5 +142,9 @@
   "bluetooth": {
     "format": "󰂯",
     "on-click": "blueman-manager"
+  },
+  "tray": {
+    "icon-size": 16,
+    "spacing": 10
   }
 }
