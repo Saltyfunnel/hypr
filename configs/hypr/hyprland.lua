@@ -138,7 +138,7 @@ hl.window_rule({ match = { title = "WallpaperPicker" }, center = true })
 hl.window_rule({ match = { class = "firefox" }, opacity = "0.90 0.90 1.0 override" })
 hl.window_rule({ match = { class = "dev.zed.Zed" }, opacity = "0.90" })
 hl.window_rule({ match = { class = "kitty" }, opacity = "0.80" })
-hl.window_rule({ match = { class = "thunar" }, opacity = "0.80 0.80" })
+hl.window_rule({ match = { class = "^[tT]hunar$" }, opacity = "0.80 0.80" })
 hl.window_rule({ match = { class = "Spotify" }, opacity = "0.80 0.80" })
 
 --------------------------------------------------------------------------------
