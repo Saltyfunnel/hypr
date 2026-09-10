@@ -26,7 +26,7 @@
       "children-class": "hardware-children",
       "transition-left-to-right": false
     },
-    "modules": [
+   "modules": [
       "custom/power",
       "memory",
       "cpu",
@@ -38,7 +38,8 @@
       "pulseaudio#microphone",
       "bluetooth",
       "tray",
-      "custom/screenshot"
+      "custom/screenshot",
+      "custom/video"
     ]
   },
   "mpris": {
@@ -80,6 +81,15 @@
     "on-click-middle": "~/.config/scripts/screenshot.sh window",
     "tooltip": true,
     "tooltip-format": "L: Select Area\nM: Window\nR: Fullscreen"
+  },
+  "custom/video": {
+    "format": "{}",
+    "exec": "~/.config/scripts/screenrecord.sh status",
+    "return-type": "json",
+    "interval": 1,
+    "on-click": "~/.config/scripts/screenrecord.sh toggle",
+    "tooltip": true,
+    "tooltip-format": "Click to toggle screen recording"
   },
   "custom/power": {
     "format": "⏻",
