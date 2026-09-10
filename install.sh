@@ -202,7 +202,7 @@ CORE_PACKAGES=(
 TERMINAL_PACKAGES=(kitty starship fastfetch)
 UTILITY_PACKAGES=(
     grim slurp wl-clipboard polkit-kde-agent
-    bluez bluez-utils blueman udiskie udisks2 gvfs networkmanager
+    bluez bluez-utils blueman udiskie udisks2 gvfs networkmanager network-manager-applet
 )
 FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
