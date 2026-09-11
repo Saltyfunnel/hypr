@@ -33,7 +33,7 @@ WAL_WALL  = Path.home() / ".cache/wal/wal"
 USAGE_FILE = Path.home() / ".cache/launcher_usage.json"
 
 SHORTCUTS = [
-    ("Files",    "󰝰", "filemanager.py"),
+    ("Files",    "󰝰", "thunar"),
     ("Terminal", "󰆍", "kitty"),
     ("Browser",  "󰖟", "firefox"),
     ("Editor",   "󰅩", "zeditor"),
