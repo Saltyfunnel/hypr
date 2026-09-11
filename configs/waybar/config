@@ -10,7 +10,7 @@
     "hyprland/window"
   ],
   "modules-center": [
-    "clock"
+    "group/center-group"
   ],
   "modules-right": [
     "custom/updates",
@@ -19,6 +19,13 @@
     "custom/steam",
     "group/hardware"
   ],
+  "group/center-group": {
+    "orientation": "horizontal",
+    "modules": [
+      "clock",
+      "custom/weather"
+    ]
+  },
   "group/hardware": {
     "orientation": "horizontal",
     "drawer": {
@@ -90,6 +97,12 @@
     "on-click": "~/.config/scripts/screenrecord.sh toggle",
     "tooltip": true,
     "tooltip-format": "Click to toggle screen recording"
+  },
+  "custom/weather": {
+    "exec": "data=$(curl -s --max-time 5 'https://wttr.in/?format=1'); echo \"${data%% *} ${data##* }\" || echo '󰖐 N/A'",
+    "format": "{}",
+    "interval": 1800,
+    "tooltip": true
   },
   "custom/power": {
     "format": "⏻",
