@@ -65,11 +65,11 @@
     "interval": 5
   },
   "cpu": {
-    "format": " {usage}%",
+    "format": " {usage}%",
     "on-click": "kitty -e btop"
   },
   "memory": {
-    "format": " {percentage}%",
+    "format": " {percentage}%",
     "on-click": "kitty -e btop"
   },
   "custom/updates": {
@@ -99,7 +99,7 @@
     "tooltip-format": "Click to toggle screen recording"
   },
   "custom/weather": {
-    "exec": "data=$(curl -s --max-time 5 'https://wttr.in/?format=1'); echo \"${data%% *} ${data##* }\" || echo '󰖐 N/A'",
+    "exec": "~/.config/scripts/weather.sh",
     "format": "{}",
     "interval": 1800,
     "tooltip": true
@@ -139,7 +139,7 @@
   },
   "temperature": {
     "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
-    "format": " {temperatureC}°C"
+    "format": " {temperatureC}°C"
   },
   "temperature#gpu": {
     "hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
