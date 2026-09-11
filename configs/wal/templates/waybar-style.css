@@ -11,6 +11,166 @@ window#waybar {
 }
 
 /* --- Standard Modules (Stand-alone pills) --- */
+#window, #workspaces,
+#custom-updates, #mpris,
+#custom-firefox, #custom-steam {
+    background-color: {background};
+    border: 3px solid {color1};
+    border-radius: 16px;
+    margin: 4px 3px;
+    padding: 0 12px;
+    min-height: 24px;
+}
+
+/* --- CENTER GROUP PILL (Clock + Weather Container) --- */
+#center-group {
+    background-color: {background};
+    border: 3px solid {color1};
+    border-radius: 16px;
+    margin: 4px 3px;
+    padding: 0 10px;
+    min-height: 24px;
+}
+
+#center-group label,
+#center-group > #clock,
+#center-group > #custom-weather {
+    background: transparent;
+    border: none;
+    color: {color1};
+    padding: 0 4px;
+    margin: 0;
+}
+
+/* --- THE HARDWARE PILL (The Drawer Container) --- */
+#hardware {
+    background-color: {background};
+    border: 3px solid {color1};
+    border-radius: 16px;
+    margin: 4px 3px;
+    padding: 0px;
+    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#hardware:hover {
+    box-shadow: 0 0 4px {color1};
+}
+
+/* Internal modules inside the hardware drawer */
+#custom-power, #memory, #cpu, #temperature,
+#temperature-gpu, #backlight, #battery, #pulseaudio,
+#pulseaudio-microphone, #bluetooth, #tray,
+#custom-screenshot, #custom-video {
+    background: transparent;
+    border: none;
+    margin: 0;
+    padding: 0 8px;
+    min-height: 24px;
+}
+
+/* The Anchor Icon (Power) */
+#custom-power {
+    color: {color1};
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+/* Hardware Colors */
+#memory              { color: {color2}; }
+#cpu                 { color: {color1}; }
+#temperature         { color: {color3}; }
+#temperature-gpu     { color: {color4}; }
+#backlight           { color: {color8}; }
+#battery             { color: {color9}; }
+#pulseaudio          { color: {color8}; }
+#pulseaudio-microphone { color: {color8}; }
+#bluetooth           { color: {color2}; }
+#tray                { color: {color2}; }
+#custom-screenshot   { color: {color2}; }
+#custom-video        { color: {color2}; }
+
+/* Custom Video / Screenrecord States */
+#custom-video.recording {
+    color: #ff0000;
+    animation-name: blink;
+    animation-duration: 0.8s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+/* Tray specific states */
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+}
+
+/* Dynamic Battery States */
+#battery.charging, #battery.plugged {
+    color: {color10};
+}
+
+#battery.warning {
+    color: {color11};
+}
+
+#battery.critical:not(.charging) {
+    color: {color9};
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+@keyframes blink {
+    to {
+        color: #ffffff;
+    }
+}
+
+/* --- Text Colors --- */
+#window            { color: {color4}; }
+#custom-updates    { color: {color4}; }
+#mpris             { color: {color10}; }
+#custom-firefox    { color: {color9}; }
+#custom-steam      { color: {color13}; }
+
+/* --- Workspaces --- */
+#workspaces button {
+    background: transparent;
+    color: {foreground};
+    border: none;
+    padding: 0 5px;
+}
+#workspaces button.active { color: {color1}; }
+
+/* --- Tooltip --- */
+tooltip {
+    background: {background};
+    border: 2px solid {color1};
+    border-radius: 8px;
+}
+tooltip label {
+    color: {foreground};
+    padding: 8px;
+}
+/* Waybar CSS - Pywal16 */
+* {
+    font-family: "Hack Nerd Font", "Hack NF", monospace;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+window#waybar {
+    background-color: transparent;
+    border: none;
+}
+
+/* --- Standard Modules (Stand-alone pills) --- */
 #window, #clock, #workspaces,
 #custom-updates, #mpris,
 #custom-firefox, #custom-steam {
