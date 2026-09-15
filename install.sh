@@ -266,7 +266,7 @@ run_command "pacman -S --noconfirm --needed ${ALL_PACKAGES[*]}" \
 print_phase "waybar-git (source build)"
 
 WAYBAR_BUILD_DEPS=(
-    git meson ninja cmake wayland wayland-protocols scdoc gtkmm3 jsoncpp 
+    git meson ninja cmake wayland wayland-protocols scdoc gtkmm3 jsoncpp
     libsigc++ fmt spdlog gtk3 glibmm libnl libxkbcommon catch2 systemd
 )
 run_command "pacman -S --noconfirm --needed ${WAYBAR_BUILD_DEPS[*]}" "Installing waybar build dependencies"
@@ -378,6 +378,7 @@ if echo "$GPU_INFO" | grep -qi nvidia; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
   LIBVA_DRIVER_NAME         = "nvidia",
+  VDPAU_DRIVER               = "nvidia",
   XDG_SESSION_TYPE          = "wayland",
   __GLX_VENDOR_LIBRARY_NAME = "nvidia",
   GBM_BACKEND               = "nvidia-drm",
@@ -385,29 +386,46 @@ return {
   __GL_GSYNC_ALLOWED        = "1",
   __GL_VRR_ALLOWED          = "1",
   QT_QPA_PLATFORM           = "wayland",
+  MOZ_ENABLE_WAYLAND        = "1",
+  GDK_BACKEND               = "wayland",
+  XDG_CURRENT_DESKTOP       = "Hyprland",
+  XDG_SESSION_DESKTOP       = "Hyprland",
 }
 EOF
 elif echo "$GPU_INFO" | grep -qi amd; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
-  LIBVA_DRIVER_NAME = "radeonsi",
-  XDG_SESSION_TYPE  = "wayland",
-  QT_QPA_PLATFORM   = "wayland",
+  LIBVA_DRIVER_NAME   = "radeonsi",
+  VDPAU_DRIVER        = "radeonsi",
+  XDG_SESSION_TYPE    = "wayland",
+  QT_QPA_PLATFORM     = "wayland",
+  MOZ_ENABLE_WAYLAND  = "1",
+  GDK_BACKEND         = "wayland",
+  XDG_CURRENT_DESKTOP = "Hyprland",
+  XDG_SESSION_DESKTOP = "Hyprland",
 }
 EOF
 elif echo "$GPU_INFO" | grep -qi intel; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
-  LIBVA_DRIVER_NAME = "iHD",
-  XDG_SESSION_TYPE  = "wayland",
-  QT_QPA_PLATFORM   = "wayland",
+  LIBVA_DRIVER_NAME   = "iHD",
+  XDG_SESSION_TYPE    = "wayland",
+  QT_QPA_PLATFORM     = "wayland",
+  MOZ_ENABLE_WAYLAND  = "1",
+  GDK_BACKEND         = "wayland",
+  XDG_CURRENT_DESKTOP = "Hyprland",
+  XDG_SESSION_DESKTOP = "Hyprland",
 }
 EOF
 else
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
-  XDG_SESSION_TYPE = "wayland",
-  QT_QPA_PLATFORM  = "wayland",
+  XDG_SESSION_TYPE    = "wayland",
+  QT_QPA_PLATFORM     = "wayland",
+  MOZ_ENABLE_WAYLAND  = "1",
+  GDK_BACKEND         = "wayland",
+  XDG_CURRENT_DESKTOP = "Hyprland",
+  XDG_SESSION_DESKTOP = "Hyprland",
 }
 EOF
 fi
