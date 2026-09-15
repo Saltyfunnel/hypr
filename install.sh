@@ -254,7 +254,7 @@ print_phase "mpvpaper installation"
 MPVPAPER_SRC="/tmp/mpvpaper-src"
 rm -rf "$MPVPAPER_SRC"
 run_command "sudo -u $USER_NAME git clone https://github.com/GhostNaN/mpvpaper.git '$MPVPAPER_SRC'" "Cloning mpvpaper source"
-run_command "cd '$MPVPAPER_SRC' && cmake -B build -G Ninja && cmake --build build && cmake --install build" "Building and installing mpvpaper"
+run_command "cd '$MPVPAPER_SRC' && make && make install" "Building and installing mpvpaper"
 rm -rf "$MPVPAPER_SRC"
 
 ################################################################################
