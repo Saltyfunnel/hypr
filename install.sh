@@ -208,7 +208,7 @@ FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
 )
 APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam spotify-launcher)
-DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx rust alsa-lib pkgconf ueberzugpp)
+DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx rust alsa-lib pkgconf ueberzugpp cmake wayland wayland-protocols)
 FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascadia-code-nerd)
 MEDIA_PACKAGES=(poppler imagemagick ffmpeg wf-recorder chafa)
 COMPRESSION_PACKAGES=(unzip p7zip tar gzip xz bzip2 unrar trash-cli)
@@ -246,6 +246,18 @@ run_command "pacman -S --noconfirm --needed ${ALL_PACKAGES[*]}" \
     "Installing all packages  (${#ALL_PACKAGES[@]} total)"
 
 ################################################################################
+# MPVPAPER INSTALLATION (SOURCE BUILD — NO AUR)
+################################################################################
+
+print_phase "mpvpaper installation"
+
+MPVPAPER_SRC="/tmp/mpvpaper-src"
+rm -rf "$MPVPAPER_SRC"
+run_command "sudo -u $USER_NAME git clone https://github.com/GhostNaN/mpvpaper.git '$MPVPAPER_SRC'" "Cloning mpvpaper source"
+run_command "cd '$MPVPAPER_SRC' && cmake -B build && cmake --build build && cmake --install build" "Building and installing mpvpaper"
+rm -rf "$MPVPAPER_SRC"
+
+################################################################################
 # PYWAL16 (PIP — NO AUR)
 ################################################################################
 
@@ -264,10 +276,10 @@ print_ok "pywal16 installed via pipx (PyPI, not AUR)"
 print_phase "Directory Structure"
 
 CONFIG_DIRS=(
-    "$CONFIG_DIR/hypr"        "$CONFIG_DIR/waybar"
-    "$CONFIG_DIR/kitty"       "$CONFIG_DIR/fastfetch"
-    "$CONFIG_DIR/mako"        "$CONFIG_DIR/scripts"
-    "$CONFIG_DIR/wal/templates"  "$CONFIG_DIR/btop"
+    "$CONFIG_DIR/hypr"          "$CONFIG_DIR/waybar"
+    "$CONFIG_DIR/kitty"         "$CONFIG_DIR/fastfetch"
+    "$CONFIG_DIR/mako"          "$CONFIG_DIR/scripts"
+    "$CONFIG_DIR/wal/templates" "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
     "$CONFIG_DIR/zed/themes"
 )
@@ -299,15 +311,13 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                    ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                               "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"                  ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                             "Waybar config"
-[[ -f "$CONFIGS_SRC/kitty/kitty.conf"        ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"             "Kitty config"
+[[ -d "$CONFIGS_SRC/hypr"                  ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                   "Hyprland config"
+[[ -d "$CONFIGS_SRC/waybar"                ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                             "Waybar config"
+[[ -f "$CONFIGS_SRC/kitty/kitty.conf"      ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
 [[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
 [[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
 [[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
-
-# mako/config is intentionally NOT copied — managed by pywal symlink
 
 # GTK dark theme
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
@@ -480,7 +490,7 @@ print_phase "Services & permissions"
 
 systemctl enable sddm.service            2>/dev/null && print_ok "sddm enabled"             || true
 systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"        || true
-systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"   || true
+systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"    || true
 
 chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
 print_ok "Ownership set"
@@ -500,14 +510,15 @@ _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
 _row "pacman configured"                    "ILoveCandy, Color, ParallelDownloads"
 _row "system updated"                       "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
+_row "mpvpaper"                             "Built from source (no AUR)"
 _row "pywal16"                              "pipx (PyPI, no AUR)"
-_row "dotfiles deployed"                     "~/.config/*"
-_row "gpu environment"                        "hypr/gpu-env.conf"
-_row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
-_row "colloid-dynamic icons"                  "~/.local/share/icons"
-_row "pywal symlinks"                        "wal → cache"
-_row "zed theme"                             "zed/themes/zed.json"
-_row "sddm · bluetooth · NetworkManager"     "systemctl enable"
+_row "dotfiles deployed"                    "~/.config/*"
+_row "gpu environment"                      "hypr/gpu-env.conf"
+_row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
+_row "colloid-dynamic icons"                "~/.local/share/icons"
+_row "pywal symlinks"                       "wal → cache"
+_row "zed theme"                            "zed/themes/zed.json"
+_row "sddm · bluetooth · NetworkManager"    "systemctl enable"
 
 echo ""
 hr
