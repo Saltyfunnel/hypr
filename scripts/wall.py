@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-wall.py — carousel wallpaper picker
+wall.py — carousel wallpaper picker (Supports Images & Video Wallpapers)
 Parallelogram cards, centre card enlarged, scroll with keys/wheel/click.
 Usage: python wall.py [wallpaper_dir]
 """
@@ -8,6 +8,7 @@ Usage: python wall.py [wallpaper_dir]
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from PyQt6 import QtCore, QtGui, QtWidgets
@@ -25,16 +26,19 @@ WAL_CACHE_JSON = Path.home() / ".cache/wal/colors.json"
 WAL_CACHE_ALT = Path.home() / ".cache/wal/colors-wal.json"
 WAL_WALL = Path.home() / ".cache/wal/wal"
 
+# Supported extensions
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+VIDEO_EXTS = {".mp4", ".mkv", ".webm"}
+ALL_EXTS = IMAGE_EXTS | VIDEO_EXTS
+
 # Card dimensions
-CARD_W = 160  # base card width (before scale)
-CARD_H = 240  # base card height
-SKEW = 0.15  # parallelogram lean (fraction of card width)
+CARD_W = 160   # base card width (before scale)
+CARD_H = 240   # base card height
+SKEW = 0.15    # parallelogram lean (fraction of card width)
 CENTER_SCALE = 1.45  # multiplier for the focused card
-SIDE_SCALE = 0.80  # multiplier for adjacent cards
+SIDE_SCALE = 0.80    # multiplier for adjacent cards
 SPACING = 130  # px between card centres
-VISIBLE = (
-    6  # cards each side of centre that are drawn (was 8; beyond 6 are invisible anyway)
-)
+VISIBLE = 6    # cards each side of centre that are drawn
 
 # Animation — spring strength (0.12 = gentle, 0.22 = snappy)
 SPRING = 0.16
@@ -78,9 +82,8 @@ def current_wall() -> str | None:
 def load_images(directory: Path) -> list[Path]:
     if not directory.exists():
         return []
-    exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
     return sorted(
-        [p for p in directory.iterdir() if p.suffix.lower() in exts],
+        [p for p in directory.iterdir() if p.suffix.lower() in ALL_EXTS],
         key=lambda p: p.name.lower(),
     )
 
@@ -102,6 +105,26 @@ def scaled_crop(path: Path, w: int, h: int) -> QtGui.QPixmap:
     return scaled.copy(x, y, w, h)
 
 
+def extract_video_thumbnail(path: Path, w: int, h: int) -> QtGui.QPixmap:
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+        tmp_name = tmp.name
+    try:
+        subprocess.run(
+            ["ffmpeg", "-y", "-ss", "00:00:01", "-i", str(path), "-vframes", "1", tmp_name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3
+        )
+        px = scaled_crop(Path(tmp_name), w, h)
+    except Exception:
+        blank = QtGui.QPixmap(w, h)
+        blank.fill(QtGui.QColor(30, 30, 40))
+        px = blank
+    finally:
+        Path(tmp_name).unlink(missing_ok=True)
+    return px
+
+
 # ── Cached fonts ──────────────────────────────────────────────────────────────
 
 _FONT_CACHE: dict[tuple, QtGui.QFont] = {}
@@ -121,7 +144,7 @@ def get_font(size: int, bold: bool = False) -> QtGui.QFont:
 
 
 class ThumbLoader(QtCore.QThread):
-    """Loads thumbnails in a background thread, emitting (index, pixmap) per image."""
+    """Loads thumbnails or video frames in a background thread."""
 
     loaded = QtCore.pyqtSignal(int, QtGui.QPixmap)
 
@@ -137,14 +160,17 @@ class ThumbLoader(QtCore.QThread):
 
     def run(self):
         n = len(self.images)
-        # Load outward from the starting centre index
         order = sorted(range(n), key=lambda i: abs(i - self._centre))
         max_w = int(CARD_W * CENTER_SCALE) + int(CARD_W * CENTER_SCALE * SKEW) + 10
         max_h = int(CARD_H * CENTER_SCALE) + 10
         for i in order:
             if self._stop:
                 return
-            px = scaled_crop(self.images[i], max_w, max_h)
+            p = self.images[i]
+            if p.suffix.lower() in VIDEO_EXTS:
+                px = extract_video_thumbnail(p, max_w, max_h)
+            else:
+                px = scaled_crop(p, max_w, max_h)
             self.loaded.emit(i, px)
 
 
@@ -152,7 +178,7 @@ class ThumbLoader(QtCore.QThread):
 
 
 class BgLoader(QtCore.QThread):
-    """Loads and scales a single background image without blocking the main thread."""
+    """Loads and scales a single background preview image without blocking."""
 
     ready = QtCore.pyqtSignal(QtGui.QPixmap)
 
@@ -161,7 +187,10 @@ class BgLoader(QtCore.QThread):
         self._path = path
 
     def run(self):
-        px = scaled_crop(self._path, WIN_W, WIN_H)
+        if self._path.suffix.lower() in VIDEO_EXTS:
+            px = extract_video_thumbnail(self._path, WIN_W, WIN_H)
+        else:
+            px = scaled_crop(self._path, WIN_W, WIN_H)
         self.ready.emit(px)
 
 
@@ -179,7 +208,6 @@ class Carousel(QtWidgets.QWidget):
         self.bg_pixmap: QtGui.QPixmap | None = None
         self._bg_loader: BgLoader | None = None
 
-        # Find index of current wallpaper
         cw = current_wall()
         self._index = 0
         if cw:
@@ -188,20 +216,15 @@ class Carousel(QtWidgets.QWidget):
                     self._index = i
                     break
 
-        # _pos: animated float index of the visual centre card.
-        # _target: where _pos is heading (advances by ±1 per scroll step).
         self._pos = float(self._index)
         self._target = float(self._index)
 
-        # Frame timer — fires every ~8 ms (~120 fps ceiling), stops when at rest
         self._anim_timer = QtCore.QTimer(self)
         self._anim_timer.setInterval(8)
         self._anim_timer.timeout.connect(self._anim_tick)
 
-        # Pywal / pywal16 colours
         self.BG, self.FG, self.ACC, self.ACC2 = load_pywal()
 
-        # Window
         self.setWindowFlags(
             QtCore.Qt.WindowType.FramelessWindowHint
             | QtCore.Qt.WindowType.WindowStaysOnTopHint
@@ -214,15 +237,12 @@ class Carousel(QtWidgets.QWidget):
         screen = QtGui.QGuiApplication.primaryScreen().availableGeometry()
         self.move(screen.center() - self.rect().center())
 
-        # Kick off background load
         self._load_bg(self._index)
 
-        # Load thumbnails from background thread
         self._loader = ThumbLoader(images, centre=self._index)
         self._loader.loaded.connect(self._on_thumb)
         self._loader.start()
 
-        # Pywal file watcher
         self._watcher = QtCore.QFileSystemWatcher(self)
         watch_files = [WAL_CACHE_JSON, WAL_CACHE_ALT, WAL_WALL]
         for f in watch_files:
@@ -233,7 +253,6 @@ class Carousel(QtWidgets.QWidget):
     # ── Animation tick ────────────────────────────────────────────────────────
 
     def _anim_tick(self):
-        """Spring-lerp _pos toward _target each timer tick; stop when close enough."""
         diff = self._target - self._pos
         if abs(diff) < 0.0005:
             self._pos = self._target
@@ -259,7 +278,7 @@ class Carousel(QtWidgets.QWidget):
     # ── Background loading ────────────────────────────────────────────────────
 
     def _load_bg(self, idx: int):
-        """Start an async background image load for the given index."""
+        path = self.images[idx]
         if idx in self.thumbs:
             self.bg_pixmap = self.thumbs[idx].scaled(
                 WIN_W,
@@ -274,7 +293,7 @@ class Carousel(QtWidgets.QWidget):
             self._bg_loader.ready.disconnect()
             self._bg_loader.quit()
 
-        self._bg_loader = BgLoader(self.images[idx])
+        self._bg_loader = BgLoader(path)
         self._bg_loader.ready.connect(self._on_bg_ready)
         self._bg_loader.start()
 
@@ -298,21 +317,35 @@ class Carousel(QtWidgets.QWidget):
 
     def _apply(self):
         path = self.images[self._index]
-        if SETWALL.exists():
-            subprocess.Popen(["bash", str(SETWALL), str(path)], start_new_session=True)
+        is_video = path.suffix.lower() in VIDEO_EXTS
+
+        if is_video:
+            # Clean up old wallpaper daemons and run mpvpaper
+            subprocess.run(["pkill", "mpvpaper"], stderr=subprocess.DEVNULL)
+            subprocess.run(["pkill", "swww"], stderr=subprocess.DEVNULL)
+            subprocess.run(["pkill", "awww"], stderr=subprocess.DEVNULL)
+            
+            subprocess.Popen(
+                ["mpvpaper", "-o", "no-audio loop", "*", str(path)],
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
         else:
-            for cmd in (
-                ["awww", "img", str(path), "--transition-type", "fade"],
-                ["swww", "img", str(path)],
-                ["feh", "--bg-fill", str(path)],
-            ):
-                try:
-                    subprocess.Popen(
-                        cmd, stderr=subprocess.DEVNULL, start_new_session=True
-                    )
-                    break
-                except FileNotFoundError:
-                    continue
+            if SETWALL.exists():
+                subprocess.Popen(["bash", str(SETWALL), str(path)], start_new_session=True)
+            else:
+                for cmd in (
+                    ["awww", "img", str(path), "--transition-type", "fade"],
+                    ["swww", "img", str(path)],
+                    ["feh", "--bg-fill", str(path)],
+                ):
+                    try:
+                        subprocess.Popen(
+                            cmd, stderr=subprocess.DEVNULL, start_new_session=True
+                        )
+                        break
+                    except FileNotFoundError:
+                        continue
         self.close()
 
     # ── Input ─────────────────────────────────────────────────────────────────
@@ -399,7 +432,7 @@ class Carousel(QtWidgets.QWidget):
         cx = W / 2
         cy = H / 2
 
-        # ── Background ────────────────────────────────────────────────────────
+        # Background
         if self.bg_pixmap:
             p.drawPixmap(0, 0, self.bg_pixmap)
         p.fillRect(0, 0, W, H, QtGui.QColor(0, 0, 0, 155))
@@ -413,7 +446,6 @@ class Carousel(QtWidgets.QWidget):
             )
             return
 
-        # ── Build card list ───────────────────────────────────────────────────
         anim_offset = self._pos - round(self._pos)
 
         cards = []
@@ -444,7 +476,6 @@ class Carousel(QtWidgets.QWidget):
             x0 = x_centre - total_w / 2
             y0 = y_centre - ch / 2
 
-            # ── Parallelogram path ────────────────────────────────────────────
             path = QtGui.QPainterPath()
             path.moveTo(x0 + skew_px, y0)
             path.lineTo(x0 + skew_px + cw, y0)
@@ -456,7 +487,6 @@ class Carousel(QtWidgets.QWidget):
             p.setOpacity(alpha / 255)
             p.setClipPath(path)
 
-            # ── Thumbnail or placeholder ──────────────────────────────────────
             if idx in self.thumbs:
                 src = self.thumbs[idx]
                 sw, sh = src.width(), src.height()
@@ -473,14 +503,25 @@ class Carousel(QtWidgets.QWidget):
                 grad.setColorAt(1.0, QtGui.QColor(30, 30, 45))
                 p.fillPath(path, QtGui.QBrush(grad))
 
-            # ── Side-card darkening ───────────────────────────────────────────
             if adist > 0.05:
                 darkness = int(min(adist, 1.5) / 1.5 * 140)
                 p.fillPath(path, QtGui.QColor(0, 0, 0, darkness))
 
+            # Draw video badge indicator on video files
+            if self.images[idx].suffix.lower() in VIDEO_EXTS:
+                p.save()
+                p.setOpacity(0.85)
+                badge_rect = QtCore.QRectF(x0 + skew_px + 8, y0 + 8, 28, 16)
+                p.setBrush(QtGui.QColor(0, 0, 0, 160))
+                p.setPen(QtCore.Qt.PenStyle.NoPen)
+                p.drawRoundedRect(badge_rect, 4, 4)
+                p.setPen(QtGui.QColor(255, 255, 255))
+                p.setFont(get_font(8, bold=True))
+                p.drawText(badge_rect, QtCore.Qt.AlignmentFlag.AlignCenter, "▶")
+                p.restore()
+
             p.restore()
 
-            # ── Centre-card accent border ─────────────────────────────────────
             if adist < 0.12:
                 glow_alpha = int((1.0 - adist / 0.12) * 200)
                 c = QtGui.QColor(self.ACC)
@@ -494,7 +535,6 @@ class Carousel(QtWidgets.QWidget):
                 p.drawPath(path)
                 p.restore()
 
-            # ── Filename label beneath centre card ────────────────────────────
             if adist < 0.05:
                 name = self.images[idx].stem
                 font = get_font(11, bold=True)
@@ -511,14 +551,13 @@ class Carousel(QtWidgets.QWidget):
                 p.drawText(tx, ty, name)
                 p.restore()
 
-        # ── Hint bar ─────────────────────────────────────────────────────────
         p.setOpacity(0.30)
         p.setPen(QtGui.QColor(255, 255, 255))
         p.setFont(get_font(10))
         p.drawText(
             QtCore.QRect(0, H - 26, W, 20),
             QtCore.Qt.AlignmentFlag.AlignHCenter,
-            "← → / hjkl / scroll   ·   Enter to set   ·   Esc to close",
+            "← → / hjkl / scroll    ·    Enter to set    ·    Esc to close",
         )
         p.setOpacity(1.0)
 
