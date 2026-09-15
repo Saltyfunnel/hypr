@@ -208,7 +208,7 @@ FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
 )
 APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam spotify-launcher)
-DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx rust alsa-lib pkgconf ueberzugpp cmake wayland wayland-protocols)
+DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx rust alsa-lib pkgconf ueberzugpp cmake ninja wayland wayland-protocols mpv)
 FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascadia-code-nerd)
 MEDIA_PACKAGES=(poppler imagemagick ffmpeg wf-recorder chafa)
 COMPRESSION_PACKAGES=(unzip p7zip tar gzip xz bzip2 unrar trash-cli)
@@ -254,7 +254,7 @@ print_phase "mpvpaper installation"
 MPVPAPER_SRC="/tmp/mpvpaper-src"
 rm -rf "$MPVPAPER_SRC"
 run_command "sudo -u $USER_NAME git clone https://github.com/GhostNaN/mpvpaper.git '$MPVPAPER_SRC'" "Cloning mpvpaper source"
-run_command "cd '$MPVPAPER_SRC' && cmake -B build && cmake --build build && cmake --install build" "Building and installing mpvpaper"
+run_command "cd '$MPVPAPER_SRC' && cmake -B build -G Ninja && cmake --build build && cmake --install build" "Building and installing mpvpaper"
 rm -rf "$MPVPAPER_SRC"
 
 ################################################################################
@@ -510,7 +510,7 @@ _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
 _row "pacman configured"                    "ILoveCandy, Color, ParallelDownloads"
 _row "system updated"                       "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
-_row "mpvpaper"                             "Built from source (no AUR)"
+_row "mpvpaper"                             "Built from source with Ninja (no AUR)"
 _row "pywal16"                              "pipx (PyPI, no AUR)"
 _row "dotfiles deployed"                    "~/.config/*"
 _row "gpu environment"                      "hypr/gpu-env.conf"
