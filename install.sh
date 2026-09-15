@@ -19,6 +19,7 @@ BLD="\e[1m"; DIM="\e[2m"; ITL="\e[3m"; UND="\e[4m"
 
 STEP=0
 TOTAL_STEPS=9
+INSTALL_START=$(date +%s)
 
 ################################################################################
 # HELPER FUNCTIONS
@@ -29,6 +30,12 @@ _cols() { tput cols 2>/dev/null || echo 80; }
 hr() {
     local cols=$(_cols)
     echo -e "${BBLK}$(printf "%${cols}s" | tr ' ' "─")${RST}"
+}
+
+box_line() {
+    local ch="$1" left="$2" right="$3"
+    local cols=$(_cols)
+    echo -e "${BBLK}${left}$(printf "%$((cols - 2))s" | tr ' ' "$ch")${right}${RST}"
 }
 
 center() {
@@ -42,6 +49,12 @@ center() {
     echo -e "$text"
 }
 
+elapsed() {
+    local now=$(date +%s)
+    local diff=$(( now - INSTALL_START ))
+    printf "%dm %02ds" $(( diff / 60 )) $(( diff % 60 ))
+}
+
 spinner() {
     local pid=$1 msg="$2"
     local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
@@ -53,19 +66,19 @@ spinner() {
         sleep 0.07
     done
     tput cnorm 2>/dev/null || true
-    printf "\r"
+    printf "\r\033[K"
 }
 
 print_banner() {
     clear
     echo ""
+    box_line "─" "╭" "╮"
     echo ""
-    center "${BLD}${BCYN}hyprland${RST}${BLD}${BBLK} · arch linux · 2026${RST}"
+    center "${BLD}${BCYN}⟁  hyprland${RST}${BLD}${BBLK}  ·  arch linux  ·  2026${RST}"
     echo ""
     center "${DIM}${BBLK}automated desktop environment installer${RST}"
     echo ""
-    echo ""
-    hr
+    box_line "─" "╰" "╯"
     echo ""
 }
 
@@ -75,17 +88,20 @@ print_phase() {
     local pct=$(( STEP * 100 / TOTAL_STEPS ))
     local done_blocks=$(( STEP * 20 / TOTAL_STEPS ))
     local todo_blocks=$(( 20 - done_blocks ))
-    local bar="${BCYN}$(printf '%0.s▪' $(seq 1 $done_blocks))${RST}${BBLK}$(printf '%0.s▫' $(seq 1 $todo_blocks))${RST}"
+    local bar="${BMAG}$(printf '%0.s▪' $(seq 1 $done_blocks))${RST}${BBLK}$(printf '%0.s▫' $(seq 1 $todo_blocks))${RST}"
 
     echo ""
-    echo -e "  ${bar}  ${BLD}${BWHT}${title}${RST}  ${BBLK}${pct}%${RST}"
+    hr
+    printf "  ${bar}  ${BLD}${BWHT}%-32s${RST}  ${BBLK}[${BCYN}%02d${BBLK}/${BCYN}%02d${BBLK}]  %3d%%${RST}\n" \
+        "$title" "$STEP" "$TOTAL_STEPS" "$pct"
     echo ""
 }
 
 print_ok()     { echo -e "    ${BGRN}✓${RST}  $1"; }
 print_err()    { echo -e "\n    ${BRED}✗  ${BLD}$1${RST}\n" >&2; exit 1; }
-print_info()   { echo -e "    ${BBLK}↳${RST}  ${DIM}$1${RST}"; }
+print_info()   { echo -e "    ${BBLU}◆${RST}  ${DIM}$1${RST}"; }
 print_item()   { echo -e "    ${BBLK}•${RST}  $1"; }
+print_warn()   { echo -e "    ${BYLW}!${RST}  $1"; }
 
 run_command() {
     local cmd="$1" desc="$2"
@@ -117,14 +133,14 @@ print_banner
 
 [[ "$EUID" -eq 0 ]] || print_err "Run as root  →  sudo $0"
 
-echo -e "    ${BBLK}user${RST}    ${WHT}${USER_NAME}${RST}"
-echo -e "    ${BBLK}home${RST}    ${WHT}${USER_HOME}${RST}"
-echo -e "    ${BBLK}repo${RST}    ${WHT}${REPO_ROOT}${RST}"
+printf "    ${BBLK}%-8s${RST}${WHT}%s${RST}\n" "user" "$USER_NAME"
+printf "    ${BBLK}%-8s${RST}${WHT}%s${RST}\n" "home" "$USER_HOME"
+printf "    ${BBLK}%-8s${RST}${WHT}%s${RST}\n" "repo" "$REPO_ROOT"
 echo ""
 
-echo -e "    ${BYLW}${BLD}sudo password required${RST}  ${BBLK}(cached for the session)${RST}"
+echo -e "    ${BYLW}${BLD}⚿  sudo password required${RST}  ${BBLK}(cached for the session)${RST}"
 echo ""
-read -r -s -p "    $(echo -e "${BCYN}password:${RST} ")" USER_PASS
+read -r -s -p "    $(echo -e "${BCYN}password ›${RST} ")" USER_PASS
 echo ""
 
 if ! echo "$USER_PASS" | su -c "true" "$USER_NAME" 2>/dev/null; then
@@ -138,8 +154,6 @@ trap 'rm -f "$SUDOERS_TMP"; echo ""' EXIT
 
 echo ""
 print_ok "Credentials accepted"
-echo ""
-hr
 
 ################################################################################
 # PACMAN CONFIGURATION (ILoveCandy, Color, ParallelDownloads)
@@ -173,20 +187,20 @@ run_command "pacman -Syu --noconfirm" "Synchronising package databases"
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
 
 if echo "$GPU_INFO" | grep -qi nvidia; then
-    echo -e "    ${BBLK}gpu${RST}    ${WHT}NVIDIA${RST}"
+    print_item "${BBLK}gpu${RST}  ${BGRN}●${RST}  ${WHT}NVIDIA${RST}"
     run_command "pacman -S --noconfirm --needed nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" \
         "Installing NVIDIA open-source drivers"
 elif echo "$GPU_INFO" | grep -qi amd; then
-    echo -e "    ${BBLK}gpu${RST}    ${WHT}AMD${RST}"
+    print_item "${BBLK}gpu${RST}  ${BRED}●${RST}  ${WHT}AMD${RST}"
     run_command "pacman -S --noconfirm --needed xf86-video-amdgpu mesa vulkan-radeon lib32-vulkan-radeon linux-headers" \
         "Installing AMD drivers & Vulkan support"
 elif echo "$GPU_INFO" | grep -qi intel; then
-    echo -e "    ${BBLK}gpu${RST}    ${WHT}Intel${RST}"
+    print_item "${BBLK}gpu${RST}  ${BCYN}●${RST}  ${WHT}Intel${RST}"
     run_command "pacman -Sy --noconfirm" "Syncing repositories"
     run_command "pacman -S --noconfirm --needed mesa lib32-mesa vulkan-intel lib32-vulkan-intel linux-headers" \
         "Installing Intel drivers & Vulkan support"
 else
-    echo -e "    ${BBLK}gpu${RST}    ${WHT}generic${RST}"
+    print_item "${BBLK}gpu${RST}  ${BWHT}●${RST}  ${WHT}generic${RST}"
 fi
 
 ################################################################################
@@ -196,7 +210,7 @@ fi
 print_phase "Package Installation"
 
 CORE_PACKAGES=(
-    hyprland waybar awww mako zed sddm qt6-5compat pacman-contrib
+    hyprland awww mako zed sddm qt6-5compat pacman-contrib
     xdg-desktop-portal-hyprland
 )
 TERMINAL_PACKAGES=(kitty starship fastfetch)
@@ -238,7 +252,7 @@ declare -A GROUP_LABELS=(
 )
 
 for label in "Core WM" "Terminal" "Utilities" "Files" "Apps" "Dev Tools" "Fonts" "Media" "Archives" "Python" "Qt/Wayland"; do
-    echo -e "  ${BBLU}${label}${RST}  ${DIM}${GROUP_LABELS[$label]}${RST}"
+    printf "  ${BMAG}▎${RST} ${BBLU}%-12s${RST} ${DIM}%s${RST}\n" "$label" "${GROUP_LABELS[$label]}"
 done
 echo ""
 
@@ -246,16 +260,31 @@ run_command "pacman -S --noconfirm --needed ${ALL_PACKAGES[*]}" \
     "Installing all packages  (${#ALL_PACKAGES[@]} total)"
 
 ################################################################################
-# MPVPAPER INSTALLATION (SOURCE BUILD — NO AUR)
+# WAYBAR-GIT (SOURCE BUILD)
 ################################################################################
 
-print_phase "mpvpaper installation"
+print_phase "waybar-git (source build)"
 
-MPVPAPER_SRC="/tmp/mpvpaper-src"
-rm -rf "$MPVPAPER_SRC"
-run_command "sudo -u $USER_NAME git clone https://github.com/GhostNaN/mpvpaper.git '$MPVPAPER_SRC'" "Cloning mpvpaper source"
-run_command "cd '$MPVPAPER_SRC' && meson setup build --prefix=/usr/local && ninja -C build && ninja -C build install" "Building and installing mpvpaper"
-rm -rf "$MPVPAPER_SRC"
+WAYBAR_BUILD_DEPS=(
+    git meson ninja cmake wayland wayland-protocols scdoc gtkmm3 jsoncpp 
+    libsigc++ fmt spdlog gtk3 glibmm libnl libxkbcommon catch2 systemd
+)
+run_command "pacman -S --noconfirm --needed ${WAYBAR_BUILD_DEPS[*]}" "Installing waybar build dependencies"
+
+WAYBAR_SRC_TMP="/tmp/waybar-git-src"
+rm -rf "$WAYBAR_SRC_TMP"
+
+run_command "sudo -u $USER_NAME git clone --depth 1 https://aur.archlinux.org/waybar-git.git '$WAYBAR_SRC_TMP'" "Cloning waybar-git AUR repository"
+
+(
+    cd "$WAYBAR_SRC_TMP"
+    sudo -u "$USER_NAME" makepkg -si --noconfirm
+) > /tmp/hypr_install_log 2>&1 &
+
+spinner "$!" "Building and installing waybar-git"
+wait $! || print_err "waybar-git build failed  →  /tmp/hypr_install_log"
+
+print_ok "waybar-git built and installed successfully"
 
 ################################################################################
 # PYWAL16 (PIP — NO AUR)
@@ -276,10 +305,10 @@ print_ok "pywal16 installed via pipx (PyPI, not AUR)"
 print_phase "Directory Structure"
 
 CONFIG_DIRS=(
-    "$CONFIG_DIR/hypr"          "$CONFIG_DIR/waybar"
-    "$CONFIG_DIR/kitty"         "$CONFIG_DIR/fastfetch"
-    "$CONFIG_DIR/mako"          "$CONFIG_DIR/scripts"
-    "$CONFIG_DIR/wal/templates" "$CONFIG_DIR/btop"
+    "$CONFIG_DIR/hypr"             "$CONFIG_DIR/waybar"
+    "$CONFIG_DIR/kitty"            "$CONFIG_DIR/fastfetch"
+    "$CONFIG_DIR/mako"             "$CONFIG_DIR/scripts"
+    "$CONFIG_DIR/wal/templates"    "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
     "$CONFIG_DIR/zed/themes"
 )
@@ -311,13 +340,13 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                  ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                   "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"                ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                             "Waybar config"
+[[ -d "$CONFIGS_SRC/hypr"                 ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                   "Hyprland config"
+[[ -d "$CONFIGS_SRC/waybar"               ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                             "Waybar config"
 [[ -f "$CONFIGS_SRC/kitty/kitty.conf"      ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
 [[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
-[[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
-[[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
+[[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                  "btop config"
+[[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"            "pywal templates"
 
 # GTK dark theme
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
@@ -489,7 +518,7 @@ print_phase "Pywal symlinks"
 print_phase "Services & permissions"
 
 systemctl enable sddm.service            2>/dev/null && print_ok "sddm enabled"             || true
-systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"        || true
+systemctl enable bluetooth.service        2>/dev/null && print_ok "bluetooth enabled"         || true
 systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"    || true
 
 chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
@@ -502,29 +531,28 @@ print_ok "Ownership set"
 clear
 print_banner
 
-center "${BLD}${BGRN}installation complete${RST}"
+center "${BLD}${BGRN}✓  installation complete${RST}"
+center "${DIM}${BBLK}finished in $(elapsed)${RST}"
 echo ""
-echo ""
+box_line "─" "╭" "╮"
 
-_row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
-_row "pacman configured"                    "ILoveCandy, Color, ParallelDownloads"
+_row() { printf "${BBLK}│${RST}  ${BGRN}✓${RST}  %-36s${DIM}%-22s${RST}${BBLK}│${RST}\n" "$1" "$2"; }
+_row "pacman configured"                    "ILoveCandy, Color, ParallelDl"
 _row "system updated"                       "pacman -Syu"
-_row "${#ALL_PACKAGES[@]} packages"          "pacman"
-_row "mpvpaper"                             "Built from source via Meson (no AUR)"
+_row "packages + waybar-git"                "pacman & AUR source build"
 _row "pywal16"                              "pipx (PyPI, no AUR)"
 _row "dotfiles deployed"                    "~/.config/*"
-_row "gpu environment"                      "hypr/gpu-env.conf"
+_row "gpu environment"                      "hypr/gpu-env.lua"
 _row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
 _row "colloid-dynamic icons"                "~/.local/share/icons"
 _row "pywal symlinks"                       "wal → cache"
 _row "zed theme"                            "zed/themes/zed.json"
-_row "sddm · bluetooth · NetworkManager"    "systemctl enable"
+_row "sddm · bluetooth · networkmanager"    "systemctl enable"
 
-echo ""
-hr
+box_line "─" "╰" "╯"
 echo ""
 
-read -r -p "    $(echo -e "${BCYN}reboot system now? [Y/n]:${RST} ")" REBOOT_CHOICE
+read -r -p "    $(echo -e "${BCYN}reboot system now? [Y/n] ›${RST} ")" REBOOT_CHOICE
 REBOOT_CHOICE=${REBOOT_CHOICE:-Y}
 
 if [[ "$REBOOT_CHOICE" =~ ^[Yy]$ ]]; then
