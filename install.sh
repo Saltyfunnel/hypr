@@ -531,11 +531,14 @@ fi
 (cd "$COLLOID_SRC" && sudo -u "$USER_NAME" ./install.sh \
     -d "$USER_HOME/.local/share/icons" \
     -n Colloid-Dynamic \
-    -s default) \
+    -s dark) \
     > /tmp/hypr_install_log 2>&1 &
 spinner "$!" "Installing Colloid-Dynamic icons"
 wait $! || print_err "Colloid install failed  →  /tmp/hypr_install_log"
 print_ok "Colloid-Dynamic icons installed"
+
+sudo -u "$USER_NAME" gtk-update-icon-cache -f -t "$USER_HOME/.local/share/icons/Colloid-Dynamic-Dark" >/dev/null 2>&1 || true
+print_ok "Icon cache refreshed  →  Colloid-Dynamic-Dark"
 
 ################################################################################
 # THUNAR CUSTOM ACTIONS (KITTY)
