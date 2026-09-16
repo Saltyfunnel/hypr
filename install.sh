@@ -18,7 +18,7 @@ BBLU="\e[94m"; BMAG="\e[95m"; BCYN="\e[96m"; BWHT="\e[97m"
 BLD="\e[1m"; DIM="\e[2m"; ITL="\e[3m"; UND="\e[4m"
 
 STEP=0
-TOTAL_STEPS=9
+TOTAL_STEPS=11
 INSTALL_START=$(date +%s)
 
 ################################################################################
@@ -128,6 +128,8 @@ SCRIPTS_SRC="$REPO_ROOT/scripts"
 CONFIGS_SRC="$REPO_ROOT/configs"
 WALLPAPERS_REPO="https://github.com/Saltyfunnel/Wallpapers.git"
 DESKTOP_ENTRIES_SRC="$REPO_ROOT/desktop-entries"
+LOCALSEND_REPO_API="https://api.github.com/repos/localsend/localsend/releases/latest"
+LOCALSEND_DIR="/opt/localsend"
 
 print_banner
 
@@ -217,6 +219,7 @@ TERMINAL_PACKAGES=(kitty starship fastfetch)
 UTILITY_PACKAGES=(
     grim slurp wl-clipboard polkit-kde-agent
     bluez bluez-utils blueman udiskie udisks2 gvfs networkmanager network-manager-applet
+    fuse2
 )
 FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
@@ -297,6 +300,54 @@ sudo -u "$USER_NAME" pipx install pywal16 \
 spinner "$!" "Installing pywal16 via pipx"
 wait $! || print_err "pywal16 install failed  →  /tmp/hypr_install_log"
 print_ok "pywal16 installed via pipx (PyPI, not AUR)"
+
+################################################################################
+# LOCALSEND (GITHUB APPIMAGE — NO AUR)
+################################################################################
+
+print_phase "LocalSend (GitHub AppImage)"
+
+mkdir -p "$LOCALSEND_DIR"
+
+print_info "Querying latest LocalSend release"
+LOCALSEND_URL=$(curl -fsSL "$LOCALSEND_REPO_API" | jq -r '.assets[] | select(.name | test("linux-x86-64\\.AppImage$")) | .browser_download_url')
+LOCALSEND_VERSION=$(curl -fsSL "$LOCALSEND_REPO_API" | jq -r '.tag_name')
+
+[[ -n "$LOCALSEND_URL" && "$LOCALSEND_URL" != "null" ]] || print_err "Could not resolve LocalSend AppImage download URL"
+print_ok "Resolved latest release  →  $LOCALSEND_VERSION"
+
+run_command "curl -fsSL -o '$LOCALSEND_DIR/LocalSend.AppImage' '$LOCALSEND_URL'" "Downloading LocalSend AppImage"
+
+chmod +x "$LOCALSEND_DIR/LocalSend.AppImage"
+ln -sf "$LOCALSEND_DIR/LocalSend.AppImage" /usr/local/bin/localsend
+print_ok "LocalSend linked  →  /usr/local/bin/localsend"
+
+# Extract the app icon from the AppImage so the launcher has a proper icon
+(
+    cd "$LOCALSEND_DIR"
+    ./LocalSend.AppImage --appimage-extract >/dev/null 2>&1 || true
+    ICON_SRC=$(find squashfs-root -iname "*.png" -o -iname "*.svg" 2>/dev/null | grep -i localsend | head -n1)
+    if [[ -n "${ICON_SRC:-}" ]]; then
+        mkdir -p /usr/share/icons/hicolor/512x512/apps
+        cp "$ICON_SRC" /usr/share/icons/hicolor/512x512/apps/localsend.png 2>/dev/null || true
+        gtk-update-icon-cache /usr/share/icons/hicolor >/dev/null 2>&1 || true
+    fi
+    rm -rf squashfs-root
+) > /tmp/hypr_install_log 2>&1 || true
+print_ok "LocalSend icon extracted"
+
+cat > /usr/share/applications/localsend.desktop << 'EOF'
+[Desktop Entry]
+Name=LocalSend
+Comment=Share files and messages across your local network
+Exec=localsend %U
+Icon=localsend
+Terminal=false
+Type=Application
+Categories=Network;FileTransfer;
+StartupWMClass=LocalSend
+EOF
+print_ok "LocalSend desktop entry created  →  $LOCALSEND_VERSION"
 
 ################################################################################
 # DIRECTORY STRUCTURE
@@ -530,6 +581,24 @@ print_phase "Pywal symlinks"
     print_ok "zed/themes/zed.json"
 
 ################################################################################
+# CLEANUP (BUILD ARTIFACTS & TEMP DOWNLOADS)
+################################################################################
+
+print_phase "Cleanup"
+
+rm -rf "$WAYBAR_SRC_TMP" 2>/dev/null || true
+print_ok "Removed waybar-git build source  →  $WAYBAR_SRC_TMP"
+
+rm -rf "$COLLOID_SRC" 2>/dev/null || true
+print_ok "Removed Colloid icon theme source  →  $COLLOID_SRC"
+
+rm -rf "$LOCALSEND_DIR/squashfs-root" 2>/dev/null || true
+print_ok "Cleared LocalSend extraction artifacts"
+
+rm -f /tmp/hypr_install_log 2>/dev/null || true
+print_ok "Removed install log"
+
+################################################################################
 # SERVICES & PERMISSIONS
 ################################################################################
 
@@ -559,6 +628,7 @@ _row "pacman configured"                    "ILoveCandy, Color, ParallelDl"
 _row "system updated"                       "pacman -Syu"
 _row "packages + waybar-git"                "pacman & AUR source build"
 _row "pywal16"                              "pipx (PyPI, no AUR)"
+_row "localsend"                            "GitHub AppImage, no AUR"
 _row "dotfiles deployed"                    "~/.config/*"
 _row "gpu environment"                      "hypr/gpu-env.lua"
 _row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
@@ -566,17 +636,23 @@ _row "colloid-dynamic icons"                "~/.local/share/icons"
 _row "pywal symlinks"                       "wal → cache"
 _row "zed theme"                            "zed/themes/zed.json"
 _row "sddm · bluetooth · networkmanager"    "systemctl enable"
+_row "build artifacts cleaned"              "waybar-git, colloid-src, logs"
 
 box_line "─" "╰" "╯"
 echo ""
 
-read -r -p "    $(echo -e "${BCYN}reboot system now? [Y/n] ›${RST} ")" REBOOT_CHOICE
-REBOOT_CHOICE=${REBOOT_CHOICE:-Y}
+read -r -p "    $(echo -e "${BCYN}remove installer folder '$REPO_ROOT'? [y/N] ›${RST} ")" CLEAN_REPO_CHOICE
+CLEAN_REPO_CHOICE=${CLEAN_REPO_CHOICE:-N}
 
-if [[ "$REBOOT_CHOICE" =~ ^[Yy]$ ]]; then
-    echo ""
-    print_ok "Rebooting..."
-    reboot
+if [[ "$CLEAN_REPO_CHOICE" =~ ^[Yy]$ ]]; then
+    # Deleting the directory a running script lives in is unreliable if done
+    # inline, so detach the removal into a background job that fires just
+    # after this process exits.
+    nohup bash -c "sleep 2; rm -rf '$REPO_ROOT'" >/dev/null 2>&1 &
+    disown
+    print_ok "Installer folder '$REPO_ROOT' will be removed after this script exits"
 fi
 
+echo ""
+center "${DIM}${BBLK}reboot when you're ready: ${RST}${BWHT}reboot${RST}"
 echo ""
