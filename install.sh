@@ -516,8 +516,11 @@ print_ok "Shell configured"
 
 print_phase "SDDM pywal theme"
 
-read -r -p "    $(echo -e "${BCYN}apply pywal-themed SDDM login screen? [y/N] ›${RST} ")" SDDM_THEME_CHOICE
-SDDM_THEME_CHOICE=${SDDM_THEME_CHOICE:-N}
+if read -r -p "    $(echo -e "${BCYN}apply pywal-themed SDDM login screen? [y/N] ›${RST} ")" SDDM_THEME_CHOICE </dev/tty; then
+    SDDM_THEME_CHOICE=${SDDM_THEME_CHOICE:-N}
+else
+    SDDM_THEME_CHOICE="N"
+fi
 
 if [[ "$SDDM_THEME_CHOICE" =~ ^[Yy]$ ]]; then
     SDDM_THEME_NAME="pywal-sddm"
@@ -739,7 +742,6 @@ fi
 
 print_phase "Local AI agent integration"
 
-# Force read from /dev/tty so it works even if piped via curl | bash
 if read -r -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${RST} ")" AI_AGENT_CHOICE </dev/tty; then
     AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
 else
@@ -788,7 +790,7 @@ if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
 
     mkdir -p "$CONFIG_DIR/scripts"
     
-    cat << EOF> "$CONFIG_DIR/scripts/ai_toggle.sh"
+    cat << EOF > "$CONFIG_DIR/scripts/ai_toggle.sh"
 #!/bin/bash
 MODEL="$MODEL"
 
@@ -813,21 +815,27 @@ EOF
     print_ok "AI toggle script created with model: $MODEL  →  scripts/ai_toggle.sh"
 
     WAYBAR_CONFIG="$CONFIG_DIR/waybar/config.jsonc"
-    if [[ -f "$WAYBAR_CONFIG" ]]; then
-        if ! grep -q "custom/ai" "$WAYBAR_CONFIG"; then
-            sed -i 's/"custom\/firefox"/ "custom\/ai",\n    "custom\/firefox"/g' "$WAYBAR_CONFIG"
-            print_ok "Injected custom/ai into Waybar config"
+    REPO_WAYBAR_CONFIG="$CONFIGS_SRC/waybar/config.jsonc"
+    for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
+        if [[ -f "$cfg" ]]; then
+            if ! grep -q "custom/ai" "$cfg"; then
+                sed -i 's/"custom\/firefox"/ "custom\/ai",\n    "custom\/firefox"/g' "$cfg"
+                print_ok "Injected custom/ai into: $cfg"
+            fi
         fi
-    fi
+    done
 
     WAL_TEMPLATE="$CONFIG_DIR/wal/templates/waybar-style.css"
-    if [[ -f "$WAL_TEMPLATE" ]]; then
-        if ! grep -q "#custom-ai" "$WAL_TEMPLATE"; then
-            sed -i 's/#custom-firefox/#custom-ai,\n    #custom-firefox/g' "$WAL_TEMPLATE"
-            echo -e "\n#custom-ai       { color: {color2}; }" >> "$WAL_TEMPLATE"
-            print_ok "Updated pywal template (waybar-style.css)"
+    REPO_WAL_TEMPLATE="$CONFIGS_SRC/wal/templates/waybar-style.css"
+    for tpl in "$WAL_TEMPLATE" "$REPO_WAL_TEMPLATE"; do
+        if [[ -f "$tpl" ]]; then
+            if ! grep -q "#custom-ai" "$tpl"; then
+                sed -i 's/#custom-firefox/#custom-ai,\n    #custom-firefox/g' "$tpl"
+                echo -e "\n#custom-ai       { color: {color2}; }" >> "$tpl"
+                print_ok "Updated pywal template: $tpl"
+            fi
         fi
-    fi
+    done
 
     print_ok "Local AI agent integrated successfully"
 else
