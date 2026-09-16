@@ -742,16 +742,16 @@ fi
 
 print_phase "Local AI agent integration"
 
-if read -r -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${RST} ")" AI_AGENT_CHOICE </dev/tty; then
-    AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
-else
-    AI_AGENT_CHOICE="N"
+AI_AGENT_CHOICE="N"
+if [ -t 0 ]; then
+    read -r -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${RST} ")" AI_AGENT_CHOICE </dev/tty || true
 fi
+AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
 
 if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
     if ! pacman -Qi ollama &>/dev/null; then
         print_item "Installing ollama..."
-        sudo pacman -S --noconfirm ollama
+        pacman -S --noconfirm ollama
     fi
 
     print_item "Detecting system hardware for optimal AI model selection..."
@@ -760,12 +760,12 @@ if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
     VRAM_MB=""
     
     if command -v rocm-smi &>/dev/null; then
-        VRAM_MB=$(rocm-smi --showmeminfo vram --json 2>/dev/null | grep -oP '"VRAM Total Memory \(B\)"\s*:\s*\K[0-9]+' | awk '{print int($1/1024/1024)}')
+        VRAM_MB=$(rocm-smi --showmeminfo vram --json 2>/dev/null | grep -oP '"VRAM Total Memory \(B\)"\s*:\s*\K[0-9]+' | awk '{print int($1/1024/1024)}' || true)
     elif command -v nvidia-smi &>/dev/null; then
-        VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -n 1)
+        VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -n 1 || true)
     fi
 
-    if [[ -z "$VRAM_MB" ]]; then
+    if [[ -z "$VRAM_MB" || ! "$VRAM_MB" =~ ^[0-9]+$ ]]; then
         TOTAL_RAM_GB=$(free -g | awk '/^Mem:/{print $2}')
         if [[ "$TOTAL_RAM_GB" -ge 32 ]]; then
             DETECTED_MODEL="qwen2.5-coder:7b"
@@ -782,10 +782,11 @@ if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
         fi
     fi
 
-    if read -r -p "    $(echo -e "${BCYN}Use detected model [$DETECTED_MODEL]? (Press Enter to accept, or type another) ›${RST} ")" USER_MODEL_CHOICE </dev/tty; then
-        MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
-    else
-        MODEL="$DETECTED_MODEL"
+    MODEL="$DETECTED_MODEL"
+    if [ -t 0 ]; then
+        if read -r -p "    $(echo -e "${BCYN}Use detected model [$DETECTED_MODEL]? (Press Enter to accept, or type another) ›${RST} ")" USER_MODEL_CHOICE </dev/tty; then
+            MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
+        fi
     fi
 
     mkdir -p "$CONFIG_DIR/scripts"
