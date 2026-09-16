@@ -739,8 +739,12 @@ fi
 
 print_phase "Local AI agent integration"
 
-read -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${RST} ")" AI_AGENT_CHOICE
-AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
+# Force read from /dev/tty so it works even if piped via curl | bash
+if read -r -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${RST} ")" AI_AGENT_CHOICE </dev/tty; then
+    AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
+else
+    AI_AGENT_CHOICE="N"
+fi
 
 if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
     if ! pacman -Qi ollama &>/dev/null; then
@@ -776,12 +780,15 @@ if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
         fi
     fi
 
-    read -p "    $(echo -e "${BCYN}Use detected model [$DETECTED_MODEL]? (Press Enter to accept, or type another) ›${RST} ")" USER_MODEL_CHOICE
-    MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
+    if read -r -p "    $(echo -e "${BCYN}Use detected model [$DETECTED_MODEL]? (Press Enter to accept, or type another) ›${RST} ")" USER_MODEL_CHOICE </dev/tty; then
+        MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
+    else
+        MODEL="$DETECTED_MODEL"
+    fi
 
     mkdir -p "$CONFIG_DIR/scripts"
     
-    cat << EOF > "$CONFIG_DIR/scripts/ai_toggle.sh"
+    cat << EOF> "$CONFIG_DIR/scripts/ai_toggle.sh"
 #!/bin/bash
 MODEL="$MODEL"
 
