@@ -221,7 +221,7 @@ UTILITY_PACKAGES=(
 FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
 )
-APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam spotify-launcher)
+APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam spotify-launcher qbittorrent libreoffice-fresh gimp)
 DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx rust alsa-lib pkgconf ueberzugpp cmake ninja meson wayland wayland-protocols mpv)
 FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascadia-code-nerd)
 MEDIA_PACKAGES=(poppler imagemagick ffmpeg wf-recorder chafa)
