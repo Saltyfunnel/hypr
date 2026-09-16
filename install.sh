@@ -748,6 +748,109 @@ else
     print_item "${DIM}Skipped — default SDDM theme kept${RST}"
 fi
 
+##########################################################################################
+# LOCAL AI AGENT TOGGLE (OPTIONAL WITH HARDWARE DETECTION)
+##########################################################################################
+
+print_phase "Local AI agent integration"
+
+read -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${RST} ")" AI_AGENT_CHOICE
+AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
+
+if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
+    # 1. Install Ollama if missing
+    if ! pacman -Qi ollama &>/dev/null; then
+        print_item "Installing ollama..."
+        sudo pacman -S --noconfirm ollama
+    fi
+
+    # 2. Clever Hardware Detection for VRAM / Model Selection
+    print_item "Detecting system hardware for optimal AI model selection..."
+    
+    # Default fallback model
+    DETECTED_MODEL="qwen2.5-coder:7b"
+    
+    # Check for VRAM using available tools (e.g., rocm-smi for AMD or nvidia-smi)
+    if command -v rocm-smi &>/dev/null; then
+        VRAM_MB=$(rocm-smi --showmeminfo vram --json 2>/dev/null | grep -oP '"VRAM Total Memory \(B\)"\s*:\s*\K[0-9]+' | awk '{print int($1/1024/1024)}')
+    elif command -v nvidia-smi &>/dev/null; then
+        VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -n 1)
+    fi
+
+    # Fallback to standard lspci/free estimation if dedicated tool output is missing
+    if [[ -z "$VRAM_MB" ]]; then
+        TOTAL_RAM_GB=$(free -g | awk '/^Mem:/{print $2}')
+        if [[ "$TOTAL_RAM_GB" -ge 32 ]]; then
+            DETECTED_MODEL="qwen2.5-coder:7b"
+        else
+            DETECTED_MODEL="qwen2.5-coder:3b"
+        fi
+    else
+        # VRAM-based sizing logic (roughly matching 16GB+ vs lower tiers)
+        if [[ "$VRAM_MB" -ge 15000 ]]; then
+            DETECTED_MODEL="qwen2.5-coder:7b"
+            print_ok "High-VRAM GPU detected (~$((VRAM_MB/1024))GB) — targeting 7B model tier."
+        else
+            DETECTED_MODEL="qwen2.5-coder:3b"
+            print_ok "Standard VRAM tier detected (~$((VRAM_MB/1024))GB) — targeting lightweight 3B model tier."
+        fi
+    fi
+
+    # Allow a quick override prompt if desired, defaulting to the smart choice
+    read -p "    $(echo -e "${BCYN}Use detected model [$DETECTED_MODEL]? (Press Enter to accept, or type another) ›${RST} ")" USER_MODEL_CHOICE
+    MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
+
+    mkdir -p "$CONFIG_DIR/scripts"
+    
+    # 3. Create the toggle script dynamically using the chosen model
+    cat << EOF > "$CONFIG_DIR/scripts/ai_toggle.sh"
+#!/bin/bash
+MODEL="$MODEL"
+
+if [ "$1" = "--status" ]; then
+    if ollama ps | grep -q "\$MODEL"; then
+        echo '{"text": "󰚥", "tooltip": "AI Active (Click to kill)"}'
+    else
+        echo '{"text": "󰚩", "tooltip": "AI Idle (Click to launch)"}'
+    fi
+else
+    if ollama ps | grep -q "\$MODEL"; then
+        ollama stop "\$MODEL"
+        pkill -f "ollama run \$MODEL"
+        notify-send "AI Status" "Model unloaded and chat closed."
+    else
+        kitty -e ollama run "\$MODEL"
+    fi
+fi
+EOF
+    chown "$USER_NAME:$USER_NAME" "$CONFIG_DIR/scripts/ai_toggle.sh"
+    chmod +x "$CONFIG_DIR/scripts/ai_toggle.sh"
+    print_ok "AI toggle script created with model: $MODEL  →  scripts/ai_toggle.sh"
+
+    # 4. Inject custom/ai into Waybar config.jsonc
+    WAYBAR_CONFIG="$CONFIG_DIR/waybar/config.jsonc"
+    if [[ -f "$WAYBAR_CONFIG" ]]; then
+        if ! grep -q "custom/ai" "$WAYBAR_CONFIG"; then
+            sed -i 's/"custom\/firefox"/ "custom\/ai",\n    "custom\/firefox"/g' "$WAYBAR_CONFIG"
+            print_ok "Injected custom/ai into Waybar config"
+        fi
+    fi
+
+    # 5. Update the pywal template for Waybar CSS
+    WAL_TEMPLATE="$CONFIG_DIR/wal/templates/waybar-style.css"
+    if [[ -f "$WAL_TEMPLATE" ]]; then
+        if ! grep -q "#custom-ai" "$WAL_TEMPLATE"; then
+            sed -i 's/#custom-firefox/#custom-ai,\n    #custom-firefox/g' "$WAL_TEMPLATE"
+            echo -e "\n#custom-ai       { color: {color2}; }" >> "$WAL_TEMPLATE"
+            print_ok "Updated pywal template (waybar-style.css)"
+        fi
+    fi
+
+    print_ok "Local AI agent integrated successfully"
+else
+    print_item "${DIM}Skipped — local AI agent not installed${RST}"
+fi
+
 ################################################################################
 # COLLOID ICON THEME
 ################################################################################
