@@ -219,7 +219,7 @@ TERMINAL_PACKAGES=(kitty starship fastfetch)
 UTILITY_PACKAGES=(
     grim slurp wl-clipboard polkit-kde-agent
     bluez bluez-utils blueman udiskie udisks2 gvfs networkmanager network-manager-applet
-    fuse2
+    fuse2 gsettings-desktop-schemas
 )
 FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
@@ -531,7 +531,7 @@ fi
 (cd "$COLLOID_SRC" && sudo -u "$USER_NAME" ./install.sh \
     -d "$USER_HOME/.local/share/icons" \
     -n Colloid-Dynamic \
-    -s dark) \
+    -s default) \
     > /tmp/hypr_install_log 2>&1 &
 spinner "$!" "Installing Colloid-Dynamic icons"
 wait $! || print_err "Colloid install failed  →  /tmp/hypr_install_log"
@@ -539,6 +539,9 @@ print_ok "Colloid-Dynamic icons installed"
 
 sudo -u "$USER_NAME" gtk-update-icon-cache -f -t "$USER_HOME/.local/share/icons/Colloid-Dynamic-Dark" >/dev/null 2>&1 || true
 print_ok "Icon cache refreshed  →  Colloid-Dynamic-Dark"
+
+sudo -u "$USER_NAME" gsettings set org.gnome.desktop.interface icon-theme 'Colloid-Dynamic-Dark' 2>/dev/null || true
+print_ok "gsettings icon-theme set  →  Colloid-Dynamic-Dark"
 
 ################################################################################
 # THUNAR CUSTOM ACTIONS (KITTY)
