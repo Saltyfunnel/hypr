@@ -163,13 +163,9 @@ print_ok "Credentials accepted"
 
 print_phase "Configuring pacman.conf"
 
-# Enable Color
 sed -i 's/^#Color/Color/' /etc/pacman.conf
-
-# Enable ParallelDownloads
 sed -i 's/^#ParallelDownloads = 5/ParallelDownloads = 5/' /etc/pacman.conf
 
-# Enable ILoveCandy under [options]
 if grep -q "^#ILoveCandy" /etc/pacman.conf; then
     sed -i 's/^#ILoveCandy/ILoveCandy/' /etc/pacman.conf
 elif ! grep -q "^ILoveCandy" /etc/pacman.conf; then
@@ -322,7 +318,6 @@ chmod +x "$LOCALSEND_DIR/LocalSend.AppImage"
 ln -sf "$LOCALSEND_DIR/LocalSend.AppImage" /usr/local/bin/localsend
 print_ok "LocalSend linked  →  /usr/local/bin/localsend"
 
-# Extract the app icon from the AppImage so the launcher has a proper icon
 (
     cd "$LOCALSEND_DIR"
     ./LocalSend.AppImage --appimage-extract >/dev/null 2>&1 || true
@@ -356,10 +351,10 @@ print_ok "LocalSend desktop entry created  →  $LOCALSEND_VERSION"
 print_phase "Directory Structure"
 
 CONFIG_DIRS=(
-    "$CONFIG_DIR/hypr"             "$CONFIG_DIR/waybar"
-    "$CONFIG_DIR/kitty"            "$CONFIG_DIR/fastfetch"
-    "$CONFIG_DIR/mako"             "$CONFIG_DIR/scripts"
-    "$CONFIG_DIR/wal/templates"    "$CONFIG_DIR/btop"
+    "$CONFIG_DIR/hypr"               "$CONFIG_DIR/waybar"
+    "$CONFIG_DIR/kitty"              "$CONFIG_DIR/fastfetch"
+    "$CONFIG_DIR/mako"               "$CONFIG_DIR/scripts"
+    "$CONFIG_DIR/wal/templates"      "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
     "$CONFIG_DIR/zed/themes"
 )
@@ -391,15 +386,14 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                 ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                   "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"               ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                             "Waybar config"
-[[ -f "$CONFIGS_SRC/kitty/kitty.conf"      ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                "Kitty config"
-[[ -f "$CONFIGS_SRC/fastfetch/config.jsonc"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
-[[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
-[[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                  "btop config"
-[[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"            "pywal templates"
+[[ -d "$CONFIGS_SRC/hypr"                 ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                     "Hyprland config"
+[[ -d "$CONFIGS_SRC/waybar"               ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                                   "Waybar config"
+[[ -f "$CONFIGS_SRC/kitty/kitty.conf"     ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                 "Kitty config"
+[[ -f "$CONFIGS_SRC/fastfetch/config.jsonc" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
+[[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
+[[ -f "$CONFIGS_SRC/btop/btop.conf"         ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                      "btop config"
+[[ -d "$CONFIGS_SRC/wal/templates"          ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"             "pywal templates"
 
-# GTK dark theme
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
 [Settings]
 gtk-icon-theme-name=Colloid-Dynamic-Dark
@@ -429,7 +423,7 @@ if echo "$GPU_INFO" | grep -qi nvidia; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
   LIBVA_DRIVER_NAME         = "nvidia",
-  VDPAU_DRIVER               = "nvidia",
+  VDPAU_DRIVER              = "nvidia",
   XDG_SESSION_TYPE          = "wayland",
   __GLX_VENDOR_LIBRARY_NAME = "nvidia",
   GBM_BACKEND               = "nvidia-drm",
@@ -560,13 +554,11 @@ Rectangle {
     width: 1920
     height: 1080
 
-    // Default fallback colors
     property color colorBg: "#1a1b26"
     property color colorFg: "#c0caf5"
     property color colorAccent: "#7aa2f7"
     property color colorInputBg: "#24283b"
 
-    // Global location accessible by sddm user
     readonly property string pywalJsonPath: "file:///var/cache/wal/colors.json"
 
     function loadWalColors() {
@@ -600,7 +592,6 @@ Rectangle {
 
     color: root.colorBg
 
-    // Center Card Container
     Rectangle {
         anchors.centerIn: parent
         width: 360
@@ -615,7 +606,6 @@ Rectangle {
             spacing: 20
             width: parent.width - 60
 
-            // User Avatar / Icon Indicator
             Rectangle {
                 Layout.alignment: Qt.AlignHCenter
                 width: 72
@@ -633,7 +623,6 @@ Rectangle {
                 }
             }
 
-            // Username Input Field
             TextField {
                 id: usernameInput
                 Layout.fillWidth: true
@@ -650,7 +639,6 @@ Rectangle {
                 }
             }
 
-            // Password Input Field
             TextField {
                 id: passwordInput
                 Layout.fillWidth: true
@@ -669,7 +657,6 @@ Rectangle {
                 onAccepted: sddm.login(usernameInput.text, passwordInput.text, sessionSelect.currentIndex)
             }
 
-            // Session Selector
             ComboBox {
                 id: sessionSelect
                 Layout.fillWidth: true
@@ -680,7 +667,6 @@ Rectangle {
                 font.pixelSize: 12
             }
 
-            // Login Button
             Button {
                 Layout.fillWidth: true
                 height: 40
@@ -729,7 +715,6 @@ EOF
         if ! grep -q "/var/cache/wal/colors.json" "$SDDM_SETWALL_SCRIPT"; then
             sudo -u "$USER_NAME" bash -c "cat >> '$SDDM_SETWALL_SCRIPT' << 'HOOK'
 
-# Sync colors to global cache for SDDM access
 if [ -f \"\$HOME/.cache/wal/colors.json\" ]; then
     cp -f \"\$HOME/.cache/wal/colors.json\" /var/cache/wal/colors.json 2>/dev/null || true
     chmod 644 /var/cache/wal/colors.json 2>/dev/null || true
@@ -748,9 +733,9 @@ else
     print_item "${DIM}Skipped — default SDDM theme kept${RST}"
 fi
 
-##########################################################################################
+################################################################################
 # LOCAL AI AGENT TOGGLE (OPTIONAL WITH HARDWARE DETECTION)
-##########################################################################################
+################################################################################
 
 print_phase "Local AI agent integration"
 
@@ -758,26 +743,22 @@ read -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${
 AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
 
 if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
-    # 1. Install Ollama if missing
     if ! pacman -Qi ollama &>/dev/null; then
         print_item "Installing ollama..."
         sudo pacman -S --noconfirm ollama
     fi
 
-    # 2. Clever Hardware Detection for VRAM / Model Selection
     print_item "Detecting system hardware for optimal AI model selection..."
     
-    # Default fallback model
     DETECTED_MODEL="qwen2.5-coder:7b"
+    VRAM_MB=""
     
-    # Check for VRAM using available tools (e.g., rocm-smi for AMD or nvidia-smi)
     if command -v rocm-smi &>/dev/null; then
         VRAM_MB=$(rocm-smi --showmeminfo vram --json 2>/dev/null | grep -oP '"VRAM Total Memory \(B\)"\s*:\s*\K[0-9]+' | awk '{print int($1/1024/1024)}')
     elif command -v nvidia-smi &>/dev/null; then
         VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -n 1)
     fi
 
-    # Fallback to standard lspci/free estimation if dedicated tool output is missing
     if [[ -z "$VRAM_MB" ]]; then
         TOTAL_RAM_GB=$(free -g | awk '/^Mem:/{print $2}')
         if [[ "$TOTAL_RAM_GB" -ge 32 ]]; then
@@ -786,7 +767,6 @@ if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
             DETECTED_MODEL="qwen2.5-coder:3b"
         fi
     else
-        # VRAM-based sizing logic (roughly matching 16GB+ vs lower tiers)
         if [[ "$VRAM_MB" -ge 15000 ]]; then
             DETECTED_MODEL="qwen2.5-coder:7b"
             print_ok "High-VRAM GPU detected (~$((VRAM_MB/1024))GB) — targeting 7B model tier."
@@ -796,18 +776,16 @@ if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
         fi
     fi
 
-    # Allow a quick override prompt if desired, defaulting to the smart choice
     read -p "    $(echo -e "${BCYN}Use detected model [$DETECTED_MODEL]? (Press Enter to accept, or type another) ›${RST} ")" USER_MODEL_CHOICE
     MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
 
     mkdir -p "$CONFIG_DIR/scripts"
     
-    # 3. Create the toggle script dynamically using the chosen model
     cat << EOF > "$CONFIG_DIR/scripts/ai_toggle.sh"
 #!/bin/bash
 MODEL="$MODEL"
 
-if [ "$1" = "--status" ]; then
+if [ "\$1" = "--status" ]; then
     if ollama ps | grep -q "\$MODEL"; then
         echo '{"text": "󰚥", "tooltip": "AI Active (Click to kill)"}'
     else
@@ -827,7 +805,6 @@ EOF
     chmod +x "$CONFIG_DIR/scripts/ai_toggle.sh"
     print_ok "AI toggle script created with model: $MODEL  →  scripts/ai_toggle.sh"
 
-    # 4. Inject custom/ai into Waybar config.jsonc
     WAYBAR_CONFIG="$CONFIG_DIR/waybar/config.jsonc"
     if [[ -f "$WAYBAR_CONFIG" ]]; then
         if ! grep -q "custom/ai" "$WAYBAR_CONFIG"; then
@@ -836,7 +813,6 @@ EOF
         fi
     fi
 
-    # 5. Update the pywal template for Waybar CSS
     WAL_TEMPLATE="$CONFIG_DIR/wal/templates/waybar-style.css"
     if [[ -f "$WAL_TEMPLATE" ]]; then
         if ! grep -q "#custom-ai" "$WAL_TEMPLATE"; then
@@ -945,8 +921,8 @@ print_ok "Removed install log"
 
 print_phase "Services & permissions"
 
-systemctl enable sddm.service            2>/dev/null && print_ok "sddm enabled"             || true
-systemctl enable bluetooth.service        2>/dev/null && print_ok "bluetooth enabled"         || true
+systemctl enable sddm.service            2>/dev/null && print_ok "sddm enabled"          || true
+systemctl enable bluetooth.service        2>/dev/null && print_ok "bluetooth enabled"        || true
 systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"    || true
 
 chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
@@ -959,42 +935,5 @@ print_ok "Ownership set"
 clear
 print_banner
 
-center "${BLD}${BGRN}✓  installation complete${RST}"
-center "${DIM}${BBLK}finished in $(elapsed)${RST}"
-echo ""
-box_line "─" "╭" "╮"
-
-_row() { printf "${BBLK}│${RST}  ${BGRN}✓${RST}  %-36s${DIM}%-22s${RST}${BBLK}│${RST}\n" "$1" "$2"; }
-_row "pacman configured"                    "ILoveCandy, Color, ParallelDl"
-_row "system updated"                       "pacman -Syu"
-_row "packages + waybar-git"                "pacman & AUR source build"
-_row "pywal16"                              "pipx (PyPI, no AUR)"
-_row "localsend"                            "GitHub AppImage, no AUR"
-_row "dotfiles deployed"                    "~/.config/*"
-_row "gpu environment"                      "hypr/gpu-env.lua"
-_row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
-_row "colloid-dynamic icons"                "~/.local/share/icons"
-_row "pywal symlinks"                       "wal → cache"
-_row "zed theme"                            "zed/themes/zed.json"
-_row "sddm · bluetooth · networkmanager"    "systemctl enable"
-_row "sddm pywal theme"                     "if selected"
-_row "build artifacts cleaned"              "waybar-git, colloid-src, logs"
-
-box_line "─" "╰" "╯"
-echo ""
-
-read -r -p "    $(echo -e "${BCYN}remove installer folder '$REPO_ROOT'? [y/N] ›${RST} ")" CLEAN_REPO_CHOICE
-CLEAN_REPO_CHOICE=${CLEAN_REPO_CHOICE:-N}
-
-if [[ "$CLEAN_REPO_CHOICE" =~ ^[Yy]$ ]]; then
-    # Deleting the directory a running script lives in is unreliable if done
-    # inline, so detach the removal into a background job that fires just
-    # after this process exits.
-    nohup bash -c "sleep 2; rm -rf '$REPO_ROOT'" >/dev/null 2>&1 &
-    disown
-    print_ok "Installer folder '$REPO_ROOT' will be removed after this script exits"
-fi
-
-echo ""
-center "${DIM}${BBLK}reboot when you're ready: ${RST}${BWHT}reboot${RST}"
+center "${BLD}${BGRN}✓  installation complete!${RST}"
 echo ""
