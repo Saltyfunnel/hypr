@@ -18,7 +18,7 @@ BBLU="\e[94m"; BMAG="\e[95m"; BCYN="\e[96m"; BWHT="\e[97m"
 BLD="\e[1m"; DIM="\e[2m"; ITL="\e[3m"; UND="\e[4m"
 
 STEP=0
-TOTAL_STEPS=11
+TOTAL_STEPS=16
 INSTALL_START=$(date +%s)
 
 ################################################################################
@@ -517,6 +517,238 @@ EOF
 print_ok "Shell configured"
 
 ################################################################################
+# SDDM PYWAL THEME (OPTIONAL)
+################################################################################
+
+print_phase "SDDM pywal theme"
+
+read -r -p "    $(echo -e "${BCYN}apply pywal-themed SDDM login screen? [y/N] ›${RST} ")" SDDM_THEME_CHOICE
+SDDM_THEME_CHOICE=${SDDM_THEME_CHOICE:-N}
+
+if [[ "$SDDM_THEME_CHOICE" =~ ^[Yy]$ ]]; then
+    SDDM_THEME_NAME="pywal-sddm"
+    SDDM_THEME_DIR="/usr/share/sddm/themes/${SDDM_THEME_NAME}"
+    SDDM_CONF_DIR="/etc/sddm.conf.d"
+    SDDM_SETWALL_SCRIPT="$CONFIG_DIR/scripts/setwall.sh"
+    SDDM_GLOBAL_WAL_CACHE="/var/cache/wal"
+
+    faillock --user "$USER_NAME" --reset 2>/dev/null || true
+
+    run_command "pacman -S --noconfirm --needed sddm qt5-quickcontrols qt5-quickcontrols2 qt5-graphicaleffects" \
+        "Installing SDDM QML dependencies"
+
+    mkdir -p "$SDDM_THEME_DIR"
+    mkdir -p "$SDDM_GLOBAL_WAL_CACHE"
+    chown -R "$USER_NAME:$USER_NAME" "$SDDM_GLOBAL_WAL_CACHE"
+    chmod 755 "$SDDM_GLOBAL_WAL_CACHE"
+
+    if [[ -f "$USER_HOME/.cache/wal/colors.json" ]]; then
+        cp "$USER_HOME/.cache/wal/colors.json" "$SDDM_GLOBAL_WAL_CACHE/colors.json"
+    else
+        echo '{"special":{"background":"#1a1b26","foreground":"#c0caf5"},"colors":{"color0":"#24283b","color4":"#7aa2f7"}}' > "$SDDM_GLOBAL_WAL_CACHE/colors.json"
+    fi
+    chmod 644 "$SDDM_GLOBAL_WAL_CACHE/colors.json"
+    print_ok "Global pywal colour cache seeded  →  $SDDM_GLOBAL_WAL_CACHE/colors.json"
+
+    cat << 'QMLEOF' > "$SDDM_THEME_DIR/Main.qml"
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+
+Rectangle {
+    id: root
+    width: 1920
+    height: 1080
+
+    // Default fallback colors
+    property color colorBg: "#1a1b26"
+    property color colorFg: "#c0caf5"
+    property color colorAccent: "#7aa2f7"
+    property color colorInputBg: "#24283b"
+
+    // Global location accessible by sddm user
+    readonly property string pywalJsonPath: "file:///var/cache/wal/colors.json"
+
+    function loadWalColors() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", root.pywalJsonPath, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200 || xhr.status === 0) {
+                    try {
+                        var colors = JSON.parse(xhr.responseText);
+                        if (colors.special) {
+                            root.colorBg = colors.special.background || root.colorBg;
+                            root.colorFg = colors.special.foreground || root.colorFg;
+                        }
+                        if (colors.colors) {
+                            root.colorAccent = colors.colors.color4 || root.colorAccent;
+                            root.colorInputBg = colors.colors.color0 || root.colorInputBg;
+                        }
+                    } catch (e) {
+                        console.log("Failed to parse pywal JSON, using fallback colors.");
+                    }
+                }
+            }
+        };
+        xhr.send();
+    }
+
+    Component.onCompleted: {
+        loadWalColors();
+    }
+
+    color: root.colorBg
+
+    // Center Card Container
+    Rectangle {
+        anchors.centerIn: parent
+        width: 360
+        height: 380
+        radius: 16
+        color: Qt.rgba(root.colorInputBg.r, root.colorInputBg.g, root.colorInputBg.b, 0.6)
+        border.color: root.colorAccent
+        border.width: 1
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            spacing: 20
+            width: parent.width - 60
+
+            // User Avatar / Icon Indicator
+            Rectangle {
+                Layout.alignment: Qt.AlignHCenter
+                width: 72
+                height: 72
+                radius: 36
+                color: root.colorAccent
+
+                Text {
+                    anchors.centerIn: parent
+                    text: usernameInput.text.length > 0 ? usernameInput.text.substring(0, 1).toUpperCase() : "?"
+                    color: root.colorBg
+                    font.pixelSize: 32
+                    font.bold: true
+                    font.family: "Hack Nerd Font"
+                }
+            }
+
+            // Username Input Field
+            TextField {
+                id: usernameInput
+                Layout.fillWidth: true
+                placeholderText: "Username"
+                text: userModel.lastUser
+                font.family: "Hack Nerd Font"
+                font.pixelSize: 14
+                color: root.colorFg
+                background: Rectangle {
+                    color: Qt.darker(root.colorInputBg, 1.2)
+                    radius: 8
+                    border.color: usernameInput.activeFocus ? root.colorAccent : "transparent"
+                    border.width: 1
+                }
+            }
+
+            // Password Input Field
+            TextField {
+                id: passwordInput
+                Layout.fillWidth: true
+                placeholderText: "Password"
+                echoMode: TextInput.Password
+                font.family: "Hack Nerd Font"
+                font.pixelSize: 14
+                color: root.colorFg
+                focus: true
+                background: Rectangle {
+                    color: Qt.darker(root.colorInputBg, 1.2)
+                    radius: 8
+                    border.color: passwordInput.activeFocus ? root.colorAccent : "transparent"
+                    border.width: 1
+                }
+                onAccepted: sddm.login(usernameInput.text, passwordInput.text, sessionSelect.currentIndex)
+            }
+
+            // Session Selector
+            ComboBox {
+                id: sessionSelect
+                Layout.fillWidth: true
+                model: sessionModel
+                textRole: "name"
+                currentIndex: sessionModel.lastIndex
+                font.family: "Hack Nerd Font"
+                font.pixelSize: 12
+            }
+
+            // Login Button
+            Button {
+                Layout.fillWidth: true
+                height: 40
+                onClicked: sddm.login(usernameInput.text, passwordInput.text, sessionSelect.currentIndex)
+
+                contentItem: Text {
+                    text: "LOGIN"
+                    color: root.colorBg
+                    font.bold: true
+                    font.family: "Hack Nerd Font"
+                    font.pixelSize: 14
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                background: Rectangle {
+                    color: parent.down ? Qt.darker(root.colorAccent, 1.2) : root.colorAccent
+                    radius: 8
+                }
+            }
+        }
+    }
+}
+QMLEOF
+    print_ok "Main.qml written  →  $SDDM_THEME_DIR"
+
+    cat << EOF > "$SDDM_THEME_DIR/metadata.desktop"
+[SddmGreeterTheme]
+Name=${SDDM_THEME_NAME}
+Description=A sleek minimalist theme that imports pywal16 colors dynamically
+Author=Custom
+Type=sddm-theme
+ConfigFile=theme.conf
+MainScript=Main.qml
+EOF
+    print_ok "metadata.desktop written"
+
+    mkdir -p "$SDDM_CONF_DIR"
+    cat << EOF > "$SDDM_CONF_DIR/theme.conf"
+[Theme]
+Current=${SDDM_THEME_NAME}
+EOF
+    print_ok "SDDM configured to use  →  ${SDDM_THEME_NAME}"
+
+    if [[ -f "$SDDM_SETWALL_SCRIPT" ]]; then
+        if ! grep -q "/var/cache/wal/colors.json" "$SDDM_SETWALL_SCRIPT"; then
+            sudo -u "$USER_NAME" bash -c "cat >> '$SDDM_SETWALL_SCRIPT' << 'HOOK'
+
+# Sync colors to global cache for SDDM access
+if [ -f \"\$HOME/.cache/wal/colors.json\" ]; then
+    cp -f \"\$HOME/.cache/wal/colors.json\" /var/cache/wal/colors.json 2>/dev/null || true
+    chmod 644 /var/cache/wal/colors.json 2>/dev/null || true
+fi
+HOOK"
+            print_ok "setwall.sh patched with global colour sync hook"
+        else
+            print_ok "setwall.sh already has the sync hook  →  skipped"
+        fi
+    else
+        print_warn "setwall.sh not found at $SDDM_SETWALL_SCRIPT — skipping patch"
+    fi
+
+    print_ok "Pywal SDDM theme installed  →  applies on next SDDM start"
+else
+    print_item "${DIM}Skipped — default SDDM theme kept${RST}"
+fi
+
+################################################################################
 # COLLOID ICON THEME
 ################################################################################
 
@@ -642,6 +874,7 @@ _row "colloid-dynamic icons"                "~/.local/share/icons"
 _row "pywal symlinks"                       "wal → cache"
 _row "zed theme"                            "zed/themes/zed.json"
 _row "sddm · bluetooth · networkmanager"    "systemctl enable"
+_row "sddm pywal theme"                     "if selected"
 _row "build artifacts cleaned"              "waybar-git, colloid-src, logs"
 
 box_line "─" "╰" "╯"
