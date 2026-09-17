@@ -74,7 +74,7 @@ print_banner() {
     echo ""
     box_line "─" "╭" "╮"
     echo ""
-    center "${BLD}${BCYN}⟁  hyprland${RST}${BLD}${BBLK}  ·  arch linux  ·  2026${RST}"
+    center "${BLD}${BCYN}⟁  hyprland${RST}${BLD}${BBLK}  ·  arch linux  ·  2026${RST}"
     echo ""
     center "${DIM}${BBLK}automated desktop environment installer${RST}"
     echo ""
@@ -351,11 +351,11 @@ print_ok "LocalSend desktop entry created  →  $LOCALSEND_VERSION"
 print_phase "Directory Structure"
 
 CONFIG_DIRS=(
-    "$CONFIG_DIR/hypr"                      "$CONFIG_DIR/waybar"
-    "$CONFIG_DIR/kitty"                     "$CONFIG_DIR/fastfetch"
-    "$CONFIG_DIR/mako"                      "$CONFIG_DIR/scripts"
-    "$CONFIG_DIR/wal/templates"             "$CONFIG_DIR/btop"
-    "$CONFIG_DIR/gtk-3.0"                   "$CONFIG_DIR/gtk-4.0"
+    "$CONFIG_DIR/hypr"                         "$CONFIG_DIR/waybar"
+    "$CONFIG_DIR/kitty"                        "$CONFIG_DIR/fastfetch"
+    "$CONFIG_DIR/mako"                         "$CONFIG_DIR/scripts"
+    "$CONFIG_DIR/wal/templates"                "$CONFIG_DIR/btop"
+    "$CONFIG_DIR/gtk-3.0"                      "$CONFIG_DIR/gtk-4.0"
     "$CONFIG_DIR/zed/themes"
 )
 
@@ -387,12 +387,12 @@ for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null ||
 print_ok "Stale symlinks & conflicting files cleared"
 
 [[ -d "$CONFIGS_SRC/hypr"                     ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                     "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"                   ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                               "Waybar config"
-[[ -f "$CONFIGS_SRC/kitty/kitty.conf"         ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                 "Kitty config"
+[[ -d "$CONFIGS_SRC/waybar"                   ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                                   "Waybar config"
+[[ -f "$CONFIGS_SRC/kitty/kitty.conf"         ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                  "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
 [[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
-[[ -f "$CONFIGS_SRC/btop/btop.conf"           ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                     "btop config"
-[[ -d "$CONFIGS_SRC/wal/templates"            ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"                "pywal templates"
+[[ -f "$CONFIGS_SRC/btop/btop.conf"           ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                      "btop config"
+[[ -d "$CONFIGS_SRC/wal/templates"            ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"                 "pywal templates"
 
 if [[ -f "$CONFIG_DIR/wal/templates/waybar-style.css" ]]; then
     sudo -u "$USER_NAME" wal -R || true
@@ -838,52 +838,50 @@ EOF
     for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
         if [[ -f "$cfg" ]]; then
             if ! grep -q "custom/ai" "$cfg"; then
-                # Run python without swallowing stderr so we see any errors, and actually write the module block
                 python3 -c '
-                import sys, json
+import sys
 
 path = sys.argv[1]
 with open(path, "r") as f:
     raw_content = f.read()
 
-# Waybar configs often contain comments (JSONC). Let us do a safe string-based check 
-# or clean approach since standard json.loads will fail on comments.
+ai_module_json = """    \"custom/ai\": {
+        \"format\": \"{}\",
+        \"return-type\": \"json\",
+        \"exec\": \"$HOME/.config/scripts/ai_toggle.sh --status\",
+        \"interval\": 3,
+        \"on-click\": \"$HOME/.config/scripts/ai_toggle.sh\",
+        \"signal\": 1
+    }"""
+
 if "\"custom/ai\"" not in raw_content:
     if "\"custom/power\"" in raw_content:
-        raw_content = raw_content.replace("\"custom/power\"", "\"custom/ai\",\n        \"custom/power\"")
-    else:
-        raise ValueError("Could not find \"custom/power\" in modules-right")
-
-if "\"custom/ai\":" not in raw_content:
-    # Find the last occurrence of a closing brace for the root object
-    # We look for the last } in the file
-    idx = raw_content.rfind("}")
-    if idx != -1:
-        module_def = """    ,\n    "custom/ai": {
-        "format": "{}",
-        "interval": 1,
-        "exec": "$HOME/.config/scripts/ai_toggle.sh --status",
-        "on-click": "$HOME/.config/scripts/ai_toggle.sh",
-        "return-type": "json"
-    }
-"""
-        raw_content = raw_content[:idx].rstrip() + "\n" + module_def + raw_content[idx:]
-    else:
-        raise ValueError("Could not find root closing brace in Waybar config")
-
-with open(path, "w") as f:
-    f.write(raw_content)
-print("Successfully injected custom/ai into", path)
-' "$cfg" || print_err "Failed to inject custom/ai module into $cfg"
-
-                print_ok "Injected custom/ai definition and modules-right entry in $cfg"
+        raw_content = raw_content.replace("\"custom/power\"", f"{ai_module_json},\n    \"custom/power\"")
+    elif "\"modules-right\"" in raw_content:
+        raw_content = raw_content.replace("\"modules-right\": [", f"\"modules-right\": [\n    \"custom/ai\",")
+    
+    with open(path, "w") as f:
+        f.write(raw_content)
+' "$cfg"
+                print_ok "Injected custom/ai module definition and modules-right entry in $(basename "$cfg")"
             fi
         fi
     done
+    print_ok "Local AI agent integration successfully configured"
 else
-    print_item "${DIM}Skipped — AI toggle integration omitted${RST}"
+    print_item "${DIM}Skipped — local AI agent toggle not installed${RST}"
 fi
 
-print_phase "Installation Complete"
-echo -e "    ${BGRN}${BLD}Hyprland environment is fully set up!${RST}"
-echo -e "    ${DIM}Elapsed time: $(elapsed)${RST}\n"
+################################################################################
+# INSTALLATION COMPLETE
+################################################################################
+
+echo ""
+hr
+echo -e "${BGRN}${BLD}  ✓  Installation completed successfully!${RST}"
+echo -e "     Total time elapsed: $(elapsed)"
+echo -e "     Log output:         /tmp/hypr_install_log"
+echo ""
+hr
+echo -e "     ${CYN}You can now reboot into your new Hyprland environment.${RST}"
+echo ""
