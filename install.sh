@@ -147,13 +147,9 @@ hr
 
 print_phase "Configuring pacman.conf"
 
-# Enable Color
 sed -i 's/^#Color/Color/' /etc/pacman.conf
-
-# Enable ParallelDownloads
 sed -i 's/^#ParallelDownloads = 5/ParallelDownloads = 5/' /etc/pacman.conf
 
-# Enable ILoveCandy under [options]
 if grep -q "^#ILoveCandy" /etc/pacman.conf; then
     sed -i 's/^#ILoveCandy/ILoveCandy/' /etc/pacman.conf
 elif ! grep -q "^ILoveCandy" /etc/pacman.conf; then
@@ -196,7 +192,7 @@ fi
 print_phase "Package Installation"
 
 CORE_PACKAGES=(
-    hyprland waybar awww mako zed sddm qt6-5compat pacman-contrib
+    hyprland waybar hyprpaper mako zed sddm qt6-5compat pacman-contrib
     xdg-desktop-portal-hyprland
 )
 TERMINAL_PACKAGES=(kitty starship fastfetch)
@@ -299,17 +295,14 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                    ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                               "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"                  ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                             "Waybar config"
-[[ -f "$CONFIGS_SRC/kitty/kitty.conf"        ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"             "Kitty config"
-[[ -f "$CONFIGS_SRC/fastfetch/config.jsonc"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
-[[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
-[[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
-[[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
+[[ -d "$CONFIGS_SRC/hypr"                ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                    "Hyprland config"
+[[ -d "$CONFIGS_SRC/waybar"               ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                               "Waybar config"
+[[ -f "$CONFIGS_SRC/kitty/kitty.conf"     ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                  "Kitty config"
+[[ -f "$CONFIGS_SRC/fastfetch/config.jsonc" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
+[[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
+[[ -f "$CONFIGS_SRC/btop/btop.conf"         ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                  "btop config"
+[[ -d "$CONFIGS_SRC/wal/templates"          ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"             "pywal templates"
 
-# mako/config is intentionally NOT copied — managed by pywal symlink
-
-# GTK dark theme
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
 [Settings]
 gtk-icon-theme-name=Colloid-Dynamic-Dark
@@ -478,8 +471,8 @@ print_phase "Pywal symlinks"
 
 print_phase "Services & permissions"
 
-systemctl enable sddm.service            2>/dev/null && print_ok "sddm enabled"             || true
-systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"        || true
+systemctl enable sddm.service         2>/dev/null && print_ok "sddm enabled"              || true
+systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"         || true
 systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"   || true
 
 chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
@@ -501,13 +494,13 @@ _row "pacman configured"                    "ILoveCandy, Color, ParallelDownload
 _row "system updated"                       "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
 _row "pywal16"                              "pipx (PyPI, no AUR)"
-_row "dotfiles deployed"                     "~/.config/*"
-_row "gpu environment"                        "hypr/gpu-env.conf"
-_row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
-_row "colloid-dynamic icons"                  "~/.local/share/icons"
-_row "pywal symlinks"                        "wal → cache"
-_row "zed theme"                             "zed/themes/zed.json"
-_row "sddm · bluetooth · NetworkManager"     "systemctl enable"
+_row "dotfiles deployed"                    "~/.config/*"
+_row "gpu environment"                      "hypr/gpu-env.conf"
+_row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
+_row "colloid-dynamic icons"                "~/.local/share/icons"
+_row "pywal symlinks"                       "wal → cache"
+_row "zed theme"                            "zed/themes/zed.json"
+_row "sddm · bluetooth · NetworkManager"    "systemctl enable"
 
 echo ""
 hr
