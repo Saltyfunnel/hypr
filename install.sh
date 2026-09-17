@@ -822,7 +822,7 @@ else
         pkill -f "ollama run \$MODEL"
         notify-send "AI Status" "Model unloaded and chat closed."
     else
-        kitty -e ollama run "\$MODEL"
+        kitty --hold -e ollama run "\$MODEL"
     fi
 fi
 EOF
