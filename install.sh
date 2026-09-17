@@ -74,7 +74,7 @@ print_banner() {
     echo ""
     box_line "─" "╭" "╮"
     echo ""
-    center "${BLD}${BCYN}⟁  hyprland${RST}${BLD}${BBLK}  ·  arch linux  ·  2026${RST}"
+    center "${BLD}${BCYN}⟁  hyprland${RST}${BLD}${BBLK}  ·  arch linux  ·  2026${RST}"
     echo ""
     center "${DIM}${BBLK}automated desktop environment installer${RST}"
     echo ""
@@ -518,10 +518,12 @@ EOF
 print_ok "Shell configured"
 
 ################################################################################
-# SDDM PYWAL THEME (OPTIONAL)
+# SDDM PYWAL THEME & SERVICE ENABLEMENT
 ################################################################################
 
-print_phase "SDDM pywal theme"
+print_phase "SDDM pywal theme & service"
+
+run_command "systemctl enable sddm.service" "Enabling SDDM display manager service"
 
 if read -r -p "    $(echo -e "${BCYN}apply pywal-themed SDDM login screen? [y/N] ›${RST} ")" SDDM_THEME_CHOICE </dev/tty; then
     SDDM_THEME_CHOICE=${SDDM_THEME_CHOICE:-N}
@@ -836,15 +838,43 @@ EOF
     for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
         if [[ -f "$cfg" ]]; then
             if ! grep -q "custom/ai" "$cfg"; then
-                awk '
-                    /"modules-right"[[:space:]]*:[[:space:]]*\[/ {in_right=1}
-                    in_right && /"custom\/power"|"powermenu"|"session"/ {
-                        sub(/"custom\/power"|"powermenu"|"session"/, "\"custom/ai\", &")
-                        in_right=0
-                    }
-                    {print}
-                ' "$cfg" > "${cfg}.tmp" && mv "${cfg}.tmp" "$cfg"
-                print_ok "Placed custom/ai right before the power module in modules-right"
+                python3 -c '
+import json, sys
+
+path = sys.argv[1]
+try:
+    with open(path, "r") as f:
+        data = json.load(f)
+    
+    # Target modules-right or main bar layout arrays
+    for bar_key in data:
+        if isinstance(data[bar_key], dict) and "modules-right" in data[bar_key]:
+            right = data[bar_key]["modules-right"]
+            if "custom/ai" not in right:
+                # Insert right before custom/power if present, else append
+                if "custom/power" in right:
+                    idx = right.index("custom/power")
+                    right.insert(idx, "custom/ai")
+                else:
+                    right.append("custom/ai")
+        elif bar_key == "modules-right":
+            right = data["modules-right"]
+            if "custom/ai" not in right:
+                if "custom/power" in right:
+                    idx = right.index("custom/power")
+                    right.insert(idx, "custom/ai")
+                else:
+                    right.append("custom/ai")
+                    
+    with open(path, "w") as f:
+        json.dump(data, f, indent=4)
+except Exception as e:
+    print(f"Error updating JSON waybar config: {e}", file=sys.stderr)
+' "$cfg" 2>/dev/null || {
+                    # Fallback text sed injection if JSON parsing fails due to comments
+                    sed -i 's/"custom\/power"/"custom\/ai", "custom\/power"/g' "$cfg"
+                }
+                print_ok "Injected custom/ai module right before custom/power in $cfg"
             fi
         fi
     done
