@@ -351,11 +351,11 @@ print_ok "LocalSend desktop entry created  →  $LOCALSEND_VERSION"
 print_phase "Directory Structure"
 
 CONFIG_DIRS=(
-    "$CONFIG_DIR/hypr"                     "$CONFIG_DIR/waybar"
-    "$CONFIG_DIR/kitty"                    "$CONFIG_DIR/fastfetch"
-    "$CONFIG_DIR/mako"                     "$CONFIG_DIR/scripts"
-    "$CONFIG_DIR/wal/templates"            "$CONFIG_DIR/btop"
-    "$CONFIG_DIR/gtk-3.0"                  "$CONFIG_DIR/gtk-4.0"
+    "$CONFIG_DIR/hypr"                      "$CONFIG_DIR/waybar"
+    "$CONFIG_DIR/kitty"                     "$CONFIG_DIR/fastfetch"
+    "$CONFIG_DIR/mako"                      "$CONFIG_DIR/scripts"
+    "$CONFIG_DIR/wal/templates"             "$CONFIG_DIR/btop"
+    "$CONFIG_DIR/gtk-3.0"                   "$CONFIG_DIR/gtk-4.0"
     "$CONFIG_DIR/zed/themes"
 )
 
@@ -387,12 +387,12 @@ for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null ||
 print_ok "Stale symlinks & conflicting files cleared"
 
 [[ -d "$CONFIGS_SRC/hypr"                     ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                     "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"                   ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                                   "Waybar config"
-[[ -f "$CONFIGS_SRC/kitty/kitty.conf"         ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                   "Kitty config"
+[[ -d "$CONFIGS_SRC/waybar"                   ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                               "Waybar config"
+[[ -f "$CONFIGS_SRC/kitty/kitty.conf"         ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                 "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
 [[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
-[[ -f "$CONFIGS_SRC/btop/btop.conf"           ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                      "btop config"
-[[ -d "$CONFIGS_SRC/wal/templates"            ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"                   "pywal templates"
+[[ -f "$CONFIGS_SRC/btop/btop.conf"           ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                     "btop config"
+[[ -d "$CONFIGS_SRC/wal/templates"            ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"                "pywal templates"
 
 if [[ -f "$CONFIG_DIR/wal/templates/waybar-style.css" ]]; then
     sudo -u "$USER_NAME" wal -R || true
@@ -835,7 +835,6 @@ EOF
     
     for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
         if [[ -f "$cfg" ]]; then
-            # 1. Place custom/ai right before the power module in modules-right
             if ! grep -q "custom/ai" "$cfg"; then
                 awk '
                     /"modules-right"[[:space:]]*:[[:space:]]*\[/ {in_right=1}
@@ -845,34 +844,14 @@ EOF
                     }
                     {print}
                 ' "$cfg" > "${cfg}.tmp" && mv "${cfg}.tmp" "$cfg"
-                print_ok "Placed custom/ai before power module in $(basename "$cfg")"
-            fi
-
-            # 2. Append the module definition block if missing
-            if ! grep -q '"custom/ai":' "$cfg"; then
-                awk '
-                    NR==1 {buffer=$0; next}
-                    {buffer=buffer "\n" $0}
-                    END {
-                        sub(/\}[[:space:]]*$/, "", buffer)
-                        print buffer
-                        print ",\n    \"custom/ai\": {"
-                        print "        \"exec\": \"$HOME/.config/scripts/ai_toggle.sh --status\","
-                        print "        \"return-type\": \"json\","
-                        print "        \"interval\": 3,"
-                        print "        \"on-click\": \"$HOME/.config/scripts/ai_toggle.sh\","
-                        print "        \"signal\": 8"
-                        print "    }"
-                        print "}"
-                    }
-                ' "$cfg" > "${cfg}.tmp" && mv "${cfg}.tmp" "$cfg"
-                print_ok "Appended custom/ai definition block to $(basename "$cfg")"
+                print_ok "Placed custom/ai right before the power module in modules-right"
             fi
         fi
     done
+else
+    print_item "${DIM}Skipped — AI toggle integration omitted${RST}"
 fi
 
 print_phase "Installation Complete"
-echo -e "    ${BGRN}${BLD}All steps finished successfully!${RST}"
-echo -e "    Elapsed time: $(elapsed)"
-echo ""
+echo -e "    ${BGRN}${BLD}Hyprland environment is fully set up!${RST}"
+echo -e "    ${DIM}Elapsed time: $(elapsed)${RST}\n"
