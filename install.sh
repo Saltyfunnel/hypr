@@ -804,25 +804,29 @@ if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
         MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
     fi
 
-    mkdir -p "$CONFIG_DIR/scripts"
+   mkdir -p "$CONFIG_DIR/scripts"
 
-    cat << EOF > "$CONFIG_DIR/scripts/ai_toggle.sh"
+    cat << 'EOF' > "$CONFIG_DIR/scripts/ai_toggle.sh"
 #!/bin/bash
-MODEL="$MODEL"
+MODEL="qwen2.5-coder:3b" # Will be replaced by installer MODEL variable
 
-if [ "\$1" = "--status" ]; then
-    if ollama ps | grep -q "\$MODEL"; then
+if [ "$1" = "--status" ]; then
+    if ollama ps &>/dev/null && ollama ps | grep -q "$MODEL"; then
         echo '{"text": "󰚥", "tooltip": "AI Active (Click to kill)"}'
-    else
+    elif ollama ps &>/dev/null; then
         echo '{"text": "󰚩", "tooltip": "AI Idle (Click to launch)"}'
+    else
+        echo '{"text": "󰚩", "tooltip": "AI Service Offline (Click to check)"}'
     fi
 else
-    if ollama ps | grep -q "\$MODEL"; then
-        ollama stop "\$MODEL"
-        pkill -f "ollama run \$MODEL"
+    if ! ollama ps &>/dev/null; then
+        notify-send "AI Error" "Ollama service is offline. Run 'sudo systemctl start ollama.service'"
+    elif ollama ps | grep -q "$MODEL"; then
+        ollama stop "$MODEL"
+        pkill -f "ollama run $MODEL"
         notify-send "AI Status" "Model unloaded and chat closed."
     else
-        kitty --hold -e ollama run "\$MODEL"
+        kitty --hold -e ollama run "$MODEL"
     fi
 fi
 EOF
