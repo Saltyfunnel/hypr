@@ -70,9 +70,9 @@ local color8 = colors[9] or "rgba(595959aa)"
 
 hl.config({
     general = {
-        gaps_in          = 2,
-        gaps_out         = 2,
-        border_size      = 3,
+        gaps_in          = 4,
+        gaps_out         = 8,
+        border_size      = 2,
         resize_on_border = true,
         allow_tearing    = false,
         layout           = "dwindle",
@@ -83,9 +83,21 @@ hl.config({
     },
 
     decoration = {
-        rounding         = 10,
+        rounding         = 12,
         active_opacity   = 1.0,
-        inactive_opacity = 1.0,
+        inactive_opacity = 0.95,
+        shadow = {
+            enabled = true,
+            range = 8,
+            render_power = 3,
+            color = "rgba(1a1a1aee)",
+        },
+        blur = {
+            enabled = true,
+            size = 3,
+            passes = 2,
+            vibrancy = 0.1696,
+        },
     },
 
     misc = {
@@ -105,22 +117,22 @@ hl.config({
 })
 
 --------------------------------------------------------------------------------
--- animations
+-- animations (jazzed up)
 --------------------------------------------------------------------------------
 
-hl.curve("wind", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.05 } } })
-hl.curve("winIn", { type = "bezier", points = { { 0.1, 1.1 }, { 0.1, 1.1 } } })
-hl.curve("winOut", { type = "bezier", points = { { 0.3, -0.3 }, { 0, 1 } } })
+hl.curve("smoothOut", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
+hl.curve("quick", { type = "bezier", points = { { 0.15, 0 }, { 0.1, 1 } } })
+hl.curve("bounce", { type = "bezier", points = { { 0.175, 0.885 }, { 0.32, 1.275 } } })
 hl.curve("liner", { type = "bezier", points = { { 1, 1 }, { 1, 1 } } })
 
-hl.animation({ leaf = "windows", enabled = true, speed = 6, bezier = "wind", style = "slide" })
-hl.animation({ leaf = "windowsIn", enabled = true, speed = 6, bezier = "winIn", style = "slide" })
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 5, bezier = "winOut", style = "slide" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 5, bezier = "wind", style = "slide" })
+hl.animation({ leaf = "windows", enabled = true, speed = 5, bezier = "bounce", style = "popin" })
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 5, bezier = "quick", style = "popin 80%" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 7, bezier = "smoothOut", style = "popin 80%" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 5, bezier = "quick", style = "slide" })
 hl.animation({ leaf = "border", enabled = true, speed = 1, bezier = "liner" })
 hl.animation({ leaf = "borderangle", enabled = true, speed = 30, bezier = "liner", style = "loop" })
-hl.animation({ leaf = "fade", enabled = true, speed = 10, bezier = "default" })
-hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "wind" })
+hl.animation({ leaf = "fade", enabled = true, speed = 10, bezier = "quick" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 4, bezier = "smoothOut", style = "slide" })
 
 --------------------------------------------------------------------------------
 -- window rules
