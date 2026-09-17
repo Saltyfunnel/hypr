@@ -838,6 +838,7 @@ EOF
 
     WAYBAR_CONFIG="$CONFIG_DIR/waybar/config"
     REPO_WAYBAR_CONFIG="$CONFIGS_SRC/waybar/config"
+    PYWAL_TEMPLATE="$CONFIG_DIR/wal/templates/waybar-style.css"
 
     for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
         if [[ -f "$cfg" ]]; then
@@ -874,28 +875,31 @@ if os.path.exists(config_path):
         with open(config_path, "w") as f:
             f.write(raw_config)
 
-# 2. Update Waybar style.css / template
-if style_path and os.path.exists(style_path):
-    with open(style_path, "r") as f:
-        raw_style = f.read()
+# 2. Update Pywal template file
+if style_path:
+    os.makedirs(os.path.dirname(style_path), exist_ok=True)
+    raw_style = ""
+    if os.path.exists(style_path):
+        with open(style_path, "r") as f:
+            raw_style = f.read()
 
     ai_style_block = """
 #custom-ai {
     padding: 0 10px;
     margin: 4px 0;
-    color: @color4;
+    color: {color4};
     background-color: transparent;
 }
 #custom-ai.active {
-    color: @color2;
+    color: {color2};
 }
 """
 
     if "#custom-ai" not in raw_style:
         with open(style_path, "a") as f:
             f.write(ai_style_block)
-' "$CONFIG_DIR/waybar/config" "$CONFIG_DIR/waybar/style.css"
-                print_ok "Injected custom/ai module definition and modules-right entry in $(basename "$cfg")"
+' "$cfg" "$PYWAL_TEMPLATE"
+                print_ok "Injected custom/ai into $(basename "$cfg") and pywal template"
             fi
         fi
     done
