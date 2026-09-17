@@ -10,7 +10,7 @@
     "hyprland/window"
   ],
   "modules-center": [
-    "clock"
+    "custom/clockweather"
   ],
   "modules-right": [
     "custom/updates",
@@ -36,9 +36,10 @@
       "battery",
       "pulseaudio",
       "pulseaudio#microphone",
-      "network",
       "bluetooth",
-      "custom/screenshot"
+      "network",
+      "custom/screenshot",
+      "custom/video"
     ]
   },
   "mpris": {
@@ -55,6 +56,11 @@
     "exec": "pgrep -x steam >/dev/null && echo '󰓓' || echo ''",
     "format": "{}",
     "interval": 5
+  },
+  "custom/clockweather": {
+    "exec": "python3 -c 'import datetime, urllib.request; now=datetime.datetime.now().strftime(\"%H:%M\"); req=urllib.request.Request(\"https://wttr.in/YourCity?format=%t\", headers={\"User-Agent\": \"curl\"}); temp=urllib.request.urlopen(req, timeout=3).read().decode().strip(); print(f\"{now}  󰖐  {temp}\")'",
+    "interval": 1800,
+    "format": "{}"
   },
   "cpu": {
     "format": " {usage}%",
@@ -81,6 +87,15 @@
     "tooltip": true,
     "tooltip-format": "L: Select Area\nM: Window\nR: Fullscreen"
   },
+  "custom/video": {
+    "format": "{}",
+    "exec": "~/.config/scripts/screenrecord.sh status",
+    "return-type": "json",
+    "interval": 1,
+    "on-click": "~/.config/scripts/screenrecord.sh toggle",
+    "tooltip": true,
+    "tooltip-format": "Click to toggle screen recording"
+  },
   "custom/power": {
     "format": "⏻",
     "on-click": "systemctl poweroff",
@@ -102,28 +117,12 @@
     "format-muted": "󰍭",
     "on-click": "pamixer --default-source -t"
   },
-  "network": {
-    "format-wifi": "󰤨",
-    "format-ethernet": "󰈀",
-    "format-disconnected": "󰤭",
-    "on-click": "kitty -e nmtui",
-    "tooltip": true,
-    "tooltip-format": "󰈀 {ifname} via {gwaddr}",
-    "tooltip-format-wifi": "󰤨 {essid} ({signalStrength}%)\nIP: {ipaddr}\nInterface: {ifname}",
-    "tooltip-format-ethernet": "󰈀 {ifname}\nIP: {ipaddr}\nGateway: {gwaddr}",
-    "tooltip-format-disconnected": "󰤭 Disconnected"
-  },
   "hyprland/workspaces": {
     "format": "{name}",
     "persistent-workspaces": { "*": 3 }
   },
   "hyprland/window": {
     "format": "󰣇 {}"
-  },
-  "clock": {
-    "format": "{:%H:%M}",
-    "tooltip": true,
-    "tooltip-format": "{:%A, %d %B %Y}\n\n{calendar}"
   },
   "temperature": {
     "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
@@ -153,5 +152,14 @@
   "bluetooth": {
     "format": "󰂯",
     "on-click": "blueman-manager"
+  },
+  "network": {
+    "format-wifi": "󰖩",
+    "format-ethernet": "󰈀",
+    "format-disconnected": "󰖪",
+    "tooltip-format-wifi": "WiFi: {essid}\nInterface: {ifname}\nIP: {ipaddr}\nGateway: {gwaddr}\nSignal: {signalStrength}%",
+    "tooltip-format-ethernet": "Wired: {ifname}\nIP: {ipaddr}\nGateway: {gwaddr}",
+    "tooltip-format-disconnected": "Disconnected",
+    "on-click": "kitty -e nmtui"
   }
 }
