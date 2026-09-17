@@ -839,13 +839,17 @@ EOF
         if [[ -f "$cfg" ]]; then
             if ! grep -q "custom/ai" "$cfg"; then
                 python3 -c '
-import sys
+import sys, os
 
-path = sys.argv[1]
-with open(path, "r") as f:
-    raw_content = f.read()
+config_path = sys.argv[1]
+style_path = sys.argv[2] if len(sys.argv) > 2 else ""
 
-ai_config_block = """    \"custom/ai\": {
+# 1. Update Waybar config
+if os.path.exists(config_path):
+    with open(config_path, "r") as f:
+        raw_config = f.read()
+
+    ai_config_block = """    \"custom/ai\": {
         \"format\": \"{}\",
         \"return-type\": \"json\",
         \"exec\": \"$HOME/.config/scripts/ai_toggle.sh --status\",
@@ -854,20 +858,39 @@ ai_config_block = """    \"custom/ai\": {
         \"signal\": 1
     },"""
 
-if "\"custom/ai\"" not in raw_content:
-    # 1. Insert the module name string inside the group/hardware modules array
-    if "\"custom/power\"" in raw_content:
-        # Replace only the one inside the modules array by targeting its array context if needed, 
-        # or safely replace the array reference:
-        raw_content = raw_content.replace("\"modules\": [\n        \"custom/power\"", "\"modules\": [\n        \"custom/ai\",\n        \"custom/power\"")
-    
-    # 2. Insert the full module definition block at the root level (before the last closing brace or near custom/power root key)
-    if "\"custom/power\": {" in raw_content:
-        raw_content = raw_content.replace("\"custom/power\": {", f"{ai_config_block}\n    \"custom/power\": {{")
+    if "\"custom/ai\"" not in raw_config:
+        if "\"modules-right\": [" in raw_config:
+            raw_config = raw_config.replace("\"modules-right\": [", "\"modules-right\": [\n    \"custom/ai\",")
+        
+        if "\"custom/updates\": {" in raw_config:
+            raw_config = raw_config.replace("\"custom/updates\": {", f"{ai_config_block}\n    \"custom/updates\": {{")
+        elif "\"mpris\": {" in raw_config:
+            raw_config = raw_config.replace("\"mpris\": {", f"{ai_config_block}\n    \"mpris\": {{")
 
-    with open(path, "w") as f:
-        f.write(raw_content)
-' "$cfg"
+        with open(config_path, "w") as f:
+            f.write(raw_config)
+
+# 2. Update Waybar style.css / template
+if style_path and os.path.exists(style_path):
+    with open(style_path, "r") as f:
+        raw_style = f.read()
+
+    ai_style_block = """
+#custom-ai {
+    padding: 0 10px;
+    margin: 4px 0;
+    color: @color4;
+    background-color: transparent;
+}
+#custom-ai.active {
+    color: @color2;
+}
+"""
+
+    if "#custom-ai" not in raw_style:
+        with open(style_path, "a") as f:
+            f.write(ai_style_block)
+' "$CONFIG_DIR/waybar/config" "$CONFIG_DIR/waybar/style.css"
                 print_ok "Injected custom/ai module definition and modules-right entry in $(basename "$cfg")"
             fi
         fi
