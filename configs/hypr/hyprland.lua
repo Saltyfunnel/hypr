@@ -1,5 +1,3 @@
--- saltyfunnel/hypr
-
 --------------------------------------------------------------------------------
 -- gpu environment
 --------------------------------------------------------------------------------
@@ -8,13 +6,6 @@ local gpu_env = dofile(os.getenv("HOME") .. "/.config/hypr/gpu-env.lua")
 for k, v in pairs(gpu_env) do
     hl.env(k, v)
 end
-
---------------------------------------------------------------------------------
--- environment
---------------------------------------------------------------------------------
-
-hl.env("XCURSOR_THEME", "Nordzy-cursors")
-hl.env("XCURSOR_SIZE", "24")
 
 --------------------------------------------------------------------------------
 -- monitor
@@ -34,7 +25,7 @@ hl.monitor({
 hl.on("hyprland.start", function()
     hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
-    hl.exec_cmd("awww-daemon --format xrgb")
+    hl.exec_cmd("hyprpaper")
     hl.exec_cmd("waybar")
     hl.exec_cmd("mako")
     hl.exec_cmd("udiskie")
