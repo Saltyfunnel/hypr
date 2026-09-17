@@ -25,7 +25,6 @@ WALL_ALIGN = "left"
 EXCLUDE = [
     "ssh", "server", "avahi", "helper", "setup", "settings daemon",
     "gnome-session", "xfce", "lstopo", "qt", "xgps",
-    "network", "connection", "nm-connection-editor",
 ]
 
 WAL_CACHE = Path.home() / ".cache/wal/colors.json"
@@ -33,7 +32,7 @@ WAL_WALL  = Path.home() / ".cache/wal/wal"
 USAGE_FILE = Path.home() / ".cache/launcher_usage.json"
 
 SHORTCUTS = [
-    ("Files",    "󰝰", "thunar"),
+    ("Files",    "󰝰", "filemanager.py"),
     ("Terminal", "󰆍", "kitty"),
     ("Browser",  "󰖟", "firefox"),
     ("Editor",   "󰅩", "zeditor"),
@@ -525,9 +524,9 @@ class Launcher(QtWidgets.QWidget):
                     if not raw_exec:
                         continue
                     apps.append({
-                        "Name":    name,
-                        "Exec":    raw_exec,
-                        "Icon":    e.get("Icon", ""),
+                        "Name":     name,
+                        "Exec":     raw_exec,
+                        "Icon":     e.get("Icon", ""),
                         "Terminal": e.get("Terminal", "false").lower() == "true",
                     })
                     seen.add(name)

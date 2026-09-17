@@ -10,7 +10,7 @@
     "hyprland/window"
   ],
   "modules-center": [
-    "group/center-group"
+    "clock"
   ],
   "modules-right": [
     "custom/updates",
@@ -19,13 +19,6 @@
     "custom/steam",
     "group/hardware"
   ],
-  "group/center-group": {
-    "orientation": "horizontal",
-    "modules": [
-      "clock",
-      "custom/weather"
-    ]
-  },
   "group/hardware": {
     "orientation": "horizontal",
     "drawer": {
@@ -33,7 +26,7 @@
       "children-class": "hardware-children",
       "transition-left-to-right": false
     },
-   "modules": [
+    "modules": [
       "custom/power",
       "memory",
       "cpu",
@@ -43,10 +36,9 @@
       "battery",
       "pulseaudio",
       "pulseaudio#microphone",
+      "network",
       "bluetooth",
-      "tray",
-      "custom/screenshot",
-      "custom/video"
+      "custom/screenshot"
     ]
   },
   "mpris": {
@@ -65,11 +57,11 @@
     "interval": 5
   },
   "cpu": {
-    "format": " {usage}%",
+    "format": " {usage}%",
     "on-click": "kitty -e btop"
   },
   "memory": {
-    "format": " {percentage}%",
+    "format": " {percentage}%",
     "on-click": "kitty -e btop"
   },
   "custom/updates": {
@@ -88,21 +80,6 @@
     "on-click-middle": "~/.config/scripts/screenshot.sh window",
     "tooltip": true,
     "tooltip-format": "L: Select Area\nM: Window\nR: Fullscreen"
-  },
-  "custom/video": {
-    "format": "{}",
-    "exec": "~/.config/scripts/screenrecord.sh status",
-    "return-type": "json",
-    "interval": 1,
-    "on-click": "~/.config/scripts/screenrecord.sh toggle",
-    "tooltip": true,
-    "tooltip-format": "Click to toggle screen recording"
-  },
-  "custom/weather": {
-    "exec": "~/.config/scripts/weather.sh",
-    "format": "{}",
-    "interval": 1800,
-    "tooltip": true
   },
   "custom/power": {
     "format": "⏻",
@@ -125,6 +102,17 @@
     "format-muted": "󰍭",
     "on-click": "pamixer --default-source -t"
   },
+  "network": {
+    "format-wifi": "󰤨",
+    "format-ethernet": "󰈀",
+    "format-disconnected": "󰤭",
+    "on-click": "kitty -e nmtui",
+    "tooltip": true,
+    "tooltip-format": "󰈀 {ifname} via {gwaddr}",
+    "tooltip-format-wifi": "󰤨 {essid} ({signalStrength}%)\nIP: {ipaddr}\nInterface: {ifname}",
+    "tooltip-format-ethernet": "󰈀 {ifname}\nIP: {ipaddr}\nGateway: {gwaddr}",
+    "tooltip-format-disconnected": "󰤭 Disconnected"
+  },
   "hyprland/workspaces": {
     "format": "{name}",
     "persistent-workspaces": { "*": 3 }
@@ -139,7 +127,7 @@
   },
   "temperature": {
     "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
-    "format": " {temperatureC}°C"
+    "format": " {temperatureC}°C"
   },
   "temperature#gpu": {
     "hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
@@ -165,9 +153,5 @@
   "bluetooth": {
     "format": "󰂯",
     "on-click": "blueman-manager"
-  },
-  "tray": {
-    "icon-size": 16,
-    "spacing": 10
   }
 }

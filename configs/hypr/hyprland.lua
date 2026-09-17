@@ -10,6 +10,13 @@ for k, v in pairs(gpu_env) do
 end
 
 --------------------------------------------------------------------------------
+-- environment
+--------------------------------------------------------------------------------
+
+hl.env("XCURSOR_THEME", "Nordzy-cursors")
+hl.env("XCURSOR_SIZE", "24")
+
+--------------------------------------------------------------------------------
 -- monitor
 --------------------------------------------------------------------------------
 
@@ -25,13 +32,12 @@ hl.monitor({
 --------------------------------------------------------------------------------
 
 hl.on("hyprland.start", function()
-    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORM GDK_BACKEND")
+    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("awww-daemon --format xrgb")
     hl.exec_cmd("waybar")
     hl.exec_cmd("mako")
     hl.exec_cmd("udiskie")
-    hl.exec_cmd("nm-applet --indicator")
 end)
 
 --------------------------------------------------------------------------------
@@ -138,7 +144,7 @@ hl.window_rule({ match = { title = "WallpaperPicker" }, center = true })
 hl.window_rule({ match = { class = "firefox" }, opacity = "0.90 0.90 1.0 override" })
 hl.window_rule({ match = { class = "dev.zed.Zed" }, opacity = "0.90" })
 hl.window_rule({ match = { class = "kitty" }, opacity = "0.80" })
-hl.window_rule({ match = { class = "^[tT]hunar$" }, opacity = "0.80 0.80" })
+hl.window_rule({ match = { class = "thunar" }, opacity = "0.80 0.80" })
 hl.window_rule({ match = { class = "Spotify" }, opacity = "0.80 0.80" })
 
 --------------------------------------------------------------------------------

@@ -18,8 +18,7 @@ BBLU="\e[94m"; BMAG="\e[95m"; BCYN="\e[96m"; BWHT="\e[97m"
 BLD="\e[1m"; DIM="\e[2m"; ITL="\e[3m"; UND="\e[4m"
 
 STEP=0
-TOTAL_STEPS=16
-INSTALL_START=$(date +%s)
+TOTAL_STEPS=9
 
 ################################################################################
 # HELPER FUNCTIONS
@@ -30,12 +29,6 @@ _cols() { tput cols 2>/dev/null || echo 80; }
 hr() {
     local cols=$(_cols)
     echo -e "${BBLK}$(printf "%${cols}s" | tr ' ' "─")${RST}"
-}
-
-box_line() {
-    local ch="$1" left="$2" right="$3"
-    local cols=$(_cols)
-    echo -e "${BBLK}${left}$(printf "%$((cols - 2))s" | tr ' ' "$ch")${right}${RST}"
 }
 
 center() {
@@ -49,12 +42,6 @@ center() {
     echo -e "$text"
 }
 
-elapsed() {
-    local now=$(date +%s)
-    local diff=$(( now - INSTALL_START ))
-    printf "%dm %02ds" $(( diff / 60 )) $(( diff % 60 ))
-}
-
 spinner() {
     local pid=$1 msg="$2"
     local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
@@ -66,19 +53,19 @@ spinner() {
         sleep 0.07
     done
     tput cnorm 2>/dev/null || true
-    printf "\r\033[K"
+    printf "\r"
 }
 
 print_banner() {
     clear
     echo ""
-    box_line "─" "╭" "╮"
     echo ""
-    center "${BLD}${BCYN}⟁  hyprland${RST}${BLD}${BBLK}  ·  arch linux  ·  2026${RST}"
+    center "${BLD}${BCYN}hyprland${RST}${BLD}${BBLK} · arch linux · 2026${RST}"
     echo ""
     center "${DIM}${BBLK}automated desktop environment installer${RST}"
     echo ""
-    box_line "─" "╰" "╯"
+    echo ""
+    hr
     echo ""
 }
 
@@ -88,20 +75,17 @@ print_phase() {
     local pct=$(( STEP * 100 / TOTAL_STEPS ))
     local done_blocks=$(( STEP * 20 / TOTAL_STEPS ))
     local todo_blocks=$(( 20 - done_blocks ))
-    local bar="${BMAG}$(printf '%0.s▪' $(seq 1 $done_blocks))${RST}${BBLK}$(printf '%0.s▫' $(seq 1 $todo_blocks))${RST}"
+    local bar="${BCYN}$(printf '%0.s▪' $(seq 1 $done_blocks))${RST}${BBLK}$(printf '%0.s▫' $(seq 1 $todo_blocks))${RST}"
 
     echo ""
-    hr
-    printf "  ${bar}  ${BLD}${BWHT}%-32s${RST}  ${BBLK}[${BCYN}%02d${BBLK}/${BCYN}%02d${BBLK}]  %3d%%${RST}\n" \
-        "$title" "$STEP" "$TOTAL_STEPS" "$pct"
+    echo -e "  ${bar}  ${BLD}${BWHT}${title}${RST}  ${BBLK}${pct}%${RST}"
     echo ""
 }
 
 print_ok()     { echo -e "    ${BGRN}✓${RST}  $1"; }
 print_err()    { echo -e "\n    ${BRED}✗  ${BLD}$1${RST}\n" >&2; exit 1; }
-print_info()   { echo -e "    ${BBLU}◆${RST}  ${DIM}$1${RST}"; }
+print_info()   { echo -e "    ${BBLK}↳${RST}  ${DIM}$1${RST}"; }
 print_item()   { echo -e "    ${BBLK}•${RST}  $1"; }
-print_warn()   { echo -e "    ${BYLW}!${RST}  $1"; }
 
 run_command() {
     local cmd="$1" desc="$2"
@@ -128,21 +112,19 @@ SCRIPTS_SRC="$REPO_ROOT/scripts"
 CONFIGS_SRC="$REPO_ROOT/configs"
 WALLPAPERS_REPO="https://github.com/Saltyfunnel/Wallpapers.git"
 DESKTOP_ENTRIES_SRC="$REPO_ROOT/desktop-entries"
-LOCALSEND_REPO_API="https://api.github.com/repos/localsend/localsend/releases/latest"
-LOCALSEND_DIR="/opt/localsend"
 
 print_banner
 
 [[ "$EUID" -eq 0 ]] || print_err "Run as root  →  sudo $0"
 
-printf "    ${BBLK}%-8s${RST}${WHT}%s${RST}\n" "user" "$USER_NAME"
-printf "    ${BBLK}%-8s${RST}${WHT}%s${RST}\n" "home" "$USER_HOME"
-printf "    ${BBLK}%-8s${RST}${WHT}%s${RST}\n" "repo" "$REPO_ROOT"
+echo -e "    ${BBLK}user${RST}    ${WHT}${USER_NAME}${RST}"
+echo -e "    ${BBLK}home${RST}    ${WHT}${USER_HOME}${RST}"
+echo -e "    ${BBLK}repo${RST}    ${WHT}${REPO_ROOT}${RST}"
 echo ""
 
-echo -e "    ${BYLW}${BLD}⚿  sudo password required${RST}  ${BBLK}(cached for the session)${RST}"
+echo -e "    ${BYLW}${BLD}sudo password required${RST}  ${BBLK}(cached for the session)${RST}"
 echo ""
-read -r -s -p "    $(echo -e "${BCYN}password ›${RST} ")" USER_PASS
+read -r -s -p "    $(echo -e "${BCYN}password:${RST} ")" USER_PASS
 echo ""
 
 if ! echo "$USER_PASS" | su -c "true" "$USER_NAME" 2>/dev/null; then
@@ -156,6 +138,8 @@ trap 'rm -f "$SUDOERS_TMP"; echo ""' EXIT
 
 echo ""
 print_ok "Credentials accepted"
+echo ""
+hr
 
 ################################################################################
 # PACMAN CONFIGURATION (ILoveCandy, Color, ParallelDownloads)
@@ -163,9 +147,13 @@ print_ok "Credentials accepted"
 
 print_phase "Configuring pacman.conf"
 
+# Enable Color
 sed -i 's/^#Color/Color/' /etc/pacman.conf
+
+# Enable ParallelDownloads
 sed -i 's/^#ParallelDownloads = 5/ParallelDownloads = 5/' /etc/pacman.conf
 
+# Enable ILoveCandy under [options]
 if grep -q "^#ILoveCandy" /etc/pacman.conf; then
     sed -i 's/^#ILoveCandy/ILoveCandy/' /etc/pacman.conf
 elif ! grep -q "^ILoveCandy" /etc/pacman.conf; then
@@ -185,20 +173,20 @@ run_command "pacman -Syu --noconfirm" "Synchronising package databases"
 GPU_INFO=$(lspci | grep -Ei "VGA|3D" || true)
 
 if echo "$GPU_INFO" | grep -qi nvidia; then
-    print_item "${BBLK}gpu${RST}  ${BGRN}●${RST}  ${WHT}NVIDIA${RST}"
+    echo -e "    ${BBLK}gpu${RST}    ${WHT}NVIDIA${RST}"
     run_command "pacman -S --noconfirm --needed nvidia-open-dkms nvidia-utils lib32-nvidia-utils linux-headers" \
         "Installing NVIDIA open-source drivers"
 elif echo "$GPU_INFO" | grep -qi amd; then
-    print_item "${BBLK}gpu${RST}  ${BRED}●${RST}  ${WHT}AMD${RST}"
+    echo -e "    ${BBLK}gpu${RST}    ${WHT}AMD${RST}"
     run_command "pacman -S --noconfirm --needed xf86-video-amdgpu mesa vulkan-radeon lib32-vulkan-radeon linux-headers" \
         "Installing AMD drivers & Vulkan support"
 elif echo "$GPU_INFO" | grep -qi intel; then
-    print_item "${BBLK}gpu${RST}  ${BCYN}●${RST}  ${WHT}Intel${RST}"
+    echo -e "    ${BBLK}gpu${RST}    ${WHT}Intel${RST}"
     run_command "pacman -Sy --noconfirm" "Syncing repositories"
     run_command "pacman -S --noconfirm --needed mesa lib32-mesa vulkan-intel lib32-vulkan-intel linux-headers" \
         "Installing Intel drivers & Vulkan support"
 else
-    print_item "${BBLK}gpu${RST}  ${BWHT}●${RST}  ${WHT}generic${RST}"
+    echo -e "    ${BBLK}gpu${RST}    ${WHT}generic${RST}"
 fi
 
 ################################################################################
@@ -208,22 +196,21 @@ fi
 print_phase "Package Installation"
 
 CORE_PACKAGES=(
-    hyprland awww mako zed sddm qt6-5compat pacman-contrib
+    hyprland waybar awww mako zed sddm qt6-5compat pacman-contrib
     xdg-desktop-portal-hyprland
 )
 TERMINAL_PACKAGES=(kitty starship fastfetch)
 UTILITY_PACKAGES=(
     grim slurp wl-clipboard polkit-kde-agent
-    bluez bluez-utils blueman udiskie udisks2 gvfs networkmanager network-manager-applet
-    fuse2 gsettings-desktop-schemas
+    bluez bluez-utils blueman udiskie udisks2 gvfs networkmanager
 )
 FILE_PACKAGES=(
     thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer file-roller exo
 )
-APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam spotify-launcher qbittorrent libreoffice-fresh gimp)
-DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx rust alsa-lib pkgconf ueberzugpp cmake ninja meson wayland wayland-protocols mpv)
+APP_PACKAGES=(firefox mpv imv pavucontrol btop gnome-disk-utility steam spotify-launcher)
+DEV_PACKAGES=(git base-devel wget curl nano jq python-pipx rust alsa-lib pkgconf ueberzugpp)
 FONT_PACKAGES=(ttf-jetbrains-mono-nerd ttf-hack-nerd ttf-iosevka-nerd ttf-cascadia-code-nerd)
-MEDIA_PACKAGES=(poppler imagemagick ffmpeg wf-recorder chafa)
+MEDIA_PACKAGES=(poppler imagemagick ffmpeg chafa)
 COMPRESSION_PACKAGES=(unzip p7zip tar gzip xz bzip2 unrar trash-cli)
 PYTHON_PACKAGES=(python-pyqt5 python-pyqt6 python-pillow python-opencv)
 QT_PACKAGES=(qt5-wayland qt6-wayland)
@@ -251,39 +238,12 @@ declare -A GROUP_LABELS=(
 )
 
 for label in "Core WM" "Terminal" "Utilities" "Files" "Apps" "Dev Tools" "Fonts" "Media" "Archives" "Python" "Qt/Wayland"; do
-    printf "  ${BMAG}▎${RST} ${BBLU}%-12s${RST} ${DIM}%s${RST}\n" "$label" "${GROUP_LABELS[$label]}"
+    echo -e "  ${BBLU}${label}${RST}  ${DIM}${GROUP_LABELS[$label]}${RST}"
 done
 echo ""
 
 run_command "pacman -S --noconfirm --needed ${ALL_PACKAGES[*]}" \
     "Installing all packages  (${#ALL_PACKAGES[@]} total)"
-
-################################################################################
-# WAYBAR-GIT (SOURCE BUILD)
-################################################################################
-
-print_phase "waybar-git (source build)"
-
-WAYBAR_BUILD_DEPS=(
-    git meson ninja cmake wayland wayland-protocols scdoc gtkmm3 jsoncpp
-    libsigc++ fmt spdlog gtk3 glibmm libnl libxkbcommon catch2 systemd
-)
-run_command "pacman -S --noconfirm --needed ${WAYBAR_BUILD_DEPS[*]}" "Installing waybar build dependencies"
-
-WAYBAR_SRC_TMP="/tmp/waybar-git-src"
-rm -rf "$WAYBAR_SRC_TMP"
-
-run_command "sudo -u $USER_NAME git clone --depth 1 https://aur.archlinux.org/waybar-git.git '$WAYBAR_SRC_TMP'" "Cloning waybar-git AUR repository"
-
-(
-    cd "$WAYBAR_SRC_TMP"
-    sudo -u "$USER_NAME" makepkg -si --noconfirm
-) > /tmp/hypr_install_log 2>&1 &
-
-spinner "$!" "Building and installing waybar-git"
-wait $! || print_err "waybar-git build failed  →  /tmp/hypr_install_log"
-
-print_ok "waybar-git built and installed successfully"
 
 ################################################################################
 # PYWAL16 (PIP — NO AUR)
@@ -298,64 +258,17 @@ wait $! || print_err "pywal16 install failed  →  /tmp/hypr_install_log"
 print_ok "pywal16 installed via pipx (PyPI, not AUR)"
 
 ################################################################################
-# LOCALSEND (GITHUB APPIMAGE — NO AUR)
-################################################################################
-
-print_phase "LocalSend (GitHub AppImage)"
-
-mkdir -p "$LOCALSEND_DIR"
-
-print_info "Querying latest LocalSend release"
-LOCALSEND_URL=$(curl -fsSL "$LOCALSEND_REPO_API" | jq -r '.assets[] | select(.name | test("linux-x86-64\\.AppImage$")) | .browser_download_url')
-LOCALSEND_VERSION=$(curl -fsSL "$LOCALSEND_REPO_API" | jq -r '.tag_name')
-
-[[ -n "$LOCALSEND_URL" && "$LOCALSEND_URL" != "null" ]] || print_err "Could not resolve LocalSend AppImage download URL"
-print_ok "Resolved latest release  →  $LOCALSEND_VERSION"
-
-run_command "curl -fsSL -o '$LOCALSEND_DIR/LocalSend.AppImage' '$LOCALSEND_URL'" "Downloading LocalSend AppImage"
-
-chmod +x "$LOCALSEND_DIR/LocalSend.AppImage"
-ln -sf "$LOCALSEND_DIR/LocalSend.AppImage" /usr/local/bin/localsend
-print_ok "LocalSend linked  →  /usr/local/bin/localsend"
-
-(
-    cd "$LOCALSEND_DIR"
-    ./LocalSend.AppImage --appimage-extract >/dev/null 2>&1 || true
-    ICON_SRC=$(find squashfs-root -iname "*.png" -o -iname "*.svg" 2>/dev/null | grep -i localsend | head -n1)
-    if [[ -n "${ICON_SRC:-}" ]]; then
-        mkdir -p /usr/share/icons/hicolor/512x512/apps
-        cp "$ICON_SRC" /usr/share/icons/hicolor/512x512/apps/localsend.png 2>/dev/null || true
-        gtk-update-icon-cache /usr/share/icons/hicolor >/dev/null 2>&1 || true
-    fi
-    rm -rf squashfs-root
-) > /tmp/hypr_install_log 2>&1 || true
-print_ok "LocalSend icon extracted"
-
-cat > /usr/share/applications/localsend.desktop << 'EOF'
-[Desktop Entry]
-Name=LocalSend
-Comment=Share files and messages across your local network
-Exec=localsend %U
-Icon=localsend
-Terminal=false
-Type=Application
-Categories=Network;FileTransfer;
-StartupWMClass=LocalSend
-EOF
-print_ok "LocalSend desktop entry created  →  $LOCALSEND_VERSION"
-
-################################################################################
 # DIRECTORY STRUCTURE
 ################################################################################
 
 print_phase "Directory Structure"
 
 CONFIG_DIRS=(
-    "$CONFIG_DIR/hypr"                         "$CONFIG_DIR/waybar"
-    "$CONFIG_DIR/kitty"                        "$CONFIG_DIR/fastfetch"
-    "$CONFIG_DIR/mako"                         "$CONFIG_DIR/scripts"
-    "$CONFIG_DIR/wal/templates"                "$CONFIG_DIR/btop"
-    "$CONFIG_DIR/gtk-3.0"                      "$CONFIG_DIR/gtk-4.0"
+    "$CONFIG_DIR/hypr"        "$CONFIG_DIR/waybar"
+    "$CONFIG_DIR/kitty"       "$CONFIG_DIR/fastfetch"
+    "$CONFIG_DIR/mako"        "$CONFIG_DIR/scripts"
+    "$CONFIG_DIR/wal/templates"  "$CONFIG_DIR/btop"
+    "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
     "$CONFIG_DIR/zed/themes"
 )
 
@@ -386,21 +299,17 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                     ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                     "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"                   ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                                   "Waybar config"
-[[ -f "$CONFIGS_SRC/kitty/kitty.conf"         ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                  "Kitty config"
-[[ -f "$CONFIGS_SRC/fastfetch/config.jsonc" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
-[[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
-[[ -f "$CONFIGS_SRC/btop/btop.conf"           ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                      "btop config"
-[[ -d "$CONFIGS_SRC/wal/templates"            ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"                 "pywal templates"
+[[ -d "$CONFIGS_SRC/hypr"                    ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                               "Hyprland config"
+[[ -d "$CONFIGS_SRC/waybar"                  ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                             "Waybar config"
+[[ -f "$CONFIGS_SRC/kitty/kitty.conf"        ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"             "Kitty config"
+[[ -f "$CONFIGS_SRC/fastfetch/config.jsonc"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
+[[ -f "$CONFIGS_SRC/starship/starship.toml"  ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
+[[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                "btop config"
+[[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"           "pywal templates"
 
-if [[ -f "$CONFIG_DIR/wal/templates/waybar-style.css" ]]; then
-    sudo -u "$USER_NAME" wal -R || true
-    rm -f "$CONFIG_DIR/waybar/style.css"
-    sudo -u "$USER_NAME" ln -sf "$CACHE_DIR/wal/waybar-style.css" "$CONFIG_DIR/waybar/style.css"
-    print_ok "Linked Waybar style.css to pywal compiled template cache"
-fi
+# mako/config is intentionally NOT copied — managed by pywal symlink
 
+# GTK dark theme
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
 [Settings]
 gtk-icon-theme-name=Colloid-Dynamic-Dark
@@ -430,7 +339,6 @@ if echo "$GPU_INFO" | grep -qi nvidia; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
   LIBVA_DRIVER_NAME         = "nvidia",
-  VDPAU_DRIVER              = "nvidia",
   XDG_SESSION_TYPE          = "wayland",
   __GLX_VENDOR_LIBRARY_NAME = "nvidia",
   GBM_BACKEND               = "nvidia-drm",
@@ -438,46 +346,29 @@ return {
   __GL_GSYNC_ALLOWED        = "1",
   __GL_VRR_ALLOWED          = "1",
   QT_QPA_PLATFORM           = "wayland",
-  MOZ_ENABLE_WAYLAND        = "1",
-  GDK_BACKEND               = "wayland",
-  XDG_CURRENT_DESKTOP       = "Hyprland",
-  XDG_SESSION_DESKTOP       = "Hyprland",
 }
 EOF
 elif echo "$GPU_INFO" | grep -qi amd; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
-  LIBVA_DRIVER_NAME   = "radeonsi",
-  VDPAU_DRIVER        = "radeonsi",
-  XDG_SESSION_TYPE    = "wayland",
-  QT_QPA_PLATFORM     = "wayland",
-  MOZ_ENABLE_WAYLAND  = "1",
-  GDK_BACKEND         = "wayland",
-  XDG_CURRENT_DESKTOP = "Hyprland",
-  XDG_SESSION_DESKTOP = "Hyprland",
+  LIBVA_DRIVER_NAME = "radeonsi",
+  XDG_SESSION_TYPE  = "wayland",
+  QT_QPA_PLATFORM   = "wayland",
 }
 EOF
 elif echo "$GPU_INFO" | grep -qi intel; then
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
-  LIBVA_DRIVER_NAME   = "iHD",
-  XDG_SESSION_TYPE    = "wayland",
-  QT_QPA_PLATFORM     = "wayland",
-  MOZ_ENABLE_WAYLAND  = "1",
-  GDK_BACKEND         = "wayland",
-  XDG_CURRENT_DESKTOP = "Hyprland",
-  XDG_SESSION_DESKTOP = "Hyprland",
+  LIBVA_DRIVER_NAME = "iHD",
+  XDG_SESSION_TYPE  = "wayland",
+  QT_QPA_PLATFORM   = "wayland",
 }
 EOF
 else
     sudo -u "$USER_NAME" cat >> "$GPU_ENV_FILE" << 'EOF'
 return {
-  XDG_SESSION_TYPE    = "wayland",
-  QT_QPA_PLATFORM     = "wayland",
-  MOZ_ENABLE_WAYLAND  = "1",
-  GDK_BACKEND         = "wayland",
-  XDG_CURRENT_DESKTOP = "Hyprland",
-  XDG_SESSION_DESKTOP = "Hyprland",
+  XDG_SESSION_TYPE = "wayland",
+  QT_QPA_PLATFORM  = "wayland",
 }
 EOF
 fi
@@ -518,406 +409,117 @@ EOF
 print_ok "Shell configured"
 
 ################################################################################
-# SDDM PYWAL THEME & SERVICE ENABLEMENT
+# COLLOID ICON THEME
 ################################################################################
 
-print_phase "SDDM pywal theme & service"
+print_phase "Colloid icon theme"
 
-run_command "systemctl enable sddm.service" "Enabling SDDM display manager service"
-
-if read -r -p "    $(echo -e "${BCYN}apply pywal-themed SDDM login screen? [y/N] ›${RST} ")" SDDM_THEME_CHOICE </dev/tty; then
-    SDDM_THEME_CHOICE=${SDDM_THEME_CHOICE:-N}
-else
-    SDDM_THEME_CHOICE="N"
+COLLOID_SRC="$CONFIG_DIR/colloid-src"
+if [ ! -d "$COLLOID_SRC" ]; then
+    run_command "sudo -u $USER_NAME git clone --depth 1 https://github.com/Saltyfunnel/colloid.git '$COLLOID_SRC'" \
+        "Cloning Colloid icon theme"
 fi
 
-if [[ "$SDDM_THEME_CHOICE" =~ ^[Yy]$ ]]; then
-    SDDM_THEME_NAME="pywal-sddm"
-    SDDM_THEME_DIR="/usr/share/sddm/themes/${SDDM_THEME_NAME}"
-    SDDM_CONF_DIR="/etc/sddm.conf.d"
-    SDDM_SETWALL_SCRIPT="$CONFIG_DIR/scripts/setwall.sh"
-    SDDM_GLOBAL_WAL_CACHE="/var/cache/wal"
-
-    faillock --user "$USER_NAME" --reset 2>/dev/null || true
-
-    run_command "pacman -S --noconfirm --needed sddm qt5-quickcontrols qt5-quickcontrols2 qt5-graphicaleffects" \
-        "Installing SDDM QML dependencies"
-
-    mkdir -p "$SDDM_THEME_DIR"
-    mkdir -p "$SDDM_GLOBAL_WAL_CACHE"
-    chown -R "$USER_NAME:$USER_NAME" "$SDDM_GLOBAL_WAL_CACHE"
-    chmod 755 "$SDDM_GLOBAL_WAL_CACHE"
-
-    if [[ -f "$USER_HOME/.cache/wal/colors.json" ]]; then
-        cp "$USER_HOME/.cache/wal/colors.json" "$SDDM_GLOBAL_WAL_CACHE/colors.json"
-    else
-        echo '{"special":{"background":"#1a1b26","foreground":"#c0caf5"},"colors":{"color0":"#24283b","color4":"#7aa2f7"}}' > "$SDDM_GLOBAL_WAL_CACHE/colors.json"
-    fi
-    chmod 644 "$SDDM_GLOBAL_WAL_CACHE/colors.json"
-    print_ok "Global pywal colour cache seeded  →  $SDDM_GLOBAL_WAL_CACHE/colors.json"
-
-    cat << 'QMLEOF' > "$SDDM_THEME_DIR/Main.qml"
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.15
-
-Rectangle {
-    id: root
-    width: 1920
-    height: 1080
-
-    property color colorBg: "#1a1b26"
-    property color colorFg: "#c0caf5"
-    property color colorAccent: "#7aa2f7"
-    property color colorInputBg: "#24283b"
-
-    readonly property string pywalJsonPath: "file:///var/cache/wal/colors.json"
-
-    function loadWalColors() {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.pywalJsonPath, true);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                if (xhr.status === 200 || xhr.status === 0) {
-                    try {
-                        var colors = JSON.parse(xhr.responseText);
-                        if (colors.special) {
-                            root.colorBg = colors.special.background || root.colorBg;
-                            root.colorFg = colors.special.foreground || root.colorFg;
-                        }
-                        if (colors.colors) {
-                            root.colorAccent = colors.colors.color4 || root.colorAccent;
-                            root.colorInputBg = colors.colors.color0 || root.colorInputBg;
-                        }
-                    } catch (e) {
-                        console.log("Failed to parse pywal JSON, using fallback colors.");
-                    }
-                }
-            }
-        };
-        xhr.send();
-    }
-
-    Component.onCompleted: {
-        loadWalColors();
-    }
-
-    color: root.colorBg
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: 360
-        height: 380
-        radius: 16
-        color: Qt.rgba(root.colorInputBg.r, root.colorInputBg.g, root.colorInputBg.b, 0.6)
-        border.color: root.colorAccent
-        border.width: 1
-
-        ColumnLayout {
-            anchors.centerIn: parent
-            spacing: 20
-            width: parent.width - 60
-
-            Rectangle {
-                Layout.alignment: Qt.AlignHCenter
-                width: 72
-                height: 72
-                radius: 36
-                color: root.colorAccent
-
-                Text {
-                    anchors.centerIn: parent
-                    text: usernameInput.text.length > 0 ? usernameInput.text.substring(0, 1).toUpperCase() : "?"
-                    color: root.colorBg
-                    font.pixelSize: 32
-                    font.bold: true
-                    font.family: "Hack Nerd Font"
-                }
-            }
-
-            TextField {
-                id: usernameInput
-                Layout.fillWidth: true
-                placeholderText: "Username"
-                text: userModel.lastUser
-                font.family: "Hack Nerd Font"
-                font.pixelSize: 14
-                color: root.colorFg
-                background: Rectangle {
-                    color: Qt.darker(root.colorInputBg, 1.2)
-                    radius: 8
-                    border.color: usernameInput.activeFocus ? root.colorAccent : "transparent"
-                    border.width: 1
-                }
-            }
-
-            TextField {
-                id: passwordInput
-                Layout.fillWidth: true
-                placeholderText: "Password"
-                echoMode: TextInput.Password
-                font.family: "Hack Nerd Font"
-                font.pixelSize: 14
-                color: root.colorFg
-                focus: true
-                background: Rectangle {
-                    color: Qt.darker(root.colorInputBg, 1.2)
-                    radius: 8
-                    border.color: passwordInput.activeFocus ? root.colorAccent : "transparent"
-                    border.width: 1
-                }
-                onAccepted: sddm.login(usernameInput.text, passwordInput.text, sessionSelect.currentIndex)
-            }
-
-            ComboBox {
-                id: sessionSelect
-                Layout.fillWidth: true
-                model: sessionModel
-                textRole: "name"
-                currentIndex: sessionModel.lastIndex
-                font.family: "Hack Nerd Font"
-                font.pixelSize: 12
-            }
-
-            Button {
-                Layout.fillWidth: true
-                height: 40
-                onClicked: sddm.login(usernameInput.text, passwordInput.text, sessionSelect.currentIndex)
-
-                contentItem: Text {
-                    text: "LOGIN"
-                    color: root.colorBg
-                    font.bold: true
-                    font.family: "Hack Nerd Font"
-                    font.pixelSize: 14
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                background: Rectangle {
-                    color: parent.down ? Qt.darker(root.colorAccent, 1.2) : root.colorAccent
-                    radius: 8
-                }
-            }
-        }
-    }
-}
-QMLEOF
-    print_ok "Main.qml written  →  $SDDM_THEME_DIR"
-
-    cat << EOF > "$SDDM_THEME_DIR/metadata.desktop"
-[SddmGreeterTheme]
-Name=${SDDM_THEME_NAME}
-Description=A sleek minimalist theme that imports pywal16 colors dynamically
-Author=Custom
-Type=sddm-theme
-ConfigFile=theme.conf
-MainScript=Main.qml
-EOF
-    print_ok "metadata.desktop written"
-
-    mkdir -p "$SDDM_CONF_DIR"
-    cat << EOF > "$SDDM_CONF_DIR/theme.conf"
-[Theme]
-Current=${SDDM_THEME_NAME}
-EOF
-    print_ok "SDDM configured to use  →  ${SDDM_THEME_NAME}"
-
-    if [[ -f "$SDDM_SETWALL_SCRIPT" ]]; then
-        if ! grep -q "/var/cache/wal/colors.json" "$SDDM_SETWALL_SCRIPT"; then
-            sudo -u "$USER_NAME" bash -c "cat >> '$SDDM_SETWALL_SCRIPT' << 'HOOK'
-
-if [ -f \"\$HOME/.cache/wal/colors.json\" ]; then
-    cp -f \"\$HOME/.cache/wal/colors.json\" /var/cache/wal/colors.json 2>/dev/null || true
-    chmod 644 /var/cache/wal/colors.json 2>/dev/null || true
-fi
-HOOK"
-            print_ok "setwall.sh patched with global colour sync hook"
-        else
-            print_ok "setwall.sh already has the sync hook  →  skipped"
-        fi
-    else
-        print_warn "setwall.sh not found at $SDDM_SETWALL_SCRIPT — skipping patch"
-    fi
-
-    print_ok "Pywal SDDM theme installed  →  applies on next SDDM start"
-else
-    print_item "${DIM}Skipped — default SDDM theme kept${RST}"
-fi
+(cd "$COLLOID_SRC" && sudo -u "$USER_NAME" ./install.sh \
+    -d "$USER_HOME/.local/share/icons" \
+    -n Colloid-Dynamic \
+    -s default) \
+    > /tmp/hypr_install_log 2>&1 &
+spinner "$!" "Installing Colloid-Dynamic icons"
+wait $! || print_err "Colloid install failed  →  /tmp/hypr_install_log"
+print_ok "Colloid-Dynamic icons installed"
 
 ################################################################################
-# LOCAL AI AGENT TOGGLE (OPTIONAL WITH HARDWARE DETECTION)
+# THUNAR CUSTOM ACTIONS (KITTY)
 ################################################################################
 
-print_phase "Local AI agent integration"
+print_phase "Thunar Custom Actions"
 
-AI_AGENT_CHOICE="N"
-if read -r -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${RST} ")" AI_AGENT_CHOICE </dev/tty; then
-    AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
-else
-    AI_AGENT_CHOICE="N"
-fi
+sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/Thunar"
 
-if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
-    if command -v ollama &>/dev/null; then
-        print_ok "ollama already installed  →  $(command -v ollama)"
-    else
-        run_command "pacman -S --noconfirm --needed ollama" "Installing ollama"
-    fi
+sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/Thunar/uca.xml' << 'EOF'
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<actions>
+<action>
+    <icon>kitty</icon>
+    <name>Open Kitty Here</name>
+    <unique-id>kitty-open-here</unique-id>
+    <command>kitty --directory %f</command>
+    <description>Open Kitty terminal in this directory</description>
+    <patterns>*</patterns>
+    <directories/>
+</action>
+</actions>
+EOF"
 
-    if ! command -v ollama &>/dev/null; then
-        print_err "ollama binary still not found after install — aborting AI setup"
-    fi
-
-    run_command "systemctl enable --now ollama.service" "Enabling ollama service"
-
-    print_item "Detecting system hardware for optimal AI model selection..."
-
-    DETECTED_MODEL="qwen2.5-coder:7b"
-    VRAM_MB=""
-
-    if command -v rocm-smi &>/dev/null; then
-        VRAM_MB=$(rocm-smi --showmeminfo vram --json 2>/dev/null | grep -oP '"VRAM Total Memory \(B\)"\s*:\s*\K[0-9]+' | awk '{print int($1/1024/1024)}' || true)
-    elif command -v nvidia-smi &>/dev/null; then
-        VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -n 1 || true)
-    fi
-
-    if [[ -z "$VRAM_MB" || ! "$VRAM_MB" =~ ^[0-9]+$ ]]; then
-        TOTAL_RAM_GB=$(free -g | awk '/^Mem:/{print $2}')
-        if [[ "$TOTAL_RAM_GB" -ge 32 ]]; then
-            DETECTED_MODEL="qwen2.5-coder:7b"
-        else
-            DETECTED_MODEL="qwen2.5-coder:3b"
-        fi
-    else
-        if [[ "$VRAM_MB" -ge 15000 ]]; then
-            DETECTED_MODEL="qwen2.5-coder:7b"
-            print_ok "High-VRAM GPU detected (~$((VRAM_MB/1024))GB) — targeting 7B model tier."
-        else
-            DETECTED_MODEL="qwen2.5-coder:3b"
-            print_ok "Standard VRAM tier detected (~$((VRAM_MB/1024))GB) — targeting lightweight 3B model tier."
-        fi
-    fi
-
-    MODEL="$DETECTED_MODEL"
-    if read -r -p "    $(echo -e "${BCYN}Use detected model [$DETECTED_MODEL]? (Press Enter to accept, or type another) ›${RST} ")" USER_MODEL_CHOICE </dev/tty; then
-        MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
-    fi
-
-   mkdir -p "$CONFIG_DIR/scripts"
-
-    cat << 'EOF' > "$CONFIG_DIR/scripts/ai_toggle.sh"
-#!/bin/bash
-MODEL="qwen2.5-coder:3b" # Will be replaced by installer MODEL variable
-
-if [ "$1" = "--status" ]; then
-    if ollama ps &>/dev/null && ollama ps | grep -q "$MODEL"; then
-        echo '{"text": "󰚥", "tooltip": "AI Active (Click to kill)"}'
-    elif ollama ps &>/dev/null; then
-        echo '{"text": "󰚩", "tooltip": "AI Idle (Click to launch)"}'
-    else
-        echo '{"text": "󰚩", "tooltip": "AI Service Offline (Click to check)"}'
-    fi
-else
-    if ! ollama ps &>/dev/null; then
-        notify-send "AI Error" "Ollama service is offline. Run 'sudo systemctl start ollama.service'"
-    elif ollama ps | grep -q "$MODEL"; then
-        ollama stop "$MODEL"
-        pkill -f "ollama run $MODEL"
-        notify-send "AI Status" "Model unloaded and chat closed."
-    else
-        kitty --hold -e ollama run "$MODEL"
-    fi
-fi
-EOF
-    chown "$USER_NAME:$USER_NAME" "$CONFIG_DIR/scripts/ai_toggle.sh"
-    chmod +x "$CONFIG_DIR/scripts/ai_toggle.sh"
-    print_ok "AI toggle script created with model: $MODEL  →  scripts/ai_toggle.sh"
-
-    run_command "ollama pull '$MODEL'" "Pulling model: $MODEL (this can take a while)"
-
-    WAYBAR_CONFIG="$CONFIG_DIR/waybar/config"
-    REPO_WAYBAR_CONFIG="$CONFIGS_SRC/waybar/config"
-    PYWAL_TEMPLATE="$CONFIG_DIR/wal/templates/waybar-style.css"
-
-    for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
-        if [[ -f "$cfg" ]]; then
-            if ! grep -q "custom/ai" "$cfg"; then
-                python3 -c '
-import sys, os
-
-config_path = sys.argv[1]
-style_path = sys.argv[2] if len(sys.argv) > 2 else ""
-
-# 1. Update Waybar config
-if os.path.exists(config_path):
-    with open(config_path, "r") as f:
-        raw_config = f.read()
-
-    ai_config_block = """    \"custom/ai\": {
-        \"format\": \"{}\",
-        \"return-type\": \"json\",
-        \"exec\": \"$HOME/.config/scripts/ai_toggle.sh --status\",
-        \"interval\": 3,
-        \"on-click\": \"$HOME/.config/scripts/ai_toggle.sh\",
-        \"signal\": 1
-    },"""
-
-    if "\"custom/ai\"" not in raw_config:
-        if "\"modules-right\": [" in raw_config:
-            raw_config = raw_config.replace("\"modules-right\": [", "\"modules-right\": [\n    \"custom/ai\",")
-        
-        if "\"custom/updates\": {" in raw_config:
-            raw_config = raw_config.replace("\"custom/updates\": {", f"{ai_config_block}\n    \"custom/updates\": {{")
-        elif "\"mpris\": {" in raw_config:
-            raw_config = raw_config.replace("\"mpris\": {", f"{ai_config_block}\n    \"mpris\": {{")
-
-        with open(config_path, "w") as f:
-            f.write(raw_config)
-
-# 2. Update Pywal template file
-if style_path:
-    os.makedirs(os.path.dirname(style_path), exist_ok=True)
-    raw_style = ""
-    if os.path.exists(style_path):
-        with open(style_path, "r") as f:
-            raw_style = f.read()
-
-    ai_style_block = """
-#custom-ai {
-    padding: 0 10px;
-    margin: 4px 0;
-    color: {color4};
-    background-color: transparent;
-}
-#custom-ai.active {
-    color: {color2};
-}
-"""
-
-    if "#custom-ai" not in raw_style:
-        with open(style_path, "a") as f:
-            f.write(ai_style_block)
-' "$cfg" "$PYWAL_TEMPLATE"
-                print_ok "Injected custom/ai into $(basename "$cfg") and pywal template"
-            fi
-        fi
-    done
-    print_ok "Local AI agent integration successfully configured"
-else
-    print_item "${DIM}Skipped — local AI agent toggle not installed${RST}"
-fi
+print_ok "Thunar 'Open Kitty Here' action configured"
 
 ################################################################################
-# INSTALLATION COMPLETE
+# PYWAL SYMLINKS
 ################################################################################
+
+print_phase "Pywal symlinks"
+
+[[ -f "$CONFIG_DIR/wal/templates/waybar-style.css" ]] && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css" && \
+    print_ok "waybar/style.css"
+
+[[ -f "$CONFIG_DIR/wal/templates/mako-config" ]] && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config" && \
+    print_ok "mako/config"
+
+[[ -f "$CONFIG_DIR/wal/templates/zed.json" ]] && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-zed.json" "$CONFIG_DIR/zed/themes/zed.json" && \
+    print_ok "zed/themes/zed.json"
+
+################################################################################
+# SERVICES & PERMISSIONS
+################################################################################
+
+print_phase "Services & permissions"
+
+systemctl enable sddm.service            2>/dev/null && print_ok "sddm enabled"             || true
+systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"        || true
+systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"   || true
+
+chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
+print_ok "Ownership set"
+
+################################################################################
+# DONE
+################################################################################
+
+clear
+print_banner
+
+center "${BLD}${BGRN}installation complete${RST}"
+echo ""
+echo ""
+
+_row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
+_row "pacman configured"                    "ILoveCandy, Color, ParallelDownloads"
+_row "system updated"                       "pacman -Syu"
+_row "${#ALL_PACKAGES[@]} packages"          "pacman"
+_row "pywal16"                              "pipx (PyPI, no AUR)"
+_row "dotfiles deployed"                     "~/.config/*"
+_row "gpu environment"                        "hypr/gpu-env.conf"
+_row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
+_row "colloid-dynamic icons"                  "~/.local/share/icons"
+_row "pywal symlinks"                        "wal → cache"
+_row "zed theme"                             "zed/themes/zed.json"
+_row "sddm · bluetooth · NetworkManager"     "systemctl enable"
 
 echo ""
 hr
-echo -e "${BGRN}${BLD}  ✓  Installation completed successfully!${RST}"
-echo -e "     Total time elapsed: $(elapsed)"
-echo -e "     Log output:         /tmp/hypr_install_log"
 echo ""
-hr
-echo -e "     ${CYN}You can now reboot into your new Hyprland environment.${RST}"
+
+read -r -p "    $(echo -e "${BCYN}reboot system now? [Y/n]:${RST} ")" REBOOT_CHOICE
+REBOOT_CHOICE=${REBOOT_CHOICE:-Y}
+
+if [[ "$REBOOT_CHOICE" =~ ^[Yy]$ ]]; then
+    echo ""
+    print_ok "Rebooting..."
+    reboot
+fi
+
 echo ""
