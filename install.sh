@@ -839,19 +839,23 @@ EOF
         if [[ -f "$cfg" ]]; then
             if ! grep -q "custom/ai" "$cfg"; then
                 python3 -c '
-import json, sys
+import json, re, sys
 
 path = sys.argv[1]
 try:
     with open(path, "r") as f:
-        data = json.load(f)
+        content = f.read()
     
-    # Target modules-right or main bar layout arrays
+    # Strip single-line (//) and multi-line (/* ... */) comments for valid parsing
+    content_clean = re.sub(r"//.*$", "", content, flags=re.MULTILINE)
+    content_clean = re.sub(r"/\*.*?\*/", "", content_clean, flags=re.DOTALL)
+    
+    data = json.loads(content_clean)
+    
     for bar_key in data:
         if isinstance(data[bar_key], dict) and "modules-right" in data[bar_key]:
             right = data[bar_key]["modules-right"]
             if "custom/ai" not in right:
-                # Insert right before custom/power if present, else append
                 if "custom/power" in right:
                     idx = right.index("custom/power")
                     right.insert(idx, "custom/ai")
@@ -869,11 +873,13 @@ try:
     with open(path, "w") as f:
         json.dump(data, f, indent=4)
 except Exception as e:
-    print(f"Error updating JSON waybar config: {e}", file=sys.stderr)
-' "$cfg" 2>/dev/null || {
-                    # Fallback text sed injection if JSON parsing fails due to comments
-                    sed -i 's/"custom\/power"/"custom\/ai", "custom\/power"/g' "$cfg"
-                }
+    with open(path, "r") as f:
+        raw_text = f.read()
+    if "\"custom/power\"" in raw_text and "\"custom/ai\"" not in raw_text:
+        raw_text = raw_text.replace("\"custom/power\"", "\"custom/ai\", \"custom/power\"")
+        with open(path, "w") as f:
+            f.write(raw_text)
+' "$cfg" 2>/dev/null
                 print_ok "Injected custom/ai module right before custom/power in $cfg"
             fi
         fi
