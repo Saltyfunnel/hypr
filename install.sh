@@ -840,41 +840,41 @@ EOF
             if ! grep -q "custom/ai" "$cfg"; then
                 # Run python without swallowing stderr so we see any errors, and actually write the module block
                 python3 -c '
-                import sys
+                import sys, json
 
-                path = sys.argv[1]
-                with open(path, "r") as f:
-                    content = f.read()
+path = sys.argv[1]
+with open(path, "r") as f:
+    raw_content = f.read()
 
-                # 1. Insert "custom/ai" into modules-right if not already there
-                if "\"custom/ai\"" not in content:
-                    if "\"custom/power\"" in content:
-                        content = content.replace("\"custom/power\"", "\"custom/ai\",\n        \"custom/power\"")
-                    else:
-                        raise ValueError("Could not find \"custom/power\" in modules-right")
+# Waybar configs often contain comments (JSONC). Let us do a safe string-based check 
+# or clean approach since standard json.loads will fail on comments.
+if "\"custom/ai\"" not in raw_content:
+    if "\"custom/power\"" in raw_content:
+        raw_content = raw_content.replace("\"custom/power\"", "\"custom/ai\",\n        \"custom/power\"")
+    else:
+        raise ValueError("Could not find \"custom/power\" in modules-right")
 
-                # 2. Append the module definition safely inside the main JSON object
-                module_definition = """    "custom/ai": {
-                        "format": "{}",
-                        "interval": 1,
-                        "exec": "$HOME/.config/scripts/ai_toggle.sh --status",
-                        "on-click": "$HOME/.config/scripts/ai_toggle.sh",
-                        "return-type": "json"
-                    }"""
+if "\"custom/ai\":" not in raw_content:
+    # Find the last occurrence of a closing brace for the root object
+    # We look for the last } in the file
+    idx = raw_content.rfind("}")
+    if idx != -1:
+        module_def = """    ,\n    "custom/ai": {
+        "format": "{}",
+        "interval": 1,
+        "exec": "$HOME/.config/scripts/ai_toggle.sh --status",
+        "on-click": "$HOME/.config/scripts/ai_toggle.sh",
+        "return-type": "json"
+    }
+"""
+        raw_content = raw_content[:idx].rstrip() + "\n" + module_def + raw_content[idx:]
+    else:
+        raise ValueError("Could not find root closing brace in Waybar config")
 
-                if "\"custom/ai\":" not in content:
-                    # Find the last closing brace and insert it just before it
-                    last_brace = content.rfind("}")
-                    if last_brace != -1:
-                        # Ensure there is a comma after the preceding block if needed, then insert
-                        content = content[:last_brace].rstrip() + ",\n" + module_definition + "\n}\n"
-                    else:
-                        raise ValueError("Malformed Waybar config JSON")
-
-                with open(path, "w") as f:
-                    f.write(content)
-                print(f"Successfully injected custom/ai module into {path}")
-                ' "$cfg" || print_err "Failed to inject custom/ai module into $cfg"
+with open(path, "w") as f:
+    f.write(raw_content)
+print("Successfully injected custom/ai into", path)
+' "$cfg" || print_err "Failed to inject custom/ai module into $cfg"
 
                 print_ok "Injected custom/ai definition and modules-right entry in $cfg"
             fi
