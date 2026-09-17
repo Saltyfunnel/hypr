@@ -838,49 +838,46 @@ EOF
     for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
         if [[ -f "$cfg" ]]; then
             if ! grep -q "custom/ai" "$cfg"; then
+                # Run python without swallowing stderr so we see any errors, and actually write the module block
                 python3 -c '
-import json, re, sys
+import sys, json
 
 path = sys.argv[1]
-try:
-    with open(path, "r") as f:
-        content = f.read()
-    
-    # Strip single-line (//) and multi-line (/* ... */) comments for valid parsing
-    content_clean = re.sub(r"//.*$", "", content, flags=re.MULTILINE)
-    content_clean = re.sub(r"/\*.*?\*/", "", content_clean, flags=re.DOTALL)
-    
-    data = json.loads(content_clean)
-    
-    for bar_key in data:
-        if isinstance(data[bar_key], dict) and "modules-right" in data[bar_key]:
-            right = data[bar_key]["modules-right"]
-            if "custom/ai" not in right:
-                if "custom/power" in right:
-                    idx = right.index("custom/power")
-                    right.insert(idx, "custom/ai")
-                else:
-                    right.append("custom/ai")
-        elif bar_key == "modules-right":
-            right = data["modules-right"]
-            if "custom/ai" not in right:
-                if "custom/power" in right:
-                    idx = right.index("custom/power")
-                    right.insert(idx, "custom/ai")
-                else:
-                    right.append("custom/ai")
-                    
-    with open(path, "w") as f:
-        json.dump(data, f, indent=4)
-except Exception as e:
-    with open(path, "r") as f:
-        raw_text = f.read()
-    if "\"custom/power\"" in raw_text and "\"custom/ai\"" not in raw_text:
-        raw_text = raw_text.replace("\"custom/power\"", "\"custom/ai\", \"custom/power\"")
-        with open(path, "w") as f:
-            f.write(raw_text)
-' "$cfg" 2>/dev/null
-                print_ok "Injected custom/ai module right before custom/power in $cfg"
+with open(path, "r") as f:
+    content = f.read()
+
+# 1. Insert "custom/ai" into modules-right if not already there
+if "\"custom/ai\"" not in content:
+    if "\"custom/power\"" in content:
+        content = content.replace("\"custom/power\"", "\"custom/ai\",\n        \"custom/power\"")
+    else:
+        raise ValueError("Could not find \"custom/power\" in modules-right to position custom/ai")
+
+# 2. Append the full module definition block at the bottom of the config (before the last closing brace)
+module_definition = """
+    "custom/ai": {
+        "format": "{}",
+        "interval": 1,
+        "exec": "$HOME/.config/scripts/ai_toggle.sh --status",
+        "on-click": "$HOME/.config/scripts/ai_toggle.sh",
+        "return-type": "json"
+    }
+"""
+
+if "\"custom/ai\":" not in content:
+    # Find the last closing brace to safely inject the module block
+    last_brace = content.rfind("}")
+    if last_brace != -1:
+        content = content[:last_brace] + ",\n" + module_definition + "\n" + content[last_brace:]
+    else:
+        raise ValueError("Malformed Waybar config JSON: missing closing brace")
+
+with open(path, "w") as f:
+    f.write(content)
+print(f"Successfully injected custom/ai module and definition into {path}")
+' "$cfg" || print_err "Failed to inject custom/ai module into $cfg"
+                
+                print_ok "Injected custom/ai definition and modules-right entry in $cfg"
             fi
         fi
     done
