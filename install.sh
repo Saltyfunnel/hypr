@@ -743,10 +743,11 @@ fi
 print_phase "Local AI agent integration"
 
 AI_AGENT_CHOICE="N"
-if [ -t 0 ]; then
-    read -r -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${RST} ")" AI_AGENT_CHOICE </dev/tty || true
+if read -r -p "    $(echo -e "${BCYN}install local AI agent Waybar toggle? [y/N] ›${RST} ")" AI_AGENT_CHOICE </dev/tty; then
+    AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
+else
+    AI_AGENT_CHOICE="N"
 fi
-AI_AGENT_CHOICE=${AI_AGENT_CHOICE:-N}
 
 if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
     if ! pacman -Qi ollama &>/dev/null; then
@@ -755,10 +756,10 @@ if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
     fi
 
     print_item "Detecting system hardware for optimal AI model selection..."
-    
+
     DETECTED_MODEL="qwen2.5-coder:7b"
     VRAM_MB=""
-    
+
     if command -v rocm-smi &>/dev/null; then
         VRAM_MB=$(rocm-smi --showmeminfo vram --json 2>/dev/null | grep -oP '"VRAM Total Memory \(B\)"\s*:\s*\K[0-9]+' | awk '{print int($1/1024/1024)}' || true)
     elif command -v nvidia-smi &>/dev/null; then
@@ -783,14 +784,12 @@ if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
     fi
 
     MODEL="$DETECTED_MODEL"
-    if [ -t 0 ]; then
-        if read -r -p "    $(echo -e "${BCYN}Use detected model [$DETECTED_MODEL]? (Press Enter to accept, or type another) ›${RST} ")" USER_MODEL_CHOICE </dev/tty; then
-            MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
-        fi
+    if read -r -p "    $(echo -e "${BCYN}Use detected model [$DETECTED_MODEL]? (Press Enter to accept, or type another) ›${RST} ")" USER_MODEL_CHOICE </dev/tty; then
+        MODEL="${USER_MODEL_CHOICE:-$DETECTED_MODEL}"
     fi
 
     mkdir -p "$CONFIG_DIR/scripts"
-    
+
     cat << EOF > "$CONFIG_DIR/scripts/ai_toggle.sh"
 #!/bin/bash
 MODEL="$MODEL"
@@ -815,23 +814,61 @@ EOF
     chmod +x "$CONFIG_DIR/scripts/ai_toggle.sh"
     print_ok "AI toggle script created with model: $MODEL  →  scripts/ai_toggle.sh"
 
+    # --- Inject into Waybar config (both the modules-right reference AND
+    #     the actual module definition block). The reference-injection sed
+    #     is scoped to the modules-right array only, via the /modules-right/,/\]/
+    #     line-range address, so it can never touch the "custom/firefox": { ... }
+    #     definition further down in the same file (that collision was the
+    #     original bug: a global 's/.../g' matched BOTH occurrences of the
+    #     literal string "custom/firefox" and corrupted the JSON).
     WAYBAR_CONFIG="$CONFIG_DIR/waybar/config.jsonc"
     REPO_WAYBAR_CONFIG="$CONFIGS_SRC/waybar/config.jsonc"
     for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
         if [[ -f "$cfg" ]]; then
-            if ! grep -q "custom/ai" "$cfg"; then
-                sed -i 's/"custom\/firefox"/ "custom\/ai",\n    "custom\/firefox"/g' "$cfg"
-                print_ok "Injected custom/ai into: $cfg"
+            # 1) Add the module name to the modules-right array (scoped range only)
+            if ! grep -q '"custom/ai"' "$cfg"; then
+                if grep -q '"custom/firefox"' "$cfg"; then
+                    sed -i '/"modules-right"[[:space:]]*:[[:space:]]*\[/,/\]/{
+                        s/"custom\/firefox"/"custom\/ai",\n    "custom\/firefox"/
+                    }' "$cfg"
+                    print_ok "Injected custom/ai reference into: $cfg"
+                else
+                    print_warn "No custom/firefox entry found in modules-right in $cfg — add custom/ai to modules-right manually"
+                fi
+            fi
+
+            # 2) Add the actual module definition block (checked separately,
+            #    keyed on the colon-suffixed form so it never matches the
+            #    bare array entry above)
+            if ! grep -q '"custom/ai"[[:space:]]*:' "$cfg"; then
+                if grep -q '"custom/firefox"[[:space:]]*:[[:space:]]*{' "$cfg"; then
+                    sed -i '/"custom\/firefox"[[:space:]]*:[[:space:]]*{/i\
+  "custom/ai": {\
+    "format": "{}",\
+    "exec": "~/.config/scripts/ai_toggle.sh --status",\
+    "on-click": "~/.config/scripts/ai_toggle.sh",\
+    "return-type": "json",\
+    "interval": 5,\
+    "tooltip": true\
+  },' "$cfg"
+                    print_ok "Injected custom/ai module definition into: $cfg"
+                else
+                    print_warn "custom/firefox module block not found in $cfg — add the custom/ai module definition manually"
+                fi
             fi
         fi
     done
 
+    # --- Inject into the pywal Waybar CSS template. Same scoping principle:
+    #     match "#custom-firefox" only where it appears in the standalone-pill
+    #     selector list (comma-separated selectors on one line), so we don't
+    #     accidentally touch a later "#custom-firefox { color: ... }" rule.
     WAL_TEMPLATE="$CONFIG_DIR/wal/templates/waybar-style.css"
     REPO_WAL_TEMPLATE="$CONFIGS_SRC/wal/templates/waybar-style.css"
     for tpl in "$WAL_TEMPLATE" "$REPO_WAL_TEMPLATE"; do
         if [[ -f "$tpl" ]]; then
             if ! grep -q "#custom-ai" "$tpl"; then
-                sed -i 's/#custom-firefox/#custom-ai,\n    #custom-firefox/g' "$tpl"
+                sed -i 's/#custom-firefox/#custom-ai, #custom-firefox/' "$tpl"
                 echo -e "\n#custom-ai       { color: {color2}; }" >> "$tpl"
                 print_ok "Updated pywal template: $tpl"
             fi
