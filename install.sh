@@ -351,10 +351,10 @@ print_ok "LocalSend desktop entry created  →  $LOCALSEND_VERSION"
 print_phase "Directory Structure"
 
 CONFIG_DIRS=(
-    "$CONFIG_DIR/hypr"               "$CONFIG_DIR/waybar"
-    "$CONFIG_DIR/kitty"              "$CONFIG_DIR/fastfetch"
-    "$CONFIG_DIR/mako"               "$CONFIG_DIR/scripts"
-    "$CONFIG_DIR/wal/templates"      "$CONFIG_DIR/btop"
+    "$CONFIG_DIR/hypr"                   "$CONFIG_DIR/waybar"
+    "$CONFIG_DIR/kitty"                  "$CONFIG_DIR/fastfetch"
+    "$CONFIG_DIR/mako"                   "$CONFIG_DIR/scripts"
+    "$CONFIG_DIR/wal/templates"          "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
     "$CONFIG_DIR/zed/themes"
 )
@@ -386,13 +386,13 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                 ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                     "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"               ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                                   "Waybar config"
-[[ -f "$CONFIGS_SRC/kitty/kitty.conf"     ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                 "Kitty config"
+[[ -d "$CONFIGS_SRC/hypr"                     ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                     "Hyprland config"
+[[ -d "$CONFIGS_SRC/waybar"                 ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                                   "Waybar config"
+[[ -f "$CONFIGS_SRC/kitty/kitty.conf"       ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                  "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
 [[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
-[[ -f "$CONFIGS_SRC/btop/btop.conf"         ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                      "btop config"
-[[ -d "$CONFIGS_SRC/wal/templates"          ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"             "pywal templates"
+[[ -f "$CONFIGS_SRC/btop/btop.conf"           ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                      "btop config"
+[[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"                 "pywal templates"
 
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
 [Settings]
@@ -750,12 +750,6 @@ else
 fi
 
 if [[ "$AI_AGENT_CHOICE" =~ ^[Yy]$ ]]; then
-    # Check the actual binary, not just the pacman db — a stale/partial db
-    # entry from an earlier attempt can report "installed" with pacman -Qi
-    # even when the ollama binary isn't really on disk, which silently
-    # skipped this step before. run_command also means a real install
-    # failure now aborts loudly via print_err instead of continuing on
-    # to create a toggle script for a binary that was never installed.
     if command -v ollama &>/dev/null; then
         print_ok "ollama already installed  →  $(command -v ollama)"
     else
@@ -829,179 +823,56 @@ EOF
 
     run_command "ollama pull '$MODEL'" "Pulling model: $MODEL (this can take a while)"
 
-    # --- Inject into Waybar config (both the modules-right reference AND
-    #     the actual module definition block). The reference-injection sed
-    #     is scoped to the modules-right array only, via the /modules-right/,/\]/
-    #     line-range address, so it can never touch the "custom/firefox": { ... }
-    #     definition further down in the same file (that collision was the
-    #     original bug: a global 's/.../g' matched BOTH occurrences of the
-    #     literal string "custom/firefox" and corrupted the JSON).
-    WAYBAR_CONFIG="$CONFIG_DIR/waybar/config.jsonc"
-    REPO_WAYBAR_CONFIG="$CONFIGS_SRC/waybar/config.jsonc"
+    WAYBAR_CONFIG="$CONFIG_DIR/waybar/config"
+    REPO_WAYBAR_CONFIG="$CONFIGS_SRC/waybar/config"
+    
     for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
         if [[ -f "$cfg" ]]; then
-            # 1) Add the module name to the modules-right array (scoped range only)
-            if ! grep -q '"custom/ai"' "$cfg"; then
-                if grep -q '"custom/firefox"' "$cfg"; then
-                    sed -i '/"modules-right"[[:space:]]*:[[:space:]]*\[/,/\]/{
-                        s/"custom\/firefox"/"custom\/ai",\n    "custom\/firefox"/
-                    }' "$cfg"
-                    print_ok "Injected custom/ai reference into: $cfg"
-                else
-                    print_warn "No custom/firefox entry found in modules-right in $cfg — add custom/ai to modules-right manually"
-                fi
+            if ! grep -q "custom/ai" "$cfg"; then
+                sed -i '/"modules-right": *\[/,/\]/ {
+                    s/\]/,\n    "custom/ai"&/
+                }' "$cfg"
+                print_ok "Added custom/ai to modules-right in $(basename "$cfg")"
             fi
 
-            # 2) Add the actual module definition block (checked separately,
-            #    keyed on the colon-suffixed form so it never matches the
-            #    bare array entry above)
-            if ! grep -q '"custom/ai"[[:space:]]*:' "$cfg"; then
-                if grep -q '"custom/firefox"[[:space:]]*:[[:space:]]*{' "$cfg"; then
-                    sed -i '/"custom\/firefox"[[:space:]]*:[[:space:]]*{/i\
-  "custom/ai": {\
-    "format": "{}",\
-    "exec": "~/.config/scripts/ai_toggle.sh --status",\
-    "on-click": "~/.config/scripts/ai_toggle.sh",\
-    "return-type": "json",\
-    "interval": 5,\
-    "tooltip": true\
-  },' "$cfg"
-                    print_ok "Injected custom/ai module definition into: $cfg"
-                else
-                    print_warn "custom/firefox module block not found in $cfg — add the custom/ai module definition manually"
-                fi
+            if ! grep -q '"custom/ai":' "$cfg"; then
+                awk '
+                    NR==1 {buffer=$0; next}
+                    {buffer=buffer "\n" $0}
+                    END {
+                        sub(/\}[[:space:]]*$/, "", buffer)
+                        print buffer
+                        print ",\n    \"custom/ai\": {"
+                        print "        \"exec\": \"$HOME/.config/scripts/ai_toggle.sh --status\","
+                        print "        \"return-type\": \"json\","
+                        print "        \"interval\": 3,"
+                        print "        \"on-click\": \"$HOME/.config/scripts/ai_toggle.sh\","
+                        print "        \"signal\": 8"
+                        print "    }"
+                        print "}"
+                    }
+                ' "$cfg" > "${cfg}.tmp" && mv "${cfg}.tmp" "$cfg"
+                print_ok "Appended custom/ai definition block to $(basename "$cfg")"
             fi
         fi
     done
 
-    # --- Inject into the pywal Waybar CSS template. Same scoping principle:
-    #     match "#custom-firefox" only where it appears in the standalone-pill
-    #     selector list (comma-separated selectors on one line), so we don't
-    #     accidentally touch a later "#custom-firefox { color: ... }" rule.
-    WAL_TEMPLATE="$CONFIG_DIR/wal/templates/waybar-style.css"
-    REPO_WAL_TEMPLATE="$CONFIGS_SRC/wal/templates/waybar-style.css"
-    for tpl in "$WAL_TEMPLATE" "$REPO_WAL_TEMPLATE"; do
-        if [[ -f "$tpl" ]]; then
-            if ! grep -q "#custom-ai" "$tpl"; then
-                sed -i 's/#custom-firefox/#custom-ai, #custom-firefox/' "$tpl"
-                echo -e "\n#custom-ai       { color: {color2}; }" >> "$tpl"
-                print_ok "Updated pywal template: $tpl"
-            fi
-        fi
-    done
-
-    print_ok "Local AI agent integrated successfully"
+    print_ok "Local AI agent integration completed successfully."
 else
-    print_item "${DIM}Skipped — local AI agent not installed${RST}"
+    print_item "${DIM}Skipped — local AI agent integration bypassed${RST}"
 fi
 
 ################################################################################
-# COLLOID ICON THEME
+# INSTALLATION COMPLETE SUMMARY
 ################################################################################
 
-print_phase "Colloid icon theme"
+INSTALL_END=$(date +%s)
+TOTAL_TIME=$(( INSTALL_END - INSTALL_START ))
 
-COLLOID_SRC="$CONFIG_DIR/colloid-src"
-if [ ! -d "$COLLOID_SRC" ]; then
-    run_command "sudo -u $USER_NAME git clone --depth 1 https://github.com/Saltyfunnel/colloid.git '$COLLOID_SRC'" \
-        "Cloning Colloid icon theme"
-fi
-
-(cd "$COLLOID_SRC" && sudo -u "$USER_NAME" ./install.sh \
-    -d "$USER_HOME/.local/share/icons" \
-    -n Colloid-Dynamic \
-    -s default) \
-    > /tmp/hypr_install_log 2>&1 &
-spinner "$!" "Installing Colloid-Dynamic icons"
-wait $! || print_err "Colloid install failed  →  /tmp/hypr_install_log"
-print_ok "Colloid-Dynamic icons installed"
-
-sudo -u "$USER_NAME" gtk-update-icon-cache -f -t "$USER_HOME/.local/share/icons/Colloid-Dynamic-Dark" >/dev/null 2>&1 || true
-print_ok "Icon cache refreshed  →  Colloid-Dynamic-Dark"
-
-sudo -u "$USER_NAME" gsettings set org.gnome.desktop.interface icon-theme 'Colloid-Dynamic-Dark' 2>/dev/null || true
-print_ok "gsettings icon-theme set  →  Colloid-Dynamic-Dark"
-
-################################################################################
-# THUNAR CUSTOM ACTIONS (KITTY)
-################################################################################
-
-print_phase "Thunar Custom Actions"
-
-sudo -u "$USER_NAME" mkdir -p "$CONFIG_DIR/Thunar"
-
-sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/Thunar/uca.xml' << 'EOF'
-<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<actions>
-<action>
-    <icon>kitty</icon>
-    <name>Open Kitty Here</name>
-    <unique-id>kitty-open-here</unique-id>
-    <command>kitty --directory %f</command>
-    <description>Open Kitty terminal in this directory</description>
-    <patterns>*</patterns>
-    <directories/>
-</action>
-</actions>
-EOF"
-
-print_ok "Thunar 'Open Kitty Here' action configured"
-
-################################################################################
-# PYWAL SYMLINKS
-################################################################################
-
-print_phase "Pywal symlinks"
-
-[[ -f "$CONFIG_DIR/wal/templates/waybar-style.css" ]] && \
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/waybar-style.css" "$CONFIG_DIR/waybar/style.css" && \
-    print_ok "waybar/style.css"
-
-[[ -f "$CONFIG_DIR/wal/templates/mako-config" ]] && \
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/mako-config" "$CONFIG_DIR/mako/config" && \
-    print_ok "mako/config"
-
-[[ -f "$CONFIG_DIR/wal/templates/zed.json" ]] && \
-    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-zed.json" "$CONFIG_DIR/zed/themes/zed.json" && \
-    print_ok "zed/themes/zed.json"
-
-################################################################################
-# CLEANUP (BUILD ARTIFACTS & TEMP DOWNLOADS)
-################################################################################
-
-print_phase "Cleanup"
-
-rm -rf "$WAYBAR_SRC_TMP" 2>/dev/null || true
-print_ok "Removed waybar-git build source  →  $WAYBAR_SRC_TMP"
-
-rm -rf "$COLLOID_SRC" 2>/dev/null || true
-print_ok "Removed Colloid icon theme source  →  $COLLOID_SRC"
-
-rm -rf "$LOCALSEND_DIR/squashfs-root" 2>/dev/null || true
-print_ok "Cleared LocalSend extraction artifacts"
-
-rm -f /tmp/hypr_install_log 2>/dev/null || true
-print_ok "Removed install log"
-
-################################################################################
-# SERVICES & PERMISSIONS
-################################################################################
-
-print_phase "Services & permissions"
-
-systemctl enable sddm.service            2>/dev/null && print_ok "sddm enabled"          || true
-systemctl enable bluetooth.service        2>/dev/null && print_ok "bluetooth enabled"        || true
-systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"    || true
-
-chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
-print_ok "Ownership set"
-
-################################################################################
-# DONE
-################################################################################
-
-clear
-print_banner
-
-center "${BLD}${BGRN}✓  installation complete!${RST}"
+echo ""
+hr
+echo -e "${BLD}${BGRN}✔  Installation complete!${RST}  ${BBLK}(Total time: $(( TOTAL_TIME / 60 ))m $(( TOTAL_TIME % 60 ))s)${RST}"
+hr
+echo ""
+print_item "You can now reboot or restart your session into ${BLD}${BCYN}Hyprland${RST}."
 echo ""
