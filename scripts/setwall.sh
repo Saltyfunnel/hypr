@@ -19,8 +19,19 @@ hyprpaper wallpaper ", $WALL"
 # 2. Run wal safely
 wal -i "$WALL" --backend haiku
 
-# 3. Symlink current wallpaper
+# 3. Symlink current wallpaper & write modern hyprpaper.conf block for reboots
 ln -sf "$WALL" ~/.cache/current-wallpaper
+
+cat << EOF > ~/.config/hypr/hyprpaper.conf
+wallpaper {
+    monitor =
+    path = $WALL
+    fit_mode = cover
+}
+
+splash = false
+ipc = on
+EOF
 
 # 4. Folder icon recolor
 [[ -f "$HOME/.config/scripts/recolor_folders.sh" ]] && \
