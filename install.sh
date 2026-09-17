@@ -828,13 +828,20 @@ EOF
     
     for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
         if [[ -f "$cfg" ]]; then
+            # 1. Inject module into modules-right array safely using awk
             if ! grep -q "custom/ai" "$cfg"; then
-                sed -i '/"modules-right": *\[/,/\]/ {
-                    s/\]/,\n    "custom/ai"&/
-                }' "$cfg"
+                awk '
+                    /"modules-right"[[:space:]]*:[[:space:]]*\[/ {in_right=1}
+                    in_right && /\]/ {
+                        sub(/\]/, ", \"custom/ai\"]")
+                        in_right=0
+                    }
+                    {print}
+                ' "$cfg" > "${cfg}.tmp" && mv "${cfg}.tmp" "$cfg"
                 print_ok "Added custom/ai to modules-right in $(basename "$cfg")"
             fi
 
+            # 2. Append the module block before the last closing brace if missing
             if ! grep -q '"custom/ai":' "$cfg"; then
                 awk '
                     NR==1 {buffer=$0; next}
