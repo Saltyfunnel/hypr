@@ -57,10 +57,10 @@
     "format": "{}",
     "interval": 5
   },
-  "custom/clockweather": {
-    "exec": "python3 -c 'import datetime, urllib.request; now=datetime.datetime.now().strftime(\"%H:%M\"); req=urllib.request.Request(\"https://wttr.in/YourCity?format=%t\", headers={\"User-Agent\": \"curl\"}); temp=urllib.request.urlopen(req, timeout=3).read().decode().strip(); print(f\"{now}  󰖐  {temp}\")'",
+ "custom/clockweather": {
+    "exec": "python3 -c 'import datetime, urllib.request, subprocess; now=datetime.datetime.now().strftime(\"%H:%M\"); req=urllib.request.Request(\"https://wttr.in/Lhanbryde?format=%t\", headers={\"User-Agent\": \"curl\"}); temp=urllib.request.urlopen(req, timeout=3).read().decode().strip(); cal=subprocess.check_output([\"cal\"], text=True); text=f\"{now}  󰖐  {temp}\"; import json; print(json.dumps({\"text\": text, \"tooltip\": cal}))'",
     "interval": 1800,
-    "format": "{}"
+    "return-type": "json"
   },
   "cpu": {
     "format": " {usage}%",
