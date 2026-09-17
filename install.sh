@@ -834,49 +834,48 @@ EOF
 
     WAYBAR_CONFIG="$CONFIG_DIR/waybar/config"
     REPO_WAYBAR_CONFIG="$CONFIGS_SRC/waybar/config"
-    
+
     for cfg in "$WAYBAR_CONFIG" "$REPO_WAYBAR_CONFIG"; do
         if [[ -f "$cfg" ]]; then
             if ! grep -q "custom/ai" "$cfg"; then
                 # Run python without swallowing stderr so we see any errors, and actually write the module block
                 python3 -c '
-import sys, json
+                import sys
 
-path = sys.argv[1]
-with open(path, "r") as f:
-    content = f.read()
+                path = sys.argv[1]
+                with open(path, "r") as f:
+                    content = f.read()
 
-# 1. Insert "custom/ai" into modules-right if not already there
-if "\"custom/ai\"" not in content:
-    if "\"custom/power\"" in content:
-        content = content.replace("\"custom/power\"", "\"custom/ai\",\n        \"custom/power\"")
-    else:
-        raise ValueError("Could not find \"custom/power\" in modules-right to position custom/ai")
+                # 1. Insert "custom/ai" into modules-right if not already there
+                if "\"custom/ai\"" not in content:
+                    if "\"custom/power\"" in content:
+                        content = content.replace("\"custom/power\"", "\"custom/ai\",\n        \"custom/power\"")
+                    else:
+                        raise ValueError("Could not find \"custom/power\" in modules-right")
 
-# 2. Append the full module definition block at the bottom of the config (before the last closing brace)
-module_definition = """
-    "custom/ai": {
-        "format": "{}",
-        "interval": 1,
-        "exec": "$HOME/.config/scripts/ai_toggle.sh --status",
-        "on-click": "$HOME/.config/scripts/ai_toggle.sh",
-        "return-type": "json"
-    }
-"""
+                # 2. Append the module definition safely inside the main JSON object
+                module_definition = """    "custom/ai": {
+                        "format": "{}",
+                        "interval": 1,
+                        "exec": "$HOME/.config/scripts/ai_toggle.sh --status",
+                        "on-click": "$HOME/.config/scripts/ai_toggle.sh",
+                        "return-type": "json"
+                    }"""
 
-if "\"custom/ai\":" not in content:
-    # Find the last closing brace to safely inject the module block
-    last_brace = content.rfind("}")
-    if last_brace != -1:
-        content = content[:last_brace] + ",\n" + module_definition + "\n" + content[last_brace:]
-    else:
-        raise ValueError("Malformed Waybar config JSON: missing closing brace")
+                if "\"custom/ai\":" not in content:
+                    # Find the last closing brace and insert it just before it
+                    last_brace = content.rfind("}")
+                    if last_brace != -1:
+                        # Ensure there is a comma after the preceding block if needed, then insert
+                        content = content[:last_brace].rstrip() + ",\n" + module_definition + "\n}\n"
+                    else:
+                        raise ValueError("Malformed Waybar config JSON")
 
-with open(path, "w") as f:
-    f.write(content)
-print(f"Successfully injected custom/ai module and definition into {path}")
-' "$cfg" || print_err "Failed to inject custom/ai module into $cfg"
-                
+                with open(path, "w") as f:
+                    f.write(content)
+                print(f"Successfully injected custom/ai module into {path}")
+                ' "$cfg" || print_err "Failed to inject custom/ai module into $cfg"
+
                 print_ok "Injected custom/ai definition and modules-right entry in $cfg"
             fi
         fi
