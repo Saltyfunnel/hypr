@@ -1,24 +1,31 @@
 #!/bin/bash
 WALL="$1"
 
-# Wallpaper transition immediately (visual feedback)
-awww img "$WALL" --transition-type simple &
+# 1. Fire the wallpaper transition immediately
+awww img "$WALL" \
+    --transition-type center \
+    --transition-duration 0.6 \
+    --transition-fps 60 &
 
-# Generate palette — blocks until done, templates written
+# 2. Run pywal synchronously so it actually generates the files and blocks until done
 wal -i "$WALL" --backend haiku
 
-# Symlink current wallpaper
+# 3. Symlink current wallpaper
 ln -sf "$WALL" ~/.cache/current-wallpaper
 
-# Folder icon recolor (background)
+# 4. Folder icon recolor
 [[ -f "$HOME/.config/scripts/recolor_folders.sh" ]] && \
     bash "$HOME/.config/scripts/recolor_folders.sh" &
 
-# Restart waybar + mako
+# 5. Restart waybar + mako + reload hyprland
 killall waybar 2>/dev/null; waybar &
 killall mako 2>/dev/null; sleep 0.1; mako & disown
-
-# Reload hyprland (templates are guaranteed written by now)
 hyprctl reload
 
 notify-send -i "$WALL" "Theme Updated" "$(basename "$WALL")"
+
+# 6. Sync colors to global cache for SDDM access
+if [ -f "$HOME/.cache/wal/colors.json" ]; then
+    cp -f "$HOME/.cache/wal/colors.json" /var/cache/wal/colors.json 2>/dev/null || true
+    chmod 644 /var/cache/wal/colors.json 2>/dev/null || true
+fi
