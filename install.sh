@@ -845,21 +845,26 @@ path = sys.argv[1]
 with open(path, "r") as f:
     raw_content = f.read()
 
-ai_module_json = """    \"custom/ai\": {
+ai_config_block = """    \"custom/ai\": {
         \"format\": \"{}\",
         \"return-type\": \"json\",
         \"exec\": \"$HOME/.config/scripts/ai_toggle.sh --status\",
         \"interval\": 3,
         \"on-click\": \"$HOME/.config/scripts/ai_toggle.sh\",
         \"signal\": 1
-    }"""
+    },"""
 
 if "\"custom/ai\"" not in raw_content:
+    # 1. Insert the module name string inside the group/hardware modules array
     if "\"custom/power\"" in raw_content:
-        raw_content = raw_content.replace("\"custom/power\"", f"{ai_module_json},\n    \"custom/power\"")
-    elif "\"modules-right\"" in raw_content:
-        raw_content = raw_content.replace("\"modules-right\": [", f"\"modules-right\": [\n    \"custom/ai\",")
+        # Replace only the one inside the modules array by targeting its array context if needed, 
+        # or safely replace the array reference:
+        raw_content = raw_content.replace("\"modules\": [\n        \"custom/power\"", "\"modules\": [\n        \"custom/ai\",\n        \"custom/power\"")
     
+    # 2. Insert the full module definition block at the root level (before the last closing brace or near custom/power root key)
+    if "\"custom/power\": {" in raw_content:
+        raw_content = raw_content.replace("\"custom/power\": {", f"{ai_config_block}\n    \"custom/power\": {{")
+
     with open(path, "w") as f:
         f.write(raw_content)
 ' "$cfg"
