@@ -42,11 +42,4 @@ The Waybar `custom/clockweather` module fetches temperature via `wttr.in`. To ch
     "exec": "python3 -c 'import datetime, urllib.request, subprocess; now=datetime.datetime.now().strftime(\"%H:%M\"); req=urllib.request.Request(\"[https://wttr.in/YOUR_CITY?format=%t](https://wttr.in/YOUR_CITY?format=%t)\", headers={\"User-Agent\": \"curl\"}); temp=urllib.request.urlopen(req, timeout=3).read().decode().strip(); cal=subprocess.check_output([\"cal\"], text=True); text=f\"{now}  󰖐  {temp}\"; import json; print(json.dumps({\"text\": text, \"tooltip\": cal}))'",
     "interval": 1800,
     "return-type": "json"
-},
-
-## Quick Start
-
-git clone https://github.com/Saltyfunnel/hypr
-cd hypr
-chmod +x install.sh
-sudo ./install.sh
+}
