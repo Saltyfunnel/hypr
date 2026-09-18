@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PyQt6 chat GUI for Ollama with RGBA transparency, Nerd Font icons, smart hardware detection, and live status."""
+"""PyQt6 chat GUI for Ollama with RGBA transparency, Nerd Font icons, manual model management (install/delete), and live status."""
 
 import json
 import subprocess
@@ -19,6 +19,15 @@ from PyQt6.QtWidgets import (
 HOST = "http://localhost:11434"
 FONT = "Hack Nerd Font"
 
+# Curated scale using clean Nerd Font glyphs that render reliably with Hack Nerd Font
+MODELS = [
+    ("󰅱 Qwen2.5-Coder (7B) — Blazing fast code gen & daily scripting (8GB+ VRAM)", "qwen2.5-coder:7b"),
+    ("󰚩 DeepSeek-R1 (8B) — Step-by-step logic & advanced debugging (12GB+ VRAM)", "deepseek-r1:8b"),
+    ("󰓅 Qwen2.5-Coder (14B) — Deep script architecture & complex logic (12GB+ VRAM)", "qwen2.5-coder:14b"),
+    ("󰭹 Llama 3.1 (8B) — Elite all-rounder for general chat & questions (10GB+ VRAM)", "llama3.1:8b"),
+    ("󰻠 Qwen3 (32B) — Maximum capability, high-end reasoning (16GB+ VRAM)", "qwen3:32b"),
+]
+
 
 def find_ollama():
     """Locate the ollama binary across standard system and user paths."""
@@ -37,57 +46,6 @@ def find_ollama():
             return str(c)
 
     return None
-
-
-def detect_optimal_model():
-    """Distinguish between dedicated desktop GPUs and laptops/integrated graphics."""
-    vram_gb = 0
-
-    if shutil.which("nvidia-smi"):
-        try:
-            res = subprocess.run(
-                ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
-                capture_output=True, text=True, timeout=2
-            )
-            if res.returncode == 0:
-                vram_gb = int(res.stdout.strip().split("\n")[0]) / 1024
-        except Exception:
-            pass
-
-    if vram_gb == 0:
-        try:
-            for card_path in Path("/sys/class/drm").glob("card*"):
-                vram_file = card_path / "device" / "mem_info_vram_total"
-                if vram_file.exists():
-                    vram_bytes = int(vram_file.read_text().strip())
-                    vram_gb = max(vram_gb, vram_bytes / (1024 ** 3))
-        except Exception:
-            pass
-
-    if vram_gb >= 22:
-        return "qwen3:32b"
-    elif vram_gb >= 12:
-        return "qwen3:14b"
-    elif vram_gb >= 6:
-        return "qwen2.5:7b"
-    elif vram_gb > 0:
-        return "qwen2.5:3b"
-
-    try:
-        with open("/proc/meminfo") as f:
-            for line in f:
-                if "MemTotal" in line:
-                    sys_ram_gb = int(line.split()[1]) / (1024 * 1024)
-                    if sys_ram_gb >= 24:
-                        return "qwen2.5:7b"
-                    break
-    except Exception:
-        pass
-
-    return "qwen2.5:3b"
-
-
-DEFAULT_MODEL = detect_optimal_model()
 
 
 def load_colors():
@@ -282,6 +240,27 @@ class PullThread(QThread):
             self.finished.emit(False, str(e))
 
 
+class DeleteThread(QThread):
+    finished = pyqtSignal(bool, str)
+
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def run(self):
+        try:
+            req = urllib.request.Request(
+                f"{HOST}/api/delete",
+                data=json.dumps({"name": self.model}).encode(),
+                headers={"Content-Type": "application/json"},
+                method="DELETE"
+            )
+            with urllib.request.urlopen(req, timeout=30) as r:
+                self.finished.emit(True, "")
+        except Exception as e:
+            self.finished.emit(False, str(e))
+
+
 class InstallOllamaThread(QThread):
     finished = pyqtSignal(bool, str)
 
@@ -360,11 +339,10 @@ class Input(QPlainTextEdit):
 class Win(QWidget):
     def __init__(self):
         super().__init__()
-        # Explicit attribute flag required for proper window transparency under Linux WMs (Hyprland, etc.)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
         self.setWindowTitle("󰣇  ollama chat")
-        self.resize(840, 740)
+        self.resize(920, 740)
 
         self.history = []
         self.md = ""
@@ -373,22 +351,27 @@ class Win(QWidget):
         self.err = ""
         self.worker = None
         self.pull_worker = None
+        self.delete_worker = None
         self.server_worker = None
         self.install_ollama_worker = None
+        self.installed_tags = set()
 
         self.view = QTextBrowser()
         self.view.setOpenExternalLinks(True)
 
         self.models = QComboBox()
+        for desc, tag in MODELS:
+            self.models.addItem(desc, tag)
+
         self.think = QCheckBox("󰚩 think")
-        self.install_btn = QPushButton(f"󰚰 install {DEFAULT_MODEL}")
-        self.install_btn.setVisible(False)
+        self.action_btn = QPushButton()
+        self.action_btn.setVisible(False)
         self.clear = QPushButton("󰃢 clear")
 
         top = QHBoxLayout()
         top.addWidget(self.models, 1)
         top.addWidget(self.think)
-        top.addWidget(self.install_btn)
+        top.addWidget(self.action_btn)
         top.addWidget(self.clear)
 
         self.input = Input()
@@ -417,7 +400,8 @@ class Win(QWidget):
 
         self.send.clicked.connect(self.go)
         self.input.submit.connect(self.go)
-        self.install_btn.clicked.connect(self.handle_install_click)
+        self.models.currentIndexChanged.connect(self.check_selected_model_status)
+        self.action_btn.clicked.connect(self.handle_action_click)
         self.clear.clicked.connect(self.reset)
 
         self.input.setFocus()
@@ -426,8 +410,8 @@ class Win(QWidget):
     def init_server(self):
         if not find_ollama():
             self.md = "> ⚠ **Ollama is not installed.** Click the button below to install it via pacman.\n\n"
-            self.install_btn.setText("󰚰 install ollama")
-            self.install_btn.setVisible(True)
+            self.action_btn.setText("󰚰 install ollama")
+            self.action_btn.setVisible(True)
             self.status_lbl.setText("󰅚 missing")
             self.render()
             return
@@ -444,47 +428,51 @@ class Win(QWidget):
             self.status_lbl.setText("󰅚 error")
             self.md = f"> ⚠ Background service error: `{err_msg}`\n\n---\n\n"
             self.render()
-        self.load_models()
+        self.load_installed_models()
 
-    def load_models(self):
+    def load_installed_models(self):
         if not find_ollama():
             return
 
-        names = []
         ollama_online = False
+        self.installed_tags = set()
         try:
             with urllib.request.urlopen(f"{HOST}/api/tags", timeout=3) as r:
-                names = [m["name"] for m in json.load(r)["models"]]
+                data = json.load(r)
+                self.installed_tags = {m["name"] for m in data.get("models", [])}
                 ollama_online = True
         except Exception:
             pass
 
-        self.models.clear()
-        self.models.addItems(names or [DEFAULT_MODEL])
-
         if not ollama_online:
             self.status_lbl.setText("󰖪 offline")
-            self.install_btn.setText(f"󰚰 install {DEFAULT_MODEL}")
-            self.install_btn.setVisible(True)
-            self.md = f"> ⚠ Can't reach Ollama at `{HOST}`. Please ensure `ollama serve` is running.\n\n" \
-                      f"> 💡 Hardware-detected optimal model: **{DEFAULT_MODEL}**\n\n---\n\n"
+            self.action_btn.setText("󰚰 install selected")
+            self.action_btn.setVisible(True)
+            self.md = f"> ⚠ Can't reach Ollama at `{HOST}`. Please ensure `ollama serve` is running.\n\n---\n\n"
             self.render()
             return
 
         self.status_lbl.setText("󰄬 ready")
-        if DEFAULT_MODEL in names:
-            self.models.setCurrentText(DEFAULT_MODEL)
-            self.install_btn.setVisible(False)
+        self.check_selected_model_status()
+
+    def check_selected_model_status(self):
+        if not find_ollama():
+            return
+
+        current_tag = self.models.currentData()
+        if current_tag in self.installed_tags:
+            self.action_btn.setText(f"󰆴 delete model")
+            self.action_btn.setVisible(True)
             self.md = ""
         else:
-            self.install_btn.setText(f"󰚰 install {DEFAULT_MODEL}")
-            self.install_btn.setVisible(True)
-            self.md = f"> 💡 **Hardware Check:** Recommended optimal model for your system is **{DEFAULT_MODEL}**, but it is not installed yet. Click above to download it.\n\n---\n\n"
+            self.action_btn.setText(f"󰚰 download {current_tag}")
+            self.action_btn.setVisible(True)
+            self.md = f"> 󰌵 Selected model **{current_tag}** is not installed yet. Click above to download it.\n\n---\n\n"
         self.render()
 
-    def handle_install_click(self):
+    def handle_action_click(self):
         if not find_ollama():
-            self.install_btn.setEnabled(False)
+            self.action_btn.setEnabled(False)
             self.status_lbl.setText("󰚰 installing...")
             self.md += "> ⚙ Prompting for password to install `ollama` via `pacman`...\n\n"
             self.render()
@@ -492,10 +480,14 @@ class Win(QWidget):
             self.install_ollama_worker.finished.connect(self.on_ollama_installed)
             self.install_ollama_worker.start()
         else:
-            self.start_model_pull()
+            current_tag = self.models.currentData()
+            if current_tag in self.installed_tags:
+                self.start_model_delete()
+            else:
+                self.start_model_pull()
 
     def on_ollama_installed(self, success, err_msg):
-        self.install_btn.setEnabled(True)
+        self.action_btn.setEnabled(True)
         if success:
             self.md += "> ✔ Successfully installed `ollama` package!\n\n"
             self.init_server()
@@ -507,12 +499,13 @@ class Win(QWidget):
     def start_model_pull(self):
         if self.pull_worker and self.pull_worker.isRunning():
             return
-        self.install_btn.setEnabled(False)
+        current_tag = self.models.currentData()
+        self.action_btn.setEnabled(False)
         self.status_lbl.setText("󰉁 downloading")
-        self.md += f"> ⬇ Starting download for **{DEFAULT_MODEL}**...\n\n"
+        self.md += f"> ⬇ Starting download for **{current_tag}**...\n\n"
         self.render()
 
-        self.pull_worker = PullThread(DEFAULT_MODEL)
+        self.pull_worker = PullThread(current_tag)
         self.pull_worker.progress.connect(self.on_install_progress)
         self.pull_worker.finished.connect(self.on_install_finished)
         self.pull_worker.start()
@@ -527,15 +520,41 @@ class Win(QWidget):
         self.render()
 
     def on_install_finished(self, success, err_msg):
-        self.install_btn.setEnabled(True)
+        self.action_btn.setEnabled(True)
+        current_tag = self.models.currentData()
         if success:
             self.status_lbl.setText("󰄬 ready")
-            self.md += f"> ✔ Successfully installed **{DEFAULT_MODEL}**!\n\n---\n\n"
-            self.load_models()
+            self.md += f"> ✔ Successfully installed **{current_tag}**!\n\n---\n\n"
+            self.load_installed_models()
         else:
             self.status_lbl.setText("󰅚 failed")
             self.md += f"> ⚠ Installation failed: {err_msg}\n\n---\n\n"
+            self.render()
+
+    def start_model_delete(self):
+        if self.delete_worker and self.delete_worker.isRunning():
+            return
+        current_tag = self.models.currentData()
+        self.action_btn.setEnabled(False)
+        self.status_lbl.setText("󰆴 deleting...")
+        self.md += f"> 🗑 Deleting model **{current_tag}**...\n\n"
         self.render()
+
+        self.delete_worker = DeleteThread(current_tag)
+        self.delete_worker.finished.connect(self.on_delete_finished)
+        self.delete_worker.start()
+
+    def on_delete_finished(self, success, err_msg):
+        self.action_btn.setEnabled(True)
+        current_tag = self.models.currentData()
+        if success:
+            self.status_lbl.setText("󰄬 ready")
+            self.md += f"> ✔ Successfully deleted **{current_tag}**.\n\n---\n\n"
+            self.load_installed_models()
+        else:
+            self.status_lbl.setText("󰅚 failed")
+            self.md += f"> ⚠ Failed to delete model: {err_msg}\n\n---\n\n"
+            self.render()
 
     def go(self):
         if self.worker and self.worker.isRunning():
@@ -548,14 +567,15 @@ class Win(QWidget):
 
         self.history.append({"role": "user", "content": text})
         shown = text.replace("\n", "  \n")
-        self.md += f"**󰊠 You**\n\n{shown}\n\n**󰚩 {self.models.currentText()}**\n\n"
+        current_tag = self.models.currentData()
+        self.md += f"**󰊠 You**\n\n{shown}\n\n**󰚩 {current_tag}**\n\n"
         self.reply, self.thinking, self.err = "", False, ""
         self.render()
 
         self.send.setText("󰓛 stop")
         self.status_lbl.setText("󰚩 thinking..." if self.think.isChecked() else "󰚩 working...")
 
-        self.worker = Stream(self.models.currentText(), self.history, self.think.isChecked())
+        self.worker = Stream(current_tag, self.history, self.think.isChecked())
         self.worker.chunk.connect(self.on_chunk)
         self.worker.failed.connect(self.on_fail)
         self.worker.finished.connect(self.done)
@@ -609,6 +629,8 @@ class Win(QWidget):
             self.worker.wait(2000)
         if self.pull_worker and self.pull_worker.isRunning():
             self.pull_worker.wait(2000)
+        if self.delete_worker and self.delete_worker.isRunning():
+            self.delete_worker.wait(2000)
 
         global _ollama_proc
         if _ollama_proc and _ollama_proc.poll() is None:
