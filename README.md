@@ -35,7 +35,7 @@ An automated Arch Linux setup script that installs and configures a complete Hyp
 ## Configuration
 
 ### Clock & Weather Module Location
-The Waybar `custom/clockweather` module fetches temperature via `wttr.in`. To change the default location (set to Lhanbryde in the example below) to your own city, locate the module in your Waybar config and replace `Lhanbryde` with your desired location string:
+The Waybar `custom/clockweather` module fetches temperature via `wttr.in`. To change the location to your own city, replace `YOUR_CITY` in the command string below with your target location:
 
 ```json
 "custom/clockweather": {
