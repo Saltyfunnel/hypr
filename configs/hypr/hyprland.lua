@@ -95,8 +95,8 @@ hl.config({
         blur = {
             enabled = true,
             size = 3,
-            passes = 2,
-            vibrancy = 0.1696,
+            passes = 1,
+            vibrancy = 0,
         },
     },
 
@@ -125,15 +125,12 @@ hl.curve("quick", { type = "bezier", points = { { 0.15, 0 }, { 0.1, 1 } } })
 hl.curve("bounce", { type = "bezier", points = { { 0.175, 0.885 }, { 0.32, 1.275 } } })
 hl.curve("liner", { type = "bezier", points = { { 1, 1 }, { 1, 1 } } })
 
-hl.animation({ leaf = "windows", enabled = true, speed = 5, bezier = "bounce", style = "popin" })
-hl.animation({ leaf = "windowsIn", enabled = true, speed = 5, bezier = "quick", style = "popin 80%" })
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 7, bezier = "smoothOut", style = "popin 80%" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 5, bezier = "quick", style = "slide" })
-hl.animation({ leaf = "border", enabled = true, speed = 1, bezier = "liner" })
-hl.animation({ leaf = "borderangle", enabled = true, speed = 30, bezier = "liner", style = "loop" })
-hl.animation({ leaf = "fade", enabled = true, speed = 10, bezier = "quick" })
-hl.animation({ leaf = "workspaces", enabled = true, speed = 4, bezier = "smoothOut", style = "slide" })
-
+hl.animation({ leaf = "windows",    enabled = true, speed = 3, bezier = "bounce",    style = "popin" })
+hl.animation({ leaf = "windowsIn",  enabled = true, speed = 3, bezier = "quick",     style = "popin 80%" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 4, bezier = "smoothOut", style = "popin 80%" })
+hl.animation({ leaf = "windowsMove",enabled = true, speed = 3, bezier = "quick",     style = "slide" })
+hl.animation({ leaf = "fade",       enabled = true, speed = 4, bezier = "quick" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 3, bezier = "smoothOut", style = "slide" })
 --------------------------------------------------------------------------------
 -- window rules
 --------------------------------------------------------------------------------
@@ -168,6 +165,7 @@ hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 
 -- apps
 hl.bind(mod .. " + F", hl.dsp.exec_cmd(fm))
+hl.bind(mod .. " + A", hl.dsp.exec_cmd("python3 ~/.config/scripts/chat.py"))
 hl.bind(mod .. " + W", hl.dsp.exec_cmd("python3 ~/.config/scripts/wall.py"))
 hl.bind(mod .. " + D", hl.dsp.exec_cmd("python3 ~/.config/scripts/app.py"))
 hl.bind(mod .. " + C", hl.dsp.exec_cmd(ed))
