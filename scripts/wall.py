@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """
-wall.py — Cover Flow wallpaper picker
+wall.py — Cover Flow wallpaper picker (Floating XWayland Mode)
 Overlapping stacked cards, centre card enlarged, scroll with keys/wheel/click.
 Usage: python wall.py [wallpaper_dir]
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+# Force XWayland platform so it matches existing Hyprland class floating rules
+os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
