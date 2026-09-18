@@ -253,7 +253,7 @@ spinner "$!" "Installing pywal16 via pipx"
 wait $! || print_err "pywal16 install failed  →  /tmp/hypr_install_log"
 print_ok "pywal16 installed via pipx (PyPI, not AUR)"
 
-################################################################################
+###############################################################################
 # LOCALSEND (TARBALL — NO AUR)
 ################################################################################
 
@@ -262,9 +262,17 @@ print_phase "LocalSend (GitHub Release)"
 LOCALSEND_VERSION=$(curl -s "https://api.github.com/repos/localsend/localsend/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
 curl -sL "https://github.com/localsend/localsend/releases/download/v${LOCALSEND_VERSION}/LocalSend-${LOCALSEND_VERSION}-linux-x86-64.tar.gz" -o /tmp/localsend.tar.gz
 
+rm -rf /opt/localsend
 mkdir -p /opt/localsend
 tar -xzf /tmp/localsend.tar.gz -C /opt/localsend
 ln -sf /opt/localsend/localsend_app /usr/bin/localsend
+
+# Extract/Copy icon from the release bundle assets
+LOCALSEND_ICON=$(find /opt/localsend -type f \( -name "*logo*" -o -name "*icon*" \) | grep -E '\.(png|svg)$' | head -n 1)
+mkdir -p /opt/localsend/icons
+if [ -n "$LOCALSEND_ICON" ]; then
+    cp "$LOCALSEND_ICON" /opt/localsend/icons/icon.png
+fi
 
 cat > /usr/share/applications/localsend.desktop <<EOF
 [Desktop Entry]
@@ -275,6 +283,7 @@ Type=Application
 Categories=Utility;Network;
 EOF
 
+update-desktop-database /usr/share/applications/ 2>/dev/null || true
 rm -f /tmp/localsend.tar.gz
 print_ok "LocalSend installed successfully from tarball (no AUR)"
 
