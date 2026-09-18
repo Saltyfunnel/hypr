@@ -18,7 +18,7 @@ BBLU="\e[94m"; BMAG="\e[95m"; BCYN="\e[96m"; BWHT="\e[97m"
 BLD="\e[1m"; DIM="\e[2m"; ITL="\e[3m"; UND="\e[4m"
 
 STEP=0
-TOTAL_STEPS=9
+TOTAL_STEPS=10
 
 ################################################################################
 # HELPER FUNCTIONS
@@ -254,6 +254,31 @@ wait $! || print_err "pywal16 install failed  →  /tmp/hypr_install_log"
 print_ok "pywal16 installed via pipx (PyPI, not AUR)"
 
 ################################################################################
+# LOCALSEND (TARBALL — NO AUR)
+################################################################################
+
+print_phase "LocalSend (GitHub Release)"
+
+LOCALSEND_VERSION=$(curl -s "https://api.github.com/repos/localsend/localsend/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+curl -sL "https://github.com/localsend/localsend/releases/download/v${LOCALSEND_VERSION}/LocalSend-${LOCALSEND_VERSION}-linux-x86-64.tar.gz" -o /tmp/localsend.tar.gz
+
+mkdir -p /opt/localsend
+tar -xzf /tmp/localsend.tar.gz -C /opt/localsend
+ln -sf /opt/localsend/localsend_app /usr/bin/localsend
+
+cat > /usr/share/applications/localsend.desktop <<EOF
+[Desktop Entry]
+Name=LocalSend
+Exec=/opt/localsend/localsend_app
+Icon=/opt/localsend/icons/icon.png
+Type=Application
+Categories=Utility;Network;
+EOF
+
+rm -f /tmp/localsend.tar.gz
+print_ok "LocalSend installed successfully from tarball (no AUR)"
+
+################################################################################
 # DIRECTORY STRUCTURE
 ################################################################################
 
@@ -295,13 +320,13 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                    "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"               ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                               "Waybar config"
-[[ -f "$CONFIGS_SRC/kitty/kitty.conf"     ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                  "Kitty config"
+[[ -d "$CONFIGS_SRC/hypr"                ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                     "Hyprland config"
+[[ -d "$CONFIGS_SRC/waybar"              ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                                   "Waybar config"
+[[ -f "$CONFIGS_SRC/kitty/kitty.conf"      ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                   "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
 [[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
-[[ -f "$CONFIGS_SRC/btop/btop.conf"         ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                  "btop config"
-[[ -d "$CONFIGS_SRC/wal/templates"          ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"             "pywal templates"
+[[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                      "btop config"
+[[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"             "pywal templates"
 
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
 [Settings]
@@ -471,9 +496,9 @@ print_phase "Pywal symlinks"
 
 print_phase "Services & permissions"
 
-systemctl enable sddm.service         2>/dev/null && print_ok "sddm enabled"              || true
-systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"         || true
-systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"   || true
+systemctl enable sddm.service         2>/dev/null && print_ok "sddm enabled"                 || true
+systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"          || true
+systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"    || true
 
 chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
 print_ok "Ownership set"
@@ -490,17 +515,18 @@ echo ""
 echo ""
 
 _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
-_row "pacman configured"                    "ILoveCandy, Color, ParallelDownloads"
-_row "system updated"                       "pacman -Syu"
+_row "pacman configured"                     "ILoveCandy, Color, ParallelDownloads"
+_row "system updated"                        "pacman -Syu"
 _row "${#ALL_PACKAGES[@]} packages"          "pacman"
-_row "pywal16"                              "pipx (PyPI, no AUR)"
-_row "dotfiles deployed"                    "~/.config/*"
-_row "gpu environment"                      "hypr/gpu-env.conf"
-_row "gtk3 & gtk4 dark theme"               "Adwaita-dark"
-_row "colloid-dynamic icons"                "~/.local/share/icons"
-_row "pywal symlinks"                       "wal → cache"
-_row "zed theme"                            "zed/themes/zed.json"
-_row "sddm · bluetooth · NetworkManager"    "systemctl enable"
+_row "pywal16"                               "pipx (PyPI, no AUR)"
+_row "localsend"                             "github release tarball (no AUR)"
+_row "dotfiles deployed"                     "~/.config/*"
+_row "gpu environment"                       "hypr/gpu-env.conf"
+_row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
+_row "colloid-dynamic icons"                 "~/.local/share/icons"
+_row "pywal symlinks"                        "wal → cache"
+_row "zed theme"                             "zed/themes/zed.json"
+_row "sddm · bluetooth · NetworkManager"     "systemctl enable"
 
 echo ""
 hr
