@@ -19,7 +19,7 @@ An automated Arch Linux setup script that installs and configures a complete Hyp
 * **No-AUR Pywal16:** Installs `pywal16` cleanly via `pipx` from PyPI.
 * **Theme & Style Integration:** Configures GTK dark themes, installs Colloid Dynamic icons, and links dynamic Pywal colors for Waybar, Mako, and Zed.
 * **Local AI Assistant (`chat.py`):** Includes a self-contained Python script to easily set up and run a local AI model on your machine.
-* **Full Application Suite:** Sets up SDDM, Waybar, Mako, Kitty, Thunar, Starship, btop, and Fastfetch automatically.
+* **Full Application Suite:** Sets up Steam, Spotify, Zed, SDDM, Waybar, Mako, Kitty, Thunar, Starship, btop, Libreoffice, Gimp, Qbittorrent and Fastfetch automatically.
 * **Wallpapers Included:** Clones and deploys custom wallpaper collections on setup.
 
 ---
