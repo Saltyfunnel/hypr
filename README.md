@@ -46,7 +46,6 @@ The Waybar `custom/clockweather` module fetches temperature via `wttr.in`. To ch
 
 ## Quick Start
 
-```bash
 git clone https://github.com/Saltyfunnel/hypr
 cd hypr
 chmod +x install.sh
