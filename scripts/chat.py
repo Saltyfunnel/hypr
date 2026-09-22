@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""PyQt6 chat GUI for Ollama with RGBA transparency, Nerd Font icons, manual model management (install/delete), and live status."""
+"""PyQt6 chat GUI for Ollama with RGBA transparency, Nerd Font icons,
+manual model management (install/delete), live status, GPU-offload
+reporting, and adjustable context length.
+
+Designed around 16GB-class consumer GPUs (e.g. AMD RX 9070 XT / RTX 4070
+Ti-class cards): the curated model list intentionally stops at ~14B params
+at Q4 quantization, since 32B-class models spill out of 16GB VRAM and
+either OOM or fall back to slow CPU offload.
+"""
 
 import json
 import subprocess
@@ -19,14 +27,20 @@ from PyQt6.QtWidgets import (
 HOST = "http://localhost:11434"
 FONT = "Hack Nerd Font"
 
-# Curated scale using clean Nerd Font glyphs that render reliably with Hack Nerd Font
+# Curated for 16GB-class VRAM. Everything here comfortably fits at Q4_K_M
+# with headroom for context — nothing that OOMs or needs CPU offload.
 MODELS = [
-    ("󰅱 Qwen2.5-Coder (7B) — Blazing fast code gen & daily scripting (8GB+ VRAM)", "qwen2.5-coder:7b"),
-    ("󰚩 DeepSeek-R1 (8B) — Step-by-step logic & advanced debugging (12GB+ VRAM)", "deepseek-r1:8b"),
-    ("󰓅 Qwen2.5-Coder (14B) — Deep script architecture & complex logic (12GB+ VRAM)", "qwen2.5-coder:14b"),
-    ("󰭹 Llama 3.1 (8B) — Elite all-rounder for general chat & questions (10GB+ VRAM)", "llama3.1:8b"),
-    ("󰻠 Qwen3 (32B) — Maximum capability, high-end reasoning (16GB+ VRAM)", "qwen3:32b"),
+    ("󰅱 Qwen2.5-Coder (7B) — Blazing fast code gen & daily scripting (~6GB VRAM)", "qwen2.5-coder:7b"),
+    ("󰚩 DeepSeek-R1 (8B) — Step-by-step logic & advanced debugging (~8GB VRAM)", "deepseek-r1:8b"),
+    ("󰭹 Llama 3.1 (8B) — Elite all-rounder for general chat & questions (~8GB VRAM)", "llama3.1:8b"),
+    ("󰊠 Qwen3 (14B) — Balanced reasoning + speed, fits 16GB comfortably (~10GB VRAM)", "qwen3:14b"),
+    ("󰓅 Qwen2.5-Coder (14B) — Deep script architecture & complex logic (~11GB VRAM, near 16GB ceiling)", "qwen2.5-coder:14b"),
 ]
+
+# Context window options (tokens). Ollama defaults to a small window unless
+# told otherwise, which silently truncates long files/conversations.
+CTX_OPTIONS = [4096, 8192, 16384, 32768]
+DEFAULT_CTX = 8192
 
 
 def find_ollama():
@@ -149,6 +163,9 @@ def style(c):
         color: {c['dim']};
         font-weight: 600;
     }}
+    QLabel#gpu_lbl {{
+        color: {c['accent']};
+    }}
     QScrollBar:vertical {{
         width: 8px;
         background: transparent;
@@ -168,9 +185,10 @@ class Stream(QThread):
     chunk = pyqtSignal(str, str)
     failed = pyqtSignal(str)
 
-    def __init__(self, model, messages, think):
+    def __init__(self, model, messages, think, num_ctx):
         super().__init__()
         self.model, self.messages, self.think = model, messages, think
+        self.num_ctx = num_ctx
         self._halt = False
 
     def halt(self):
@@ -182,6 +200,7 @@ class Stream(QThread):
             "messages": self.messages,
             "stream": True,
             "think": self.think,
+            "options": {"num_ctx": self.num_ctx},
         }).encode()
         req = urllib.request.Request(
             f"{HOST}/api/chat", body, {"Content-Type": "application/json"}
@@ -193,7 +212,12 @@ class Stream(QThread):
                         break
                     if not line.strip():
                         continue
-                    d = json.loads(line)
+                    try:
+                        d = json.loads(line)
+                    except json.JSONDecodeError:
+                        # A partial/malformed line shouldn't kill the whole
+                        # stream — skip it and keep reading.
+                        continue
                     if "error" in d:
                         self.failed.emit(d["error"])
                         return
@@ -226,7 +250,10 @@ class PullThread(QThread):
                 for line in r:
                     if not line.strip():
                         continue
-                    d = json.loads(line)
+                    try:
+                        d = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
                     status = d.get("status", "")
                     completed = d.get("completed")
                     total = d.get("total")
@@ -322,6 +349,36 @@ class ServerInitThread(QThread):
             self.ready.emit(str(e))
 
 
+class GpuCheckThread(QThread):
+    """Queries /api/ps after a response finishes to report how much of the
+    running model is actually resident on the GPU vs offloaded to CPU RAM.
+    A number well under 100% usually means the ROCm/CUDA backend isn't
+    being used and inference silently fell back to CPU."""
+    result = pyqtSignal(str)
+
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def run(self):
+        try:
+            with urllib.request.urlopen(f"{HOST}/api/ps", timeout=3) as r:
+                data = json.load(r)
+        except Exception:
+            self.result.emit("")
+            return
+
+        for m in data.get("models", []):
+            if m.get("name") == self.model or m.get("model") == self.model:
+                size = m.get("size", 0)
+                size_vram = m.get("size_vram", 0)
+                if size:
+                    pct = int((size_vram / size) * 100)
+                    self.result.emit(f"{pct}%")
+                    return
+        self.result.emit("")
+
+
 _ollama_proc = None
 
 
@@ -354,6 +411,7 @@ class Win(QWidget):
         self.delete_worker = None
         self.server_worker = None
         self.install_ollama_worker = None
+        self.gpu_worker = None
         self.installed_tags = set()
 
         self.view = QTextBrowser()
@@ -363,6 +421,12 @@ class Win(QWidget):
         for desc, tag in MODELS:
             self.models.addItem(desc, tag)
 
+        self.ctx = QComboBox()
+        for tokens in CTX_OPTIONS:
+            label = f"{tokens // 1024}k ctx" if tokens >= 1024 else f"{tokens} ctx"
+            self.ctx.addItem(label, tokens)
+        self.ctx.setCurrentIndex(CTX_OPTIONS.index(DEFAULT_CTX))
+
         self.think = QCheckBox("󰚩 think")
         self.action_btn = QPushButton()
         self.action_btn.setVisible(False)
@@ -370,6 +434,7 @@ class Win(QWidget):
 
         top = QHBoxLayout()
         top.addWidget(self.models, 1)
+        top.addWidget(self.ctx)
         top.addWidget(self.think)
         top.addWidget(self.action_btn)
         top.addWidget(self.clear)
@@ -383,10 +448,14 @@ class Win(QWidget):
         self.send.setFixedHeight(84)
 
         self.status_lbl = QLabel("󰄬 ready")
+        self.gpu_lbl = QLabel("")
+        self.gpu_lbl.setObjectName("gpu_lbl")
 
         bottom = QHBoxLayout()
         bottom.setSpacing(0)
         bottom.addWidget(self.status_lbl)
+        bottom.addSpacing(8)
+        bottom.addWidget(self.gpu_lbl)
         bottom.addSpacing(12)
         bottom.addWidget(self.input, 1)
         bottom.addWidget(self.send)
@@ -459,6 +528,7 @@ class Win(QWidget):
         if not find_ollama():
             return
 
+        self.gpu_lbl.setText("")
         current_tag = self.models.currentData()
         if current_tag in self.installed_tags:
             self.action_btn.setText(f"󰆴 delete model")
@@ -575,7 +645,8 @@ class Win(QWidget):
         self.send.setText("󰓛 stop")
         self.status_lbl.setText("󰚩 thinking..." if self.think.isChecked() else "󰚩 working...")
 
-        self.worker = Stream(current_tag, self.history, self.think.isChecked())
+        num_ctx = self.ctx.currentData()
+        self.worker = Stream(current_tag, self.history, self.think.isChecked(), num_ctx)
         self.worker.chunk.connect(self.on_chunk)
         self.worker.failed.connect(self.on_fail)
         self.worker.finished.connect(self.done)
@@ -596,18 +667,35 @@ class Win(QWidget):
         self.err = msg
 
     def done(self):
+        current_tag = self.models.currentData()
         if self.reply:
             self.history.append({"role": "assistant", "content": self.reply})
             self.md += self.reply + "\n\n"
+            if self.err:
+                # Partial reply before the stream died — keep what we got
+                # but flag it clearly so it isn't mistaken for a full answer.
+                self.md += f"> ⚠ Response cut short: {self.err}\n\n"
         else:
+            # Nothing came back at all — drop the user turn so a retry
+            # doesn't carry a dangling, unanswered message in context.
             self.history.pop()
-        if self.err:
-            self.md += f"> ⚠ {self.err}\n\n"
+            if self.err:
+                self.md += f"> ⚠ {self.err}\n\n"
         self.md += "---\n\n"
         self.reply, self.thinking = "", False
         self.send.setText("󰒭 send")
         self.status_lbl.setText("󰄬 ready")
         self.render()
+
+        self.gpu_worker = GpuCheckThread(current_tag)
+        self.gpu_worker.result.connect(self.on_gpu_result)
+        self.gpu_worker.start()
+
+    def on_gpu_result(self, pct):
+        if pct:
+            self.gpu_lbl.setText(f"󰢮 {pct} GPU")
+        else:
+            self.gpu_lbl.setText("")
 
     def render(self):
         body = self.reply or ("*󰚩 thinking…*" if self.thinking else "")
@@ -620,17 +708,17 @@ class Win(QWidget):
             self.worker.halt()
             self.worker.wait()
         self.history, self.md, self.reply = [], "", ""
+        self.gpu_lbl.setText("")
         self.init_server()
         self.render()
 
     def closeEvent(self, e):
-        if self.worker and self.worker.isRunning():
-            self.worker.halt()
-            self.worker.wait(2000)
-        if self.pull_worker and self.pull_worker.isRunning():
-            self.pull_worker.wait(2000)
-        if self.delete_worker and self.delete_worker.isRunning():
-            self.delete_worker.wait(2000)
+        for w in (self.worker, self.pull_worker, self.delete_worker,
+                  self.server_worker, self.install_ollama_worker, self.gpu_worker):
+            if w and w.isRunning():
+                if hasattr(w, "halt"):
+                    w.halt()
+                w.wait(2000)
 
         global _ollama_proc
         if _ollama_proc and _ollama_proc.poll() is None:
