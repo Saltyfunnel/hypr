@@ -1,7 +1,7 @@
 {
   "layer": "top",
   "position": "top",
-  "mod": "dock",
+  "mode": "dock",
   "exclusive": true,
   "passthrough": false,
   "spacing": 2,
@@ -10,7 +10,7 @@
     "hyprland/window"
   ],
   "modules-center": [
-    "custom/clockweather"
+    "group/clockweather"
   ],
   "modules-right": [
     "custom/updates",
@@ -19,6 +19,13 @@
     "custom/steam",
     "group/hardware"
   ],
+  "group/clockweather": {
+    "orientation": "horizontal",
+    "modules": [
+      "clock",
+      "custom/weather"
+    ]
+  },
   "group/hardware": {
     "orientation": "horizontal",
     "drawer": {
@@ -42,6 +49,22 @@
       "custom/video"
     ]
   },
+  "clock": {
+    "format": "{:%H:%M}",
+    "interval": 30,
+    "tooltip-format": "<tt>{calendar}</tt>",
+    "calendar": {
+      "mode": "month",
+      "format": {
+        "today": "<b><u>{}</u></b>"
+      }
+    }
+  },
+  "custom/weather": {
+    "exec": "curl -s --max-time 3 'https://wttr.in/Lhanbryde?format=󰖐+%t' || echo ''",
+    "format": "{}",
+    "interval": 1800
+  },
   "mpris": {
     "format": "󰓇 {artist} - {title}",
     "format-paused": "󰏤 {artist} - {title}",
@@ -57,17 +80,12 @@
     "format": "{}",
     "interval": 5
   },
- "custom/clockweather": {
-    "exec": "python3 -c 'import datetime, urllib.request, subprocess; now=datetime.datetime.now().strftime(\"%H:%M\"); req=urllib.request.Request(\"https://wttr.in/Lhanbryde?format=%t\", headers={\"User-Agent\": \"curl\"}); temp=urllib.request.urlopen(req, timeout=3).read().decode().strip(); cal=subprocess.check_output([\"cal\"], text=True); text=f\"{now}  󰖐  {temp}\"; import json; print(json.dumps({\"text\": text, \"tooltip\": cal}))'",
-    "interval": 1800,
-    "return-type": "json"
-  },
   "cpu": {
-    "format": " {usage}%",
+    "format": " {usage}%",
     "on-click": "kitty -e btop"
   },
   "memory": {
-    "format": " {percentage}%",
+    "format": " {percentage}%",
     "on-click": "kitty -e btop"
   },
   "custom/updates": {
@@ -126,7 +144,7 @@
   },
   "temperature": {
     "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
-    "format": " {temperatureC}°C"
+    "format": " {temperatureC}°C"
   },
   "temperature#gpu": {
     "hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
