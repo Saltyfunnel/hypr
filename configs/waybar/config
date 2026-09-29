@@ -130,11 +130,14 @@
     },
     "on-click": "pavucontrol"
   },
-  "pulseaudio#microphone": {
-    "format": "󰍬 {volume}%",
-    "format-muted": "󰍭",
-    "on-click": "pamixer --default-source -t"
-  },
+ "pulseaudio#microphone": {
+  "format": "{format_source}",
+  "format-source": "󰍬 {volume}%",
+  "format-source-muted": "󰍭",
+  "on-click": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
+  "on-scroll-up": "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SOURCE@ 5%+",
+  "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-"
+},
   "hyprland/workspaces": {
     "format": "{name}",
     "persistent-workspaces": { "*": 3 }
