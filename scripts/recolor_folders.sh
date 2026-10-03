@@ -10,12 +10,13 @@ NEW_COLOR=$(jq -r '.colors.color4' < "$CACHE" | tr -d '[:space:]')
 PREV_FILE="$HOME/.cache/wal/prev_icon_color"
 PREV_COLOR=$(cat "$PREV_FILE" 2>/dev/null)
 
-if [ -n "$PREV_COLOR" ] && [ "$PREV_COLOR" != "$NEW_COLOR" ]; then
+if [ -n "$PREV_COLOR" ] && [ "$PREV_COLOR" != "$NEW_COLOR" ] \
+   && grep -rqiF "$PREV_COLOR" "$ICON_DIR" --include="*.svg"; then
     # Fast path: only touch files containing the old colour
-    grep -rl "$PREV_COLOR" "$ICON_DIR" --include="*.svg" | \
-        xargs sed -i "s/$PREV_COLOR/$NEW_COLOR/gI"
+    grep -rliF "$PREV_COLOR" "$ICON_DIR" --include="*.svg" | \
+        xargs -r sed -i "s/$PREV_COLOR/$NEW_COLOR/gI"
 else
-    # First run or same colour: full scan (slow, but rare)
+    # No match, first run, or same colour: full scan
     find "$ICON_DIR" -name "*.svg" -exec \
         sed -i "/#ffffff\|#333333/!s/#[a-fA-F0-9]\{6\}/$NEW_COLOR/gI" {} +
 fi
