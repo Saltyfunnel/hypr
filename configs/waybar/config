@@ -80,14 +80,14 @@
     "format": "{}",
     "interval": 5
   },
-  "cpu": {
-    "format": " {usage}%",
-    "on-click": "kitty -e btop"
-  },
-  "memory": {
-    "format": " {percentage}%",
-    "on-click": "kitty -e btop"
-  },
+"cpu": {
+  "format": "\uf2db {usage}%",
+  "on-click": "kitty -e btop"
+},
+"memory": {
+  "format": "\udb80\udf5b {percentage}%",
+  "on-click": "kitty -e btop"
+},
   "custom/updates": {
     "exec": "count=$(checkupdates 2>/dev/null | wc -l); [ $count -gt 0 ] && echo \"󰚰 $count\" || echo ''",
     "return-type": "",
@@ -148,14 +148,14 @@
   "hyprland/window": {
     "format": "󰣇 {}"
   },
-  "temperature": {
-    "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
-    "format": " {temperatureC}°C"
-  },
-  "temperature#gpu": {
-    "hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
-    "format": "󱤓 {temperatureC}°C"
-  },
+"temperature": {
+  "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
+  "format": "\uf2c9 {temperatureC}°C"
+},
+"temperature#gpu": {
+  "hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
+  "format": "\udb86\udd13 {temperatureC}°C"
+},
   "battery": {
     "states": {
       "warning": 30,
