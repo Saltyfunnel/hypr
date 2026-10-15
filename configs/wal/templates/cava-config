@@ -11,21 +11,21 @@ method = pipewire
 source = auto
 
 [output]
-method = ncurses
+method = noncurses
 style = stereo
 
 [color]
 background = 'default'
 
-# Enable dynamic gradient using pywal colors without quotes
+# Enable dynamic gradient with formatted hex values
 gradient = 1
 gradient_count = 6
-gradient_color_1 = {color1}
-gradient_color_2 = {color2}
-gradient_color_3 = {color3}
-gradient_color_4 = {color4}
-gradient_color_5 = {color5}
-gradient_color_6 = {color6}
+gradient_color_1 = '#{color1.strip}'
+gradient_color_2 = '#{color2.strip}'
+gradient_color_3 = '#{color3.strip}'
+gradient_color_4 = '#{color4.strip}'
+gradient_color_5 = '#{color5.strip}'
+gradient_color_6 = '#{color6.strip}'
 
 [smoothing]
 integral = 77
