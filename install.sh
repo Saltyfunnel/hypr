@@ -530,6 +530,10 @@ print_phase "Pywal symlinks"
     sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/colors-zed.json" "$CONFIG_DIR/zed/themes/zed.json" && \
     print_ok "zed/themes/zed.json"
 
+[[ -f "$CONFIG_DIR/wal/templates/cava-config" ]] && \
+    sudo -u "$USER_NAME" ln -sf "$WAL_CACHE/cava-config" "$CONFIG_DIR/cava/config" && \
+    print_ok "cava/config"
+
 ################################################################################
 # SERVICES & PERMISSIONS
 ################################################################################
