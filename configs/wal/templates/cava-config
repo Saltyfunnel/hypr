@@ -17,7 +17,7 @@ style = stereo
 [color]
 background = 'default'
 
-# Enable dynamic gradient with formatted hex values
+# Gradient Settings
 gradient = 1
 gradient_count = 6
 gradient_color_1 = '#{color1.strip}'
