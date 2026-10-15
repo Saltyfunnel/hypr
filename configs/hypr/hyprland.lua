@@ -205,3 +205,11 @@ hl.bind(mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 -- move/resize with mouse
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+--------------------------------------------------------------------------------
+-- workspaces
+--------------------------------------------------------------------------------
+
+hl.workspace_rule ({ workspace = "1", persistent = true })
+hl.workspace_rule ({ workspace = "2", persistent = true })
+hl.workspace_rule ({ workspace = "3", persistent = true })
