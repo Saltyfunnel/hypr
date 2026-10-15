@@ -439,6 +439,8 @@ EOF
 
 # Configure Fish Shell
 sudo -u "$USER_NAME" cat > "$CONFIG_DIR/fish/config.fish" << 'EOF'
+set -g fish_greeting ""
+
 if status is-interactive
     if test -f ~/.cache/wal/sequences
         cat ~/.cache/wal/sequences
@@ -462,7 +464,7 @@ alias cp='cp -i'
 EOF
 
 chsh -s /usr/bin/fish "$USER_NAME"
-print_ok "Fish shell configured and set as default shell"
+print_ok "Fish shell configured (greeting disabled) and set as default shell"
 
 ################################################################################
 # COLLOID ICON THEME
