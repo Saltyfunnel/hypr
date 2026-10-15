@@ -195,7 +195,7 @@ CORE_PACKAGES=(
     hyprland waybar hyprpaper mako zed sddm qt6-5compat pacman-contrib
     xdg-desktop-portal-hyprland
 )
-TERMINAL_PACKAGES=(kitty starship fastfetch)
+TERMINAL_PACKAGES=(kitty starship fastfetch fish cava)
 UTILITY_PACKAGES=(
     grim slurp wl-clipboard polkit-kde-agent
     bluez bluez-utils blueman udiskie udisks2 gvfs networkmanager
@@ -299,7 +299,8 @@ CONFIG_DIRS=(
     "$CONFIG_DIR/mako"        "$CONFIG_DIR/scripts"
     "$CONFIG_DIR/wal/templates"  "$CONFIG_DIR/btop"
     "$CONFIG_DIR/gtk-3.0" "$CONFIG_DIR/gtk-4.0"
-    "$CONFIG_DIR/zed/themes"
+    "$CONFIG_DIR/zed/themes"  "$CONFIG_DIR/fish"
+    "$CONFIG_DIR/cava"
 )
 
 for dir in "${CONFIG_DIRS[@]}"; do
@@ -329,12 +330,13 @@ OLD_SYMLINKS=(
 for s in "${OLD_SYMLINKS[@]}"; do sudo -u "$USER_NAME" rm -f "$s" 2>/dev/null || true; done
 print_ok "Stale symlinks & conflicting files cleared"
 
-[[ -d "$CONFIGS_SRC/hypr"                ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                     "Hyprland config"
-[[ -d "$CONFIGS_SRC/waybar"              ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                                   "Waybar config"
+[[ -d "$CONFIGS_SRC/hypr"                ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/hypr/'* '$CONFIG_DIR/hypr/'"                                    "Hyprland config"
+[[ -d "$CONFIGS_SRC/waybar"              ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/waybar/'* '$CONFIG_DIR/waybar/'"                                  "Waybar config"
 [[ -f "$CONFIGS_SRC/kitty/kitty.conf"      ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/kitty/kitty.conf' '$CONFIG_DIR/kitty/kitty.conf'"                   "Kitty config"
 [[ -f "$CONFIGS_SRC/fastfetch/config.jsonc" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/fastfetch/config.jsonc' '$CONFIG_DIR/fastfetch/config.jsonc'" "Fastfetch config"
-[[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"          "Starship config"
+[[ -f "$CONFIGS_SRC/starship/starship.toml" ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/starship/starship.toml' '$CONFIG_DIR/starship.toml'"           "Starship config"
 [[ -f "$CONFIGS_SRC/btop/btop.conf"          ]] && run_command "sudo -u $USER_NAME cp '$CONFIGS_SRC/btop/btop.conf' '$CONFIG_DIR/btop/btop.conf'"                      "btop config"
+[[ -d "$CONFIGS_SRC/cava"                ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/cava/'* '$CONFIG_DIR/cava/'"                                    "cava config"
 [[ -d "$CONFIGS_SRC/wal/templates"           ]] && run_command "sudo -u $USER_NAME cp -rf '$CONFIGS_SRC/wal/templates/'* '$CONFIG_DIR/wal/templates/'"             "pywal templates"
 
 sudo -u "$USER_NAME" bash -c "cat > '$CONFIG_DIR/gtk-3.0/settings.ini' << 'EOF'
@@ -417,6 +419,7 @@ run_command "sudo -u $USER_NAME git clone --depth 1 '$WALLPAPERS_REPO' '$WALLPAP
 run_command "sudo -u $USER_NAME cp -rf '$WALLPAPER_TMP/'* '$USER_HOME/Pictures/Wallpapers/' && rm -rf '$USER_HOME/Pictures/Wallpapers/.git'" "Deploying Wallpapers"
 rm -rf "$WALLPAPER_TMP"
 
+# Configure Bash
 sudo -u "$USER_NAME" cat > "$USER_HOME/.bashrc" << 'EOF'
 #!/bin/bash
 [[ -f ~/.cache/wal/sequences ]] && cat ~/.cache/wal/sequences
@@ -433,7 +436,33 @@ alias rm='rm -i'
 alias mv='mv -i'
 alias cp='cp -i'
 EOF
-print_ok "Shell configured"
+
+# Configure Fish Shell
+sudo -u "$USER_NAME" cat > "$CONFIG_DIR/fish/config.fish" << 'EOF'
+if status is-interactive
+    if test -f ~/.cache/wal/sequences
+        cat ~/.cache/wal/sequences
+    end
+    type -q fastfetch; and fastfetch
+end
+
+type -q starship; and starship init fish | source
+
+fish_add_path $HOME/.local/bin $HOME/.cargo/bin
+
+alias ls='ls --color=auto'
+alias ll='ls -lah --color=auto'
+alias grep='grep --color=auto'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias update='sudo pacman -Syu'
+alias rm='rm -i'
+alias mv='mv -i'
+alias cp='cp -i'
+EOF
+
+chsh -s /usr/bin/fish "$USER_NAME"
+print_ok "Fish shell configured and set as default shell"
 
 ################################################################################
 # COLLOID ICON THEME
@@ -506,7 +535,7 @@ print_phase "Pywal symlinks"
 print_phase "Services & permissions"
 
 systemctl enable sddm.service         2>/dev/null && print_ok "sddm enabled"                 || true
-systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"          || true
+systemctl enable bluetooth.service       2>/dev/null && print_ok "bluetooth enabled"            || true
 systemctl enable NetworkManager.service 2>/dev/null && print_ok "NetworkManager enabled"    || true
 
 chown -R "$USER_NAME:$USER_NAME" "$CONFIG_DIR" "$CACHE_DIR" "$USER_HOME/Pictures" "$USER_HOME/.local" 2>/dev/null || true
@@ -526,7 +555,7 @@ echo ""
 _row() { printf "    ${BGRN}✓${RST}  %-36s${DIM}%s${RST}\n" "$1" "$2"; }
 _row "pacman configured"                     "ILoveCandy, Color, ParallelDownloads"
 _row "system updated"                        "pacman -Syu"
-_row "${#ALL_PACKAGES[@]} packages"          "pacman"
+_row "${#ALL_PACKAGES[@]} packages"          "pacman (cava & fish included)"
 _row "pywal16"                               "pipx (PyPI, no AUR)"
 _row "localsend"                             "github release tarball (no AUR)"
 _row "dotfiles deployed"                     "~/.config/*"
@@ -535,6 +564,7 @@ _row "gtk3 & gtk4 dark theme"                "Adwaita-dark"
 _row "colloid-dynamic icons"                 "~/.local/share/icons"
 _row "pywal symlinks"                        "wal → cache"
 _row "zed theme"                             "zed/themes/zed.json"
+_row "default shell"                         "fish"
 _row "sddm · bluetooth · NetworkManager"     "systemctl enable"
 
 echo ""
