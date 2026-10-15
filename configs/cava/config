@@ -11,7 +11,7 @@ bar_spacing = 1
 
 [input]
 # PipeWire natively handles PulseAudio stream hooks seamlessly
-method = pulseaudio
+method = pipewire
 source = auto
 
 [output]
