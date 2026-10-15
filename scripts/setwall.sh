@@ -37,9 +37,10 @@ EOF
 [[ -f "$HOME/.config/scripts/recolor_folders.sh" ]] && \
     bash "$HOME/.config/scripts/recolor_folders.sh" &
 
-# 5. Restart waybar + mako + reload hyprland
+# 5. Restart waybar + mako + reload cava + reload hyprland
 killall waybar 2>/dev/null; waybar &
 killall mako 2>/dev/null; sleep 0.1; mako & disown
+pkill -USR2 cava 2>/dev/null || true
 hyprctl reload
 
 notify-send -i "$WALL" "Theme Updated" "$(basename "$WALL")"
