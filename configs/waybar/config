@@ -65,11 +65,11 @@
     "format": "{}",
     "interval": 1800
   },
-  "mpris": {
-    "format": "󰓇 {artist} - {title}",
-    "format-paused": "󰏤 {artist} - {title}",
-    "max-length": 25
-  },
+"mpris": {
+  "format": "󰎆 {artist} - {title}",
+  "format-paused": "󰏤 {artist} - {title}",
+  "max-length": 25
+},
   "custom/firefox": {
     "exec": "pgrep -x firefox >/dev/null && echo '󰈹' || echo ''",
     "format": "{}",
