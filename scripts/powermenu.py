@@ -29,6 +29,11 @@ from PyQt6.QtWidgets import (
 FONT = "Hack Nerd Font"
 CONFIRM_TIMEOUT_MS = 3000
 
+# Opacity (0.0 transparent .. 1.0 solid). Raise these if the wallpaper
+# still bleeds through too much.
+BG_ALPHA = 0.92
+BTN_ALPHA = 0.97
+
 # (icon, label, needs_confirm)
 ACTIONS = [
     ("󰌾", "lock", False),
@@ -71,17 +76,35 @@ def load_colors():
     return c
 
 
-def hex_to_rgba(hex_str, alpha=0.85):
-    hex_str = hex_str.lstrip("#")
+def _rgb(hex_str):
+    hex_str = hex_str.strip().lstrip("#")
     if len(hex_str) != 6:
-        return f"rgba(30, 30, 46, {alpha})"
-    r, g, b = (int(hex_str[i:i + 2], 16) for i in (0, 2, 4))
+        return (30, 30, 46)
+    return tuple(int(hex_str[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def hex_to_rgba(hex_str, alpha=0.85):
+    r, g, b = _rgb(hex_str)
+    return f"rgba({r}, {g}, {b}, {alpha})"
+
+
+def mix_rgba(hex_a, hex_b, t, alpha):
+    """Blend hex_a toward hex_b by t (0..1), returned as an rgba() string."""
+    ra, ga, ba = _rgb(hex_a)
+    rb, gb, bb = _rgb(hex_b)
+    r = round(ra + (rb - ra) * t)
+    g = round(ga + (gb - ga) * t)
+    b = round(ba + (bb - ba) * t)
     return f"rgba({r}, {g}, {b}, {alpha})"
 
 
 def style(c):
-    bg = hex_to_rgba(c["bg"], 0.85)
-    surf = hex_to_rgba(c["bg"], 0.55)
+    bg = hex_to_rgba(c["bg"], BG_ALPHA)
+    # Buttons are a slightly lighter shade of the background so they stand
+    # out from the window even at near-full opacity.
+    surf = mix_rgba(c["bg"], c["fg"], 0.10, BTN_ALPHA)
+    # Hover is fully opaque with a stronger accent tint so it never looks see-through.
+    surf_hover = mix_rgba(c["bg"], c["accent"], 0.35, 1.0)
     return f"""
     QWidget {{
         background: {bg};
@@ -92,6 +115,7 @@ def style(c):
         border-radius: 18px;
     }}
     QPushButton:hover {{
+        background: {surf_hover};
         border-color: {c['accent']};
     }}
     QPushButton[armed="true"] {{
@@ -103,7 +127,7 @@ def style(c):
         font-size: 32px;
     }}
     QLabel#btn_label {{
-        color: {c['dim']};
+        color: {c['fg']};
         background: transparent;
         font-size: 13px;
         font-weight: 600;
