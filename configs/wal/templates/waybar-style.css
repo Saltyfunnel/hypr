@@ -22,6 +22,17 @@ window#waybar {
     min-height: 24px;
 }
 
+/* Hide the window pill when no window is focused */
+window#waybar.empty #window,
+#window.empty {
+    background-color: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    min-width: 0;
+}
+
 /* --- Clock + Weather pill (group container) --- */
 #clockweather {
     background-color: {background};
