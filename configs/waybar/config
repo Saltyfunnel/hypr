@@ -151,9 +151,15 @@
     "on-click": "activate",
     "sort-by-id": true
 },
-  "hyprland/window": {
-    "format": "󰣇 {}"
+"hyprland/window": {
+  "format": "{title}",
+  "rewrite": {
+    "(.+)": "󰣇 $1"
   },
+  "separate-outputs": true
+},
+  "separate-outputs": true
+},
 "temperature": {
   "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
   "format": "\uf2c9 {temperatureC}°C"
