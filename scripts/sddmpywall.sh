@@ -196,6 +196,68 @@ Rectangle {
             }
         }
     }
+
+    // Power buttons (bottom-right)
+    Row {
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.margins: 24
+        spacing: 12
+
+        Button {
+            id: rebootBtn
+            visible: sddm.canReboot
+            width: 40
+            height: 40
+            hoverEnabled: true
+            onClicked: sddm.reboot()
+
+            ToolTip.visible: hovered
+            ToolTip.text: \"Reboot\"
+
+            contentItem: Text {
+                text: \"\uf021\"
+                color: rebootBtn.hovered ? root.colorBg : root.colorFg
+                font.family: \"Hack Nerd Font\"
+                font.pixelSize: 18
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                radius: 8
+                color: rebootBtn.hovered ? root.colorAccent : Qt.rgba(root.colorInputBg.r, root.colorInputBg.g, root.colorInputBg.b, 0.6)
+                border.color: root.colorAccent
+                border.width: 1
+            }
+        }
+
+        Button {
+            id: powerBtn
+            visible: sddm.canPowerOff
+            width: 40
+            height: 40
+            hoverEnabled: true
+            onClicked: sddm.powerOff()
+
+            ToolTip.visible: hovered
+            ToolTip.text: \"Shut down\"
+
+            contentItem: Text {
+                text: \"\uf011\"
+                color: powerBtn.hovered ? root.colorBg : root.colorFg
+                font.family: \"Hack Nerd Font\"
+                font.pixelSize: 18
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                radius: 8
+                color: powerBtn.hovered ? root.colorAccent : Qt.rgba(root.colorInputBg.r, root.colorInputBg.g, root.colorInputBg.b, 0.6)
+                border.color: root.colorAccent
+                border.width: 1
+            }
+        }
+    }
 }
 EOF"
 
