@@ -24,8 +24,34 @@
   "group/clockweather": {
     "orientation": "horizontal",
     "modules": [
+      "group/clockdrawer",
+      "group/weatherdrawer"
+    ]
+  },
+
+  "group/clockdrawer": {
+    "orientation": "horizontal",
+    "drawer": {
+      "transition-duration": 500,
+      "children-class": "clock-children",
+      "transition-left-to-right": false
+    },
+    "modules": [
       "clock",
-      "custom/weather"
+      "custom/date"
+    ]
+  },
+
+  "group/weatherdrawer": {
+    "orientation": "horizontal",
+    "drawer": {
+      "transition-duration": 500,
+      "children-class": "weather-children",
+      "transition-left-to-right": true
+    },
+    "modules": [
+      "custom/weather",
+      "custom/weather-details"
     ]
   },
 
@@ -68,18 +94,30 @@
   },
 
   "clock": {
-    "format": "{:%H:%M}",
+    "format": "󰥔 {:%H:%M}",
     "interval": 30,
-    "tooltip": false,
-    "on-click": "~/.config/scripts/popup.py"
+    "tooltip": false
+  },
+
+  "custom/date": {
+    "exec": "date +'%a, %b %d'",
+    "interval": 60,
+    "format": " {}",
+    "tooltip": false
   },
 
   "custom/weather": {
-    "exec": "curl -s --max-time 3 'https://wttr.in/Lhanbryde?format=󰖐+%t' || echo ''",
+    "exec": "curl -s --max-time 3 'https://wttr.in/Lhanbryde?format=󰖐+%t' || echo '󰖐 N/A'",
     "format": "{}",
     "interval": 1800,
-    "tooltip": false,
-    "on-click": "~/.config/scripts/popup.py"
+    "tooltip": false
+  },
+
+  "custom/weather-details": {
+    "exec": "curl -s --max-time 3 'https://wttr.in/Lhanbryde?format=%C+|+Feels:+%f+|+Humidity:+%h+|+Wind:+%w' || echo ''",
+    "format": "{}",
+    "interval": 1800,
+    "tooltip": false
   },
 
   "mpris": {
@@ -127,10 +165,6 @@
     "on-click": "kitty -e btop"
   },
 
-  // Check these with:
-  //   for d in /sys/class/hwmon/hwmon*; do echo "$d $(cat $d/name)"; done
-  // hwmon numbers can change between boots. If readings swap or vanish,
-  // switch to hwmon-path-abs + input-filename (see Waybar's temperature docs).
   "temperature": {
     "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
     "format": "\uf2c9 {temperatureC}°C"
