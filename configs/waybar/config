@@ -49,21 +49,18 @@
       "custom/video"
     ]
   },
-  "clock": {
+   "clock": {
     "format": "{:%H:%M}",
     "interval": 30,
-    "tooltip-format": "<tt>{calendar}</tt>",
-    "calendar": {
-      "mode": "month",
-      "format": {
-        "today": "<b><u>{}</u></b>"
-      }
-    }
+    "tooltip": false,
+    "on-click": "~/.config/scripts/popup.py"
   },
   "custom/weather": {
     "exec": "curl -s --max-time 3 'https://wttr.in/Lhanbryde?format=󰖐+%t' || echo ''",
     "format": "{}",
-    "interval": 1800
+    "interval": 1800,
+    "tooltip": false,
+    "on-click": "~/.config/scripts/popup.py"
   },
 "mpris": {
   "format": "󰎆 {artist} - {title}",
