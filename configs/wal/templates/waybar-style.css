@@ -11,7 +11,7 @@ window#waybar {
 }
 
 /* --- Standard Modules (Stand-alone pills) --- */
-#window, #workspaces,
+#window, #workspaces, #ext-workspaces,
 #custom-updates, #mpris,
 #custom-firefox, #custom-steam {
     background-color: {background};
@@ -52,6 +52,9 @@ window#waybar.empty #window,
 #clock          { color: {color1}; padding: 0 6px 0 12px; }
 #custom-weather { color: {color6}; padding: 0 12px 0 6px; }
 
+/* Hover hint, since both open the popup */
+#clock:hover, #custom-weather:hover { color: {foreground}; }
+
 /* --- THE HARDWARE PILL (The Drawer Container) --- */
 #hardware {
     background-color: {background};
@@ -68,8 +71,8 @@ window#waybar.empty #window,
 
 /* Internal modules inside the hardware drawer */
 #custom-power, #memory, #cpu, #temperature,
-#temperature-gpu, #backlight, #battery, #pulseaudio,
-#pulseaudio-microphone, #bluetooth, #network, #tray,
+#temperature.gpu, #backlight, #battery, #pulseaudio,
+#pulseaudio.microphone, #bluetooth, #network,
 #custom-screenshot, #custom-video {
     background: transparent;
     border: none;
@@ -89,14 +92,13 @@ window#waybar.empty #window,
 #memory                { color: {color2}; }
 #cpu                   { color: {color1}; }
 #temperature           { color: {color3}; }
-#temperature-gpu       { color: {color4}; }
+#temperature.gpu       { color: {color4}; }
 #backlight             { color: {color8}; }
 #battery               { color: {color9}; }
 #pulseaudio            { color: {color8}; }
-#pulseaudio-microphone { color: {color8}; }
+#pulseaudio.microphone { color: {color8}; }
 #bluetooth             { color: {color2}; }
 #network               { color: {color6}; }
-#tray                  { color: {color2}; }
 #custom-screenshot     { color: {color2}; }
 #custom-video          { color: {color2}; }
 
@@ -108,15 +110,6 @@ window#waybar.empty #window,
     animation-timing-function: linear;
     animation-iteration-count: infinite;
     animation-direction: alternate;
-}
-
-/* Tray specific states */
-#tray > .passive {
-    -gtk-icon-effect: dim;
-}
-
-#tray > .needs-attention {
-    -gtk-icon-effect: highlight;
 }
 
 /* Dynamic Battery States */
@@ -151,13 +144,13 @@ window#waybar.empty #window,
 #custom-steam   { color: {color13}; }
 
 /* --- Workspaces --- */
-#workspaces button {
+#workspaces button, #ext-workspaces button {
     background: transparent;
     color: {foreground};
     border: none;
     padding: 0 5px;
 }
-#workspaces button.active { color: {color1}; }
+#workspaces button.active, #ext-workspaces button.active { color: {color1}; }
 
 /* --- Tooltip --- */
 tooltip {
