@@ -5,6 +5,7 @@
   "exclusive": true,
   "passthrough": false,
   "spacing": 2,
+
   "modules-left": [
     "ext/workspaces",
     "hyprland/window"
@@ -19,6 +20,7 @@
     "custom/steam",
     "group/hardware"
   ],
+
   "group/clockweather": {
     "orientation": "horizontal",
     "modules": [
@@ -26,6 +28,7 @@
       "custom/weather"
     ]
   },
+
   "group/hardware": {
     "orientation": "horizontal",
     "drawer": {
@@ -49,12 +52,28 @@
       "custom/video"
     ]
   },
-   "clock": {
+
+  "ext/workspaces": {
+    "format": "{name}",
+    "on-click": "activate",
+    "sort-by-id": true
+  },
+
+  "hyprland/window": {
+    "format": "{title}",
+    "rewrite": {
+      "(.+)": "󰣇 $1"
+    },
+    "separate-outputs": true
+  },
+
+  "clock": {
     "format": "{:%H:%M}",
     "interval": 30,
     "tooltip": false,
     "on-click": "~/.config/scripts/popup.py"
   },
+
   "custom/weather": {
     "exec": "curl -s --max-time 3 'https://wttr.in/Lhanbryde?format=󰖐+%t' || echo ''",
     "format": "{}",
@@ -62,61 +81,86 @@
     "tooltip": false,
     "on-click": "~/.config/scripts/popup.py"
   },
-"mpris": {
-  "format": "󰎆 {artist} - {title}",
-  "format-paused": "󰏤 {artist} - {title}",
-  "max-length": 25
-},
+
+  "mpris": {
+    "format": "󰎆 {artist} - {title}",
+    "format-paused": "󰏤 {artist} - {title}",
+    "max-length": 25,
+    "ignored-players": ["firefox"]
+  },
+
+  "custom/updates": {
+    "exec": "count=$(checkupdates 2>/dev/null | wc -l); [ $count -gt 0 ] && echo \"󰚰 $count\" || echo ''",
+    "format": "{}",
+    "interval": 3600,
+    "on-click": "kitty -e sudo pacman -Syu",
+    "tooltip": true,
+    "tooltip-format": "󰚰 Updates available\n\nClick to run pacman -Syu"
+  },
+
   "custom/firefox": {
     "exec": "pgrep -x firefox >/dev/null && echo '󰈹' || echo ''",
     "format": "{}",
     "interval": 5
   },
+
   "custom/steam": {
     "exec": "pgrep -x steam >/dev/null && echo '󰓓' || echo ''",
     "format": "{}",
     "interval": 5
   },
-"cpu": {
-  "format": "\uf2db {usage}%",
-  "on-click": "kitty -e btop"
-},
-"memory": {
-  "format": "\udb80\udf5b {percentage}%",
-  "on-click": "kitty -e btop"
-},
-  "custom/updates": {
-    "exec": "count=$(checkupdates 2>/dev/null | wc -l); [ $count -gt 0 ] && echo \"󰚰 $count\" || echo ''",
-    "return-type": "",
-    "format": "{}",
-    "interval": 3600,
-    "on-click": "kitty -e sudo pacman -Syu",
-    "tooltip": true,
-    "tooltip-format": "󰚰 Updates available\n\n click to run pacman -Syu"
-  },
-  "custom/screenshot": {
-    "format": "󰹑",
-    "on-click": "~/.config/scripts/screenshot.sh area",
-    "on-click-right": "~/.config/scripts/screenshot.sh screen",
-    "on-click-middle": "~/.config/scripts/screenshot.sh window",
-    "tooltip": true,
-    "tooltip-format": "L: Select Area\nM: Window\nR: Fullscreen"
-  },
-  "custom/video": {
-    "format": "{}",
-    "exec": "~/.config/scripts/screenrecord.sh status",
-    "return-type": "json",
-    "interval": 1,
-    "on-click": "~/.config/scripts/screenrecord.sh toggle",
-    "tooltip": true,
-    "tooltip-format": "Click to toggle screen recording"
-  },
+
   "custom/power": {
     "format": "⏻",
     "on-click": "~/.config/scripts/powermenu.py",
     "tooltip": true,
     "tooltip-format": "Power Menu"
   },
+
+  "memory": {
+    "format": "\udb80\udf5b {percentage}%",
+    "on-click": "kitty -e btop"
+  },
+
+  "cpu": {
+    "format": "\uf2db {usage}%",
+    "on-click": "kitty -e btop"
+  },
+
+  // Check these with:
+  //   for d in /sys/class/hwmon/hwmon*; do echo "$d $(cat $d/name)"; done
+  // hwmon numbers can change between boots. If readings swap or vanish,
+  // switch to hwmon-path-abs + input-filename (see Waybar's temperature docs).
+  "temperature": {
+    "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
+    "format": "\uf2c9 {temperatureC}°C"
+  },
+
+  "temperature#gpu": {
+    "hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
+    "format": "\udb86\udd13 {temperatureC}°C"
+  },
+
+  "backlight": {
+    "format": "{icon} {percent}%",
+    "format-icons": ["󰃞", "󰃟", "󰃠"]
+  },
+
+  "battery": {
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    "format": "{icon} {capacity}%",
+    "format-charging": "󰂄 {capacity}%",
+    "format-plugged": "󰂄 {capacity}%",
+    "format-full": "󰁹 {capacity}%",
+    "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+    "interval": 30,
+    "tooltip": true,
+    "tooltip-format": "{timeTo}\nCapacity: {capacity}%\nPower draw: {power}W\nHealth: {health}%"
+  },
+
   "pulseaudio": {
     "format": "{icon} {volume}%",
     "format-muted": "󰝟",
@@ -128,6 +172,7 @@
     "on-scroll-up": "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+",
     "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
   },
+
   "pulseaudio#microphone": {
     "format": "{format_source}",
     "format-source": "󰍬 {volume}%",
@@ -136,56 +181,12 @@
     "on-scroll-up": "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SOURCE@ 5%+",
     "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-"
   },
-"ext/workspaces": {
-    "format": "{icon}",
-    "format-icons": {
-        "1": "1",
-        "2": "2",
-        "3": "3",
-        "4": "4",
-        "5": "5"
-        },
-    "on-click": "activate",
-    "sort-by-id": true
-},
-"hyprland/window": {
-  "format": "{title}",
-  "rewrite": {
-    "(.+)": "󰣇 $1"
-  },
-  "separate-outputs": true
-},
-  "separate-outputs": true
-},
-"temperature": {
-  "hwmon-path": "/sys/class/hwmon/hwmon4/temp1_input",
-  "format": "\uf2c9 {temperatureC}°C"
-},
-"temperature#gpu": {
-  "hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
-  "format": "\udb86\udd13 {temperatureC}°C"
-},
-  "battery": {
-    "states": {
-      "warning": 30,
-      "critical": 15
-    },
-    "format": "{icon} {capacity}%",
-    "format-charging": "󰂄 {capacity}%",
-    "format-plugged": "󰂄 {capacity}%",
-    "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
-    "interval": 5,
-    "tooltip": true,
-    "tooltip-format": "{timeTo}\nCapacity: {capacity}%\nPower draw: {power}W\nHealth: {health}%"
-  },
-  "backlight": {
-    "format": "{icon} {percent}%",
-    "format-icons": ["󰃞", "󰃟", "󰃠"]
-  },
+
   "bluetooth": {
     "format": "󰂯",
     "on-click": "blueman-manager"
   },
+
   "network": {
     "format-wifi": "󰖩",
     "format-ethernet": "󰈀",
@@ -194,5 +195,24 @@
     "tooltip-format-ethernet": "Wired: {ifname}\nIP: {ipaddr}\nGateway: {gwaddr}",
     "tooltip-format-disconnected": "Disconnected",
     "on-click": "kitty -e nmtui"
+  },
+
+  "custom/screenshot": {
+    "format": "󰹑",
+    "on-click": "~/.config/scripts/screenshot.sh area",
+    "on-click-right": "~/.config/scripts/screenshot.sh screen",
+    "on-click-middle": "~/.config/scripts/screenshot.sh window",
+    "tooltip": true,
+    "tooltip-format": "L: Select Area\nM: Window\nR: Fullscreen"
+  },
+
+  "custom/video": {
+    "format": "{}",
+    "exec": "~/.config/scripts/screenrecord.sh status",
+    "return-type": "json",
+    "signal": 8,
+    "on-click": "~/.config/scripts/screenrecord.sh toggle",
+    "tooltip": true,
+    "tooltip-format": "Click to toggle screen recording"
   }
 }
